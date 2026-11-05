@@ -113,3 +113,11 @@
     animation: none; clip-path: none; translate: none; opacity: 1;
   }
 }
+
+/* MOBILE PRODUCT IMAGE VISIBILITY FIX */
+@media (max-width: 639px) {
+  .card--3d .card__media > img,
+  .card--3d .card__media .card__alt img {
+    object-fit: contain;
+  }
+}
