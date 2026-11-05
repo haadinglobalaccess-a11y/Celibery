@@ -39,7 +39,6 @@ export function RealityBreak({ product }: { product: ProductCardData }) {
   const photo = useRef<HTMLDivElement>(null);
   const pieces = useRef<(HTMLDivElement | null)[]>([]);
   const [ready, setReady] = useState(false);
-  const [replay, setReplay] = useState(0);
 
   useEffect(() => {
     const image = photo.current?.querySelector('img');
@@ -78,26 +77,26 @@ export function RealityBreak({ product }: { product: ProductCardData }) {
     const tick = (now: number) => {
       frame = 0;
       if (!last) last = now;
-      elapsed = Math.min(duration, elapsed + Math.min((now - last) / 1000, .1));
+      elapsed = (elapsed + Math.min((now - last) / 1000, .1)) % duration;
       last = now;
       if (now - rendered >= (mobile ? 1000 / 30 : 1000 / 60) || elapsed === duration) { draw(elapsed); rendered = now; }
-      if (elapsed < duration) frame = requestAnimationFrame(tick);
+      frame = requestAnimationFrame(tick);
     };
     const sync = () => {
       cancelAnimationFrame(frame); frame = 0; last = 0;
-      if (ready && inView && !document.hidden && !reduced && elapsed < duration) frame = requestAnimationFrame(tick);
+      if (ready && inView && !document.hidden && !reduced) frame = requestAnimationFrame(tick);
     };
     const observer = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }, { threshold: .25 });
     observer.observe(host);
     document.addEventListener('visibilitychange', sync);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); document.removeEventListener('visibilitychange', sync); };
-  }, [ready, replay, reduced, mobile, glass]);
+  }, [ready, reduced, mobile, glass]);
 
   return <section className="section reality-break" aria-labelledby={id}>
     <div className="container">
-      <div className="section__head"><div><span className="eyebrow eyebrow--line">REALITY BREAK</span><h2 id={id}>{lang === 'ar' ? 'ما وراء المألوف' : 'Beyond the ordinary.'}</h2><p className="muted section__lead">{lang === 'ar' ? 'لحظة تتجاوز الحدود.' : 'A moment beyond the surface.'}</p></div></div>
+      <div className="section__head"><div><span className="eyebrow eyebrow--line">REALITY BREAK</span><h2 id={id}>{lang === 'ar' ? 'Ù…Ø§ ÙˆØ±Ø§Ø¡ Ø§Ù„Ù…Ø£Ù„ÙˆÙ' : 'Beyond the ordinary.'}</h2><p className="muted section__lead">{lang === 'ar' ? 'Ù„Ø­Ø¸Ø© ØªØªØ¬Ø§ÙˆØ² Ø§Ù„Ø­Ø¯ÙˆØ¯.' : 'A moment beyond the surface.'}</p></div></div>
       <div className="reality-break__layout">
-        <div ref={scene} className="reality-break__scene" data-phase="approach" aria-label={lang === 'ar' ? 'عرض سينمائي للمنتج' : 'Cinematic product showcase'}>
+        <div ref={scene} className="reality-break__scene" data-phase="approach" aria-label={lang === 'ar' ? 'Ø¹Ø±Ø¶ Ø³ÙŠÙ†Ù…Ø§Ø¦ÙŠ Ù„Ù„Ù…Ù†ØªØ¬' : 'Cinematic product showcase'}>
           <div className="reality-break__floor" aria-hidden="true" />
           <div ref={camera} className="reality-break__camera">
             <div className="reality-break__screen" aria-hidden="true"><span /><span /><span /></div>
@@ -111,10 +110,9 @@ export function RealityBreak({ product }: { product: ProductCardData }) {
               </div>)}
             </div>
           </div>
-          {!ready ? <span className="reality-break__loading">{lang === 'ar' ? 'جارٍ تحميل المنتج' : 'Loading product'}</span> : null}
-          {!reduced ? <button type="button" className="reality-break__replay btn btn--outline btn--sm" onClick={() => setReplay(value => value + 1)} disabled={!ready}>{lang === 'ar' ? 'إعادة العرض' : 'Replay moment'} <span aria-hidden="true">↻</span></button> : null}
+          {!ready ? <span className="reality-break__loading">{lang === 'ar' ? 'Ø¬Ø§Ø±Ù ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ù†ØªØ¬' : 'Loading product'}</span> : null}
         </div>
-        <div className="reality-break__copy"><span className="eyebrow">CELIBERY</span><h3>{L(product.name, lang)}</h3>{L(product.shortDescription, lang) ? <p className="muted">{L(product.shortDescription, lang)}</p> : null}<Price price={product.price} compareAt={product.compareAtPrice} /><Link className="btn btn--primary" to={p(`/p/${product.slug}`)}>{lang === 'ar' ? 'عرض المنتج' : 'View Product'} <span aria-hidden="true">{lang === 'ar' ? '←' : '→'}</span></Link></div>
+        <div className="reality-break__copy"><span className="eyebrow">CELIBERY</span><h3>{L(product.name, lang)}</h3>{L(product.shortDescription, lang) ? <p className="muted">{L(product.shortDescription, lang)}</p> : null}<Price price={product.price} compareAt={product.compareAtPrice} /><Link className="btn btn--primary" to={p(`/p/${product.slug}`)}>{lang === 'ar' ? 'Ø¹Ø±Ø¶ Ø§Ù„Ù…Ù†ØªØ¬' : 'View Product'} <span aria-hidden="true">{lang === 'ar' ? 'â†' : 'â†’'}</span></Link></div>
       </div>
     </div>
   </section>;
