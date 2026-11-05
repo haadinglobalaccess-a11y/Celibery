@@ -7,7 +7,7 @@ import { useSettings } from '../state/settings';
  */
 export function Logo({ onDark = false }: { onDark?: boolean }) {
   const s = useSettings();
-  const src = onDark ? s?.brand?.logoDarkUrl || s?.brand?.logoUrl : s?.brand?.logoUrl;
+  const src = onDark ? s?.brand?.logoDarkUrl || s?.brand?.logoUrl : s?.brand?.logoUrl || s?.brand?.logoDarkUrl;
   if (src) {
     return (
       <span className="logo">

@@ -58,6 +58,11 @@ export function Header() {
   const loc = useLocation();
   const megaRef = useRef<HTMLDivElement>(null);
   const scrolled = useScrolled(40);
+  const [heroOverlay, setHeroOverlay] = useState(false);
+
+  useEffect(() => {
+    setHeroOverlay(Boolean(document.querySelector('.campaign-hero-slider')));
+  }, [loc.pathname, home]);
 
   useEffect(() => {
     setMega(false);
@@ -90,7 +95,7 @@ export function Header() {
             <Icon name="menu" />
           </button>
           <Link to={p('/')} aria-label="CELIBERY — home">
-            <Logo />
+            <Logo onDark={heroOverlay && !scrolled} />
           </Link>
           <nav className="header__nav" aria-label="Main">
             <button aria-expanded={mega} aria-controls="mega" onClick={() => setMega((v) => !v)} onMouseEnter={() => setMega(true)}>
@@ -168,7 +173,7 @@ export function Header() {
           <div className="overlay" onClick={() => setMobile(false)} />
           <aside className="drawer drawer--start" role="dialog" aria-modal="true" aria-label={t.nav.menu}>
             <div className="drawer__head">
-              <Logo />
+              <Logo onDark={heroOverlay && !scrolled} />
               <button className="icon-btn" aria-label={t.nav.close} onClick={() => setMobile(false)}>
                 <Icon name="close" />
               </button>
