@@ -1,4 +1,4 @@
-import path from 'node:path';
+﻿import path from 'node:path';
 import { assertProductionConfig, env } from './config/env';
 import { connectDb } from './db/connect';
 import { logger } from './lib/logger';
@@ -14,6 +14,12 @@ async function main() {
 }
 
 main().catch((err) => {
-  logger.error('Failed to start server', { err: String(err?.stack ?? err) });
+  console.error('FAILED TO START SERVER - FULL ERROR:');
+  if (err instanceof Error) {
+    console.error(err.stack || err.message);
+  } else {
+    console.error(err);
+  }
   process.exit(1);
 });
+
