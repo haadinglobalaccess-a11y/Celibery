@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" role="img" aria-label="Product photo coming soon">
+<rect width="500" height="500" fill="#F3F3F4"/>
+<g opacity=".85"><rect x="170" y="160" width="160" height="170" rx="34" fill="none" stroke="#111" stroke-width="14"/><rect x="215" y="110" width="16" height="54" rx="5" fill="#111"/><rect x="269" y="110" width="16" height="54" rx="5" fill="#111"/><rect x="225" y="250" width="50" height="16" rx="6" fill="#111"/><rect x="225" y="280" width="50" height="16" rx="6" fill="#111" opacity=".4"/></g>
+<text x="250" y="440" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#8A8A90">Photo coming soon · الصورة قريباً</text>
+</svg>

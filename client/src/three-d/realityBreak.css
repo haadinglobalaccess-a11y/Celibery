@@ -1,0 +1,38 @@
+.reality-break { background: var(--paper); }
+.reality-break__layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 64px); align-items: center; }
+.reality-break__scene { --rb-impact: 0; --rb-shadow: .12; position: relative; height: 580px; overflow: hidden; border: 1px solid var(--dark-line); border-radius: var(--r-xl); isolation: isolate; perspective: 1100px; background: radial-gradient(ellipse at 50% 35%, var(--dark-2), var(--dark) 75%); }
+.reality-break__scene::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgb(255 255 255 / .5), transparent 65%); opacity: var(--rb-impact); }
+.reality-break__camera { position: absolute; inset: 0; transform-style: preserve-3d; }
+.reality-break__product { position: absolute; left: 50%; top: 46%; width: min(55%, 330px); aspect-ratio: 1; transform-style: preserve-3d; border-radius: var(--r-lg); background: var(--paper); box-shadow: 0 1px 0 rgb(255 255 255 / .9), 0 18px 45px -25px rgb(0 0 0 / .4), 3px 2px 0 var(--line); will-change: transform; }
+.reality-break__product img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; border-radius: inherit; }
+.reality-break__reflection { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(120deg, transparent 35%, rgb(255 255 255 / .13) 48%, transparent 65%); pointer-events: none; }
+.reality-break__floor { position: absolute; bottom: 80px; left: 24%; width: 52%; height: 24px; border-radius: 50%; background: var(--ink); filter: blur(20px); opacity: var(--rb-shadow); }
+.reality-break__screen { position: absolute; width: 74%; height: 72%; top: 46%; left: 50%; transform: translate(-50%, -50%); border: 1px solid rgb(255 255 255 / .8); background: linear-gradient(120deg, transparent 10%, rgb(255 255 255 / .22) 45%, transparent 65%); border-radius: 2px; box-shadow: inset 0 0 0 1px rgb(17 17 17 / .025); transition: opacity 180ms linear; }
+.reality-break__screen span { position: absolute; inset: 12% 25%; border-top: 1px solid rgb(255 255 255 / .5); transform: rotate(-32deg); }
+.reality-break__screen span:nth-child(2) { inset: 60% 12%; transform: rotate(28deg); }
+.reality-break__screen span:nth-child(3) { inset: 36% 50%; transform: rotate(72deg); }
+.reality-break__scene:not([data-phase='approach']) .reality-break__screen { opacity: 0; }
+.reality-break__glass { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+.reality-break__shard { position: absolute; left: 50%; top: 46%; width: 74%; height: 72%; opacity: 0; backface-visibility: visible; will-change: transform, opacity; }
+.reality-break__shard svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 1px 1px rgb(17 17 17 / .13)); }
+.reality-break .reality-break__replay { position: absolute; bottom: 20px; inset-inline-end: 20px; z-index: 2; background: var(--paper); gap: 10px; }
+.reality-break__loading { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); color: var(--on-dark-muted); font-size: var(--fs-sm); }
+.reality-break__copy h3 { font-size: clamp(1.6rem, 2.6vw, 2.8rem); line-height: 1.15; margin: 16px 0 24px; letter-spacing: -.035em; }
+.reality-break__copy p { line-height: 1.8; margin-bottom: 24px; }
+.reality-break__copy .price { display: flex; margin-bottom: 28px; }
+.reality-break__copy .btn { gap: 20px; }
+@media (max-width: 959px) {
+  .reality-break__layout { grid-template-columns: 1fr; }
+  .reality-break__scene { height: 500px; }
+  .reality-break__copy { max-width: 600px; }
+}
+@media (max-width: 639px) {
+  .reality-break__scene { height: 430px; perspective: 950px; }
+  .reality-break__product { width: 60%; }
+  .reality-break__floor { bottom: 92px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reality-break__shard, .reality-break__screen { display: none; }
+  .reality-break__scene::after { display: none; }
+  .reality-break__product { will-change: auto; }
+}

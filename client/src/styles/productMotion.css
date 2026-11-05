@@ -1,0 +1,61 @@
+/* Independent translate leaves existing hover, tilt and editorial transforms intact. */
+.product-motion__card,
+.product-motion__heading {
+  opacity: 0;
+}
+.product-motion__heading {
+  translate: 0 44px;
+}
+.product-motion__card .card__media {
+  opacity: .35;
+}
+.product-motion--visible .product-motion__card--visible,
+.product-motion__heading--visible {
+  opacity: 1;
+}
+.product-motion__heading--visible {
+  translate: 0 0;
+  transition: opacity 900ms cubic-bezier(.22, .7, .25, 1), translate 900ms cubic-bezier(.22, .7, .25, 1);
+}
+.product-motion--visible .product-motion__card--visible {
+  /* Keep the original card hover lift transition. */
+  transition: opacity 900ms cubic-bezier(.22, .7, .25, 1) var(--product-delay, 120ms),
+    transform 500ms var(--ease-out-expo);
+}
+/* Animate the contents, keeping the observed card's bounds stable at viewport edges. */
+.product-motion--visible .product-motion__card--visible > * {
+  animation: product-content-rise 900ms cubic-bezier(.22, .7, .25, 1) var(--product-delay, 120ms) backwards;
+}
+@keyframes product-content-rise {
+  from { translate: 0 44px; }
+  to { translate: 0 0; }
+}
+.product-motion--visible .product-motion__card--visible .card__media {
+  opacity: 1;
+  animation: product-photo-reveal 1000ms var(--ease-out-expo) var(--product-delay, 120ms) backwards;
+}
+@keyframes product-photo-reveal {
+  from { opacity: .35; translate: 0 44px; }
+  to { opacity: 1; translate: 0 0; }
+}
+.product-motion:not(.product-motion--visible) .product-motion__card,
+.product-motion__card:not(.product-motion__card--visible),
+.product-motion__heading:not(.product-motion__heading--visible) {
+  transition: none;
+}
+.product-motion__card:focus-within,
+.product-motion__heading:focus-within {
+  opacity: 1;
+  translate: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-motion .product-motion__card,
+  .product-motion .product-motion__card > *,
+  .product-motion__heading,
+  .product-motion .product-motion__card .card__media {
+    opacity: 1;
+    translate: none;
+    transition: none;
+    animation: none;
+  }
+}

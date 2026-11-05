@@ -1,0 +1,24 @@
+import { Router } from 'express';
+import { requireStaff } from '../../middleware/auth';
+import { adminCategoryRoutes, adminDiscountRoutes, adminInventoryRoutes, adminProductRoutes } from './catalog.routes';
+import { adminContentRoutes } from './content.routes';
+import { adminIntegrationRoutes } from './integrations.routes';
+import { adminMediaRoutes } from './media.routes';
+import { adminOrderRoutes } from './orders.routes';
+import { adminCustomerRoutes, adminStaffRoutes } from './people.routes';
+import { adminSystemRoutes } from './system.routes';
+
+/** All admin APIs require a staff session; each route additionally checks its permission. */
+export const adminRoutes = Router();
+adminRoutes.use(requireStaff);
+adminRoutes.use('/', adminSystemRoutes);
+adminRoutes.use('/orders', adminOrderRoutes);
+adminRoutes.use('/products', adminProductRoutes);
+adminRoutes.use('/categories', adminCategoryRoutes);
+adminRoutes.use('/inventory', adminInventoryRoutes);
+adminRoutes.use('/discounts', adminDiscountRoutes);
+adminRoutes.use('/content', adminContentRoutes);
+adminRoutes.use('/customers', adminCustomerRoutes);
+adminRoutes.use('/staff', adminStaffRoutes);
+adminRoutes.use('/integrations', adminIntegrationRoutes);
+adminRoutes.use('/media', adminMediaRoutes);

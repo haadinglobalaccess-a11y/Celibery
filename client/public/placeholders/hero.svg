@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Hero image placeholder">
+<defs><radialGradient id="g" cx="70%" cy="40%" r="60%"><stop offset="0" stop-color="#2a2a2e"/><stop offset="1" stop-color="#0b0b0c"/></radialGradient></defs>
+<rect width="1600" height="900" fill="url(#g)"/>
+<g fill="none" stroke="#3a3a40" stroke-width="2"><circle cx="1120" cy="420" r="220"/><circle cx="1120" cy="420" r="300"/><circle cx="1120" cy="420" r="380"/></g>
+<rect x="1040" y="280" width="160" height="280" rx="30" fill="#1b1b1e" stroke="#4a4a52" stroke-width="3"/>
+<text x="800" y="860" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#55555c">Hero visual placeholder — replace with CELIBERY photography or video</text>
+</svg>

@@ -1,0 +1,197 @@
+import { useState, type FormEvent, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { ProductImage } from '../components/ProductCard';
+import { EmptyState, Quantity } from '../components/ui';
+import { useI18n } from '../i18n/I18n';
+import { formatPrice, L } from '../lib/format';
+import { useSeo } from '../lib/useSeo';
+import type { Quote } from '../lib/types';
+import { useCart } from '../state/cart';
+import { useSettings } from '../state/settings';
+import { useQuote } from '../state/useQuote';
+
+export function Summary({ quote, children, showCode = true }: { quote: Quote | null; children?: ReactNode; showCode?: boolean }) {
+  const { t, lang } = useI18n();
+  const cart = useCart();
+  const [code, setCode] = useState(cart.discountCode);
+  const apply = (e: FormEvent) => {
+    e.preventDefault();
+    cart.setDiscountCode(code.trim().toUpperCase());
+  };
+  return (
+    <aside className="summary" aria-label={t.checkout.summary}>
+      <h2>{t.checkout.summary}</h2>
+      {showCode ? (
+        <>
+          <form className="code-form" onSubmit={apply}>
+            <label className="sr-only" htmlFor="code">
+              {t.cart.code}
+            </label>
+            <input id="code" className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t.cart.code} autoComplete="off" />
+            {cart.discountCode ? (
+              <button
+                type="button"
+                className="btn btn--outline"
+                onClick={() => {
+                  setCode('');
+                  cart.setDiscountCode('');
+                }}
+              >
+                {t.cart.removeCode}
+              </button>
+            ) : (
+              <button className="btn btn--outline">{t.cart.applyCode}</button>
+            )}
+          </form>
+          {quote?.discountError ? <p className="alert alert--error">{quote.discountError}</p> : null}
+        </>
+      ) : null}
+      {quote ? (
+        <div data-testid="summary">
+          <div className="sum-row">
+            <span>{t.cart.subtotal}</span>
+            <span>{formatPrice(quote.subtotal, lang)}</span>
+          </div>
+          {quote.discountTotal ? (
+            <div className="sum-row" style={{ color: 'var(--success)' }}>
+              <span>
+                {t.cart.discount} <span className="ltr">({quote.discount?.code})</span>
+              </span>
+              <span>−{formatPrice(quote.discountTotal, lang)}</span>
+            </div>
+          ) : null}
+          <div className="sum-row">
+            <span>{t.cart.delivery}</span>
+            <span>{quote.deliveryFee ? formatPrice(quote.deliveryFee, lang) : t.cart.free}</span>
+          </div>
+          {quote.codFee ? (
+            <div className="sum-row">
+              <span>{t.cart.codFee}</span>
+              <span>{formatPrice(quote.codFee, lang)}</span>
+            </div>
+          ) : null}
+          <div className="sum-row sum-row--total">
+            <span>{t.cart.total}</span>
+            <span data-testid="total">{formatPrice(quote.total, lang)}</span>
+          </div>
+          {quote.vatRate ? (
+            <small className="muted">
+              {t.cart.vat(quote.vatRate)} ({formatPrice(quote.vatAmount, lang)})
+            </small>
+          ) : null}
+        </div>
+      ) : (
+        <div className="skeleton" style={{ height: 120 }} />
+      )}
+      <div style={{ marginTop: 16 }}>{children}</div>
+    </aside>
+  );
+}
+
+export default function CartPage() {
+  const { t, lang, p } = useI18n();
+  const cart = useCart();
+  const settings = useSettings();
+  const { quote } = useQuote();
+  useSeo(t.cart.title);
+
+  if (!cart.items.length) {
+    return (
+      <div className="container">
+        <EmptyState
+          icon="bag"
+          title={t.cart.empty}
+          text={t.cart.emptyHint}
+          action={
+            <Link className="btn btn--primary" to={p('/shop')}>
+              {t.cart.continue}
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
+
+  const lineFor = (id: string) => quote?.lines.find((l) => l.productId === id);
+  const blocked = Boolean(quote?.issues.length);
+
+  return (
+    <div className="container">
+      <div className="page-head">
+        <h1>{t.cart.title}</h1>
+      </div>
+      <div className="cart-layout">
+        <section>
+          {blocked ? (
+            <p className="alert alert--warning" role="alert">
+              {t.cart.changed}
+            </p>
+          ) : null}
+          {cart.items.map((i) => {
+            const line = lineFor(i.productId);
+            const issue = quote?.issues.find((x) => x.productId === i.productId);
+            const name = L(line?.name ?? i.snapshot.name, lang);
+            const max = Math.max(1, Math.min(line?.maxQuantity ?? 99, settings?.commerce?.maxQuantityPerItem ?? 10));
+            return (
+              <div className="line" key={i.productId} data-testid="cart-line">
+                <Link to={p(`/p/${i.snapshot.slug}`)}>
+                  <ProductImage src={line?.image || i.snapshot.image} alt={name} />
+                </Link>
+                <div>
+                  <div className="line__top">
+                    <div>
+                      <Link className="line__name" to={p(`/p/${i.snapshot.slug}`)}>
+                        {name}
+                      </Link>
+                      {i.snapshot.model ? <div className="muted ltr" style={{ fontSize: 12 }}>{i.snapshot.model}</div> : null}
+                    </div>
+                    <strong>{formatPrice(line ? line.unitPrice * i.quantity : i.snapshot.price * i.quantity, lang)}</strong>
+                  </div>
+                  {issue ? (
+                    <p className="alert alert--warning" style={{ marginTop: 8 }}>
+                      {issue.code === 'QUANTITY_LIMITED' ? t.cart.onlyLeft(line?.maxQuantity ?? 0) : t.cart.unavailable}
+                    </p>
+                  ) : null}
+                  <div className="line__actions">
+                    <Quantity
+                      label={t.product.quantity}
+                      value={i.quantity}
+                      max={max}
+                      onChange={(n) => cart.setQty(i.productId, n)}
+                    />
+                    <button className="link-btn" onClick={() => cart.remove(i.productId)}>
+                      {t.cart.remove}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <Link to={p('/shop')} className="btn btn--ghost" style={{ marginTop: 16 }}>
+            ← {t.cart.continue}
+          </Link>
+        </section>
+        <Summary quote={quote}>
+          {blocked ? (
+            <button
+              className="btn btn--outline btn--block"
+              onClick={() => {
+                for (const is of quote!.issues) {
+                  const l = lineFor(is.productId ?? '');
+                  if (!l || !l.available) cart.remove(is.productId ?? '');
+                  else cart.setQty(l.productId, l.maxQuantity);
+                }
+              }}
+            >
+              {lang === 'ar' ? 'تحديث السلة' : 'Update cart'}
+            </button>
+          ) : (
+            <Link className="btn btn--primary btn--block btn--lg" to={p('/checkout')} data-testid="go-checkout">
+              {t.cart.checkout}
+            </Link>
+          )}
+        </Summary>
+      </div>
+    </div>
+  );
+}

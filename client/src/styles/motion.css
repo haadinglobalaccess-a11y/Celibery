@@ -1,0 +1,334 @@
+/* =====================================================================
+   CELIBERY motion system (Q6 "Balanced")
+   - Only transform / opacity / filter / clip-path are animated (GPU-friendly, no layout work).
+   - Every effect is disabled under prefers-reduced-motion (see bottom of file).
+   - Direction-aware: horizontal motion flips automatically in RTL via --dir.
+   ===================================================================== */
+:root {
+  --dir: 1;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --stagger: 70ms;
+}
+html[dir='rtl'] {
+  --dir: -1;
+}
+
+/* ---------- Scroll reveals ---------- */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition:
+    opacity 900ms var(--ease-out-expo),
+    transform 900ms var(--ease-out-expo);
+  transition-delay: calc(var(--i, 0) * var(--stagger));
+}
+.reveal--fade {
+  transform: none;
+}
+.reveal--scale {
+  transform: scale(0.96);
+}
+.reveal--start {
+  transform: translate3d(calc(-40px * var(--dir)), 0, 0);
+}
+.reveal--end {
+  transform: translate3d(calc(40px * var(--dir)), 0, 0);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+/* Children of a revealed group come in one after another */
+.stagger > * {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  transition:
+    opacity 800ms var(--ease-out-expo),
+    transform 800ms var(--ease-out-expo);
+}
+.is-visible.stagger > *,
+.is-visible .stagger > * {
+  opacity: 1;
+  transform: none;
+}
+.stagger > *:nth-child(1) { transition-delay: 0ms; }
+.stagger > *:nth-child(2) { transition-delay: 70ms; }
+.stagger > *:nth-child(3) { transition-delay: 140ms; }
+.stagger > *:nth-child(4) { transition-delay: 210ms; }
+.stagger > *:nth-child(5) { transition-delay: 280ms; }
+.stagger > *:nth-child(6) { transition-delay: 350ms; }
+.stagger > *:nth-child(7) { transition-delay: 420ms; }
+.stagger > *:nth-child(n + 8) { transition-delay: 490ms; }
+
+/* ---------- Typography reveals (masked lines / words) ---------- */
+.split {
+  display: block;
+}
+.split__line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.split__word {
+  display: inline-block;
+  transform: translate3d(0, 105%, 0);
+  animation: word-up 1100ms var(--ease-out-expo) forwards;
+  animation-delay: calc(var(--d, 0ms) + var(--w, 0) * 60ms);
+}
+@keyframes word-up {
+  to {
+    transform: none;
+  }
+}
+.fade-up {
+  opacity: 0;
+  animation: fade-up 1000ms var(--ease-out-expo) forwards;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Page transitions ---------- */
+.page {
+  animation: page-in 650ms var(--ease-out-expo) backwards;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+/* Thin progress bar on route change */
+.route-bar {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  height: 2px;
+  z-index: 300;
+  background: var(--accent);
+  transform-origin: var(--route-origin, left);
+  animation: route-bar 700ms var(--ease-out-expo) forwards;
+  pointer-events: none;
+}
+html[dir='rtl'] .route-bar {
+  --route-origin: right;
+}
+@keyframes route-bar {
+  0% { transform: scaleX(0); opacity: 1; }
+  70% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+/* ---------- Buttons: press, sheen, arrow nudge ---------- */
+.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+  transform: translateX(calc(-120% * var(--dir)));
+  transition: transform 700ms var(--ease-out-expo);
+  pointer-events: none;
+}
+.btn:hover::after {
+  transform: translateX(calc(120% * var(--dir)));
+}
+.btn:active:not([disabled]) {
+  transform: scale(0.97);
+}
+.btn .arrow {
+  display: inline-block;
+  transition: transform var(--dur) var(--ease-out-expo);
+}
+.btn:hover .arrow,
+.link-arrow:hover .arrow {
+  transform: translateX(calc(4px * var(--dir)));
+}
+html[dir='rtl'] .arrow {
+  scale: -1 1;
+}
+.icon-btn {
+  transition:
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.icon-btn:active {
+  transform: scale(0.9);
+}
+.icon-btn:hover .icon {
+  animation: icon-pop 450ms var(--ease-spring);
+}
+@keyframes icon-pop {
+  40% { transform: scale(1.18); }
+}
+.badge-count {
+  animation: badge-pop 500ms var(--ease-spring);
+}
+@keyframes badge-pop {
+  0% { transform: scale(0.2); }
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  animation: toast-in 500ms var(--ease-spring);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.92);
+  }
+}
+
+/* ---------- Skeleton shimmer (premium) ---------- */
+.skeleton {
+  background: linear-gradient(100deg, var(--surface) 20%, #fafafa 40%, var(--surface) 60%);
+  background-size: 300% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* ---------- Marquee ---------- */
+.marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee__track {
+  display: flex;
+  width: max-content;
+  animation: marquee 38s linear infinite;
+}
+.marquee:hover .marquee__track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translate3d(calc(-50% * var(--dir)), 0, 0);
+  }
+}
+
+/* ---------- Ambient premium background ---------- */
+.ambient {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ambient__orb {
+  position: absolute;
+  width: 46vmax;
+  height: 46vmax;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  will-change: transform;
+}
+.ambient__orb--a {
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 70%, transparent), transparent 65%);
+  top: -18vmax;
+  inset-inline-end: -10vmax;
+  animation: orb-a 22s var(--ease-in-out) infinite alternate;
+}
+.ambient__orb--b {
+  background: radial-gradient(circle, rgb(120 120 140 / 0.45), transparent 65%);
+  bottom: -22vmax;
+  inset-inline-start: -12vmax;
+  animation: orb-b 26s var(--ease-in-out) infinite alternate;
+}
+@keyframes orb-a {
+  to { transform: translate3d(-8vmax, 10vmax, 0) scale(1.15); }
+}
+@keyframes orb-b {
+  to { transform: translate3d(10vmax, -6vmax, 0) scale(0.9); }
+}
+.ambient__grid {
+  position: absolute;
+  inset: -1px;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+  animation: grid-drift 30s linear infinite;
+}
+@keyframes grid-drift {
+  to { background-position: 64px 64px; }
+}
+.ambient__noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Scroll-linked parallax (progressive enhancement) ---------- */
+@supports (animation-timeline: view()) {
+  .parallax {
+    animation: parallax linear both;
+    animation-timeline: view();
+    animation-range: cover;
+  }
+  @keyframes parallax {
+    from { transform: translate3d(0, -6%, 0) scale(1.08); }
+    to { transform: translate3d(0, 6%, 0) scale(1.08); }
+  }
+  .scroll-scale {
+    animation: scroll-scale linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
+  }
+  @keyframes scroll-scale {
+    from { transform: scale(0.94); border-radius: 48px; }
+    to { transform: none; }
+  }
+}
+
+/* =====================================================================
+   Reduced motion: everything lands in its final state, no movement.
+   ===================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .stagger > *,
+  .fade-up,
+  .split__word {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+  .page,
+  .route-bar,
+  .marquee__track,
+  .ambient__orb,
+  .ambient__grid,
+  .parallax,
+  .scroll-scale,
+  .badge-count,
+  .toast {
+    animation: none !important;
+  }
+  .btn::after {
+    display: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

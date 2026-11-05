@@ -1,0 +1,140 @@
+import { type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { useI18n, useMaybeI18n } from '../i18n/I18n';
+import { formatPrice } from '../lib/format';
+import { DimensionalIcon } from '../three-d/DimensionalIcon';
+import { Icon } from './Icon';
+
+export function Price({ price, compareAt, className = '' }: { price: number; compareAt?: number | null; className?: string }) {
+  const { lang } = useI18n();
+  return (
+    <span className={`price ${className}`}>
+      <span className="price__now">{formatPrice(price, lang)}</span>
+      {compareAt && compareAt > price ? (
+        <s className="price__was">
+          <span className="sr-only">{lang === 'ar' ? 'السعر قبل الخصم' : 'Was'} </span>
+          {formatPrice(compareAt, lang)}
+        </s>
+      ) : null}
+    </span>
+  );
+}
+
+export function Spinner({ label }: { label?: string }) {
+  const i18n = useMaybeI18n();
+  return (
+    <div className="state" role="status">
+      <div className="spinner" />
+      <span className="sr-only">{label ?? i18n?.t.common.loading ?? 'Loading…'}</span>
+    </div>
+  );
+}
+
+export function EmptyState({ title, text, action, icon = 'box' }: { title: string; text?: string; action?: ReactNode; icon?: string }) {
+  return (
+    <div className="state state--3d d-icon-host">
+      <DimensionalIcon name={icon} size="lg" />
+      <h2>{title}</h2>
+      {text ? <p>{text}</p> : null}
+      {action}
+    </div>
+  );
+}
+
+export function ErrorState({ onRetry, message }: { onRetry?: () => void; message?: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="state" role="alert">
+      <Icon name="alert" />
+      <h2>{t.common.error}</h2>
+      {message ? <p>{message}</p> : null}
+      {onRetry ? (
+        <button className="btn btn--outline" onClick={onRetry}>
+          {t.common.retry}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+export function NotFound() {
+  const { t, p } = useI18n();
+  return (
+    <div className="container not-found">
+      <div className="nf3d ltr" aria-hidden="true">
+        <span>4</span>
+        <span className="nf3d__zero">0</span>
+        <span>4</span>
+      </div>
+      <EmptyState
+        icon="search"
+        title={t.common.notFound}
+        text={t.common.notFoundText}
+        action={
+          <Link className="btn btn--primary" to={p('/')}>
+            {t.common.home}
+          </Link>
+        }
+      />
+    </div>
+  );
+}
+
+export function Quantity({ value, onChange, max = 99, min = 1, label }: { value: number; onChange: (n: number) => void; max?: number; min?: number; label: string }) {
+  return (
+    <div className="qty" role="group" aria-label={label}>
+      <button type="button" onClick={() => onChange(Math.max(min, value - 1))} disabled={value <= min} aria-label="−">
+        <Icon name="minus" className="icon" />
+      </button>
+      {/* Re-keyed so the number rolls in on each change (visual only) */}
+      <output aria-live="polite" key={value}>
+        {value}
+      </output>
+      <button type="button" onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max} aria-label="+">
+        <Icon name="plus" className="icon" />
+      </button>
+    </div>
+  );
+}
+
+export function Field({ label, error, hint, children, className = '' }: { label: string; error?: string; hint?: string; children: ReactNode; className?: string }) {
+  return (
+    <div className={`field ${className}`}>
+      <label>
+        <span className="label">{label}</span>
+        {children}
+      </label>
+      {hint && !error ? <span className="hint">{hint}</span> : null}
+      {error ? (
+        <span className="error" role="alert">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+export function Crumbs({ items }: { items: { label: string; to?: string }[] }) {
+  return (
+    <nav className="crumbs" aria-label="Breadcrumb">
+      {items.map((c, i) => (
+        <span key={i}>
+          {c.to ? <Link to={c.to}>{c.label}</Link> : <span aria-current="page">{c.label}</span>}
+          {i < items.length - 1 ? <span aria-hidden="true"> / </span> : null}
+        </span>
+      ))}
+    </nav>
+  );
+}
+
+export function PayLogos() {
+  return (
+    <span className="pay-logos" aria-hidden="true">
+      {['mada', 'VISA', 'Mastercard', 'Apple Pay', 'STC Pay', 'tabby'].map((l) => (
+        <span key={l} className="pay-logo">
+          {l}
+        </span>
+      ))}
+    </span>
+  );
+}

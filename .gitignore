@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.vercel/
+test-results/
+playwright-report/
+e2e/.artifacts/
+server/uploads/
+/uploads/
