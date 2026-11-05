@@ -34,14 +34,14 @@ export function issueSession(res: Response, user: { _id: unknown; tokenVersion?:
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: isProd || env.COOKIE_SECURE,
-    sameSite: 'lax',
+    sameSite: isProd ? 'none' : 'lax',
     path: '/',
     maxAge: ttlHours * 3600 * 1000,
   });
 }
 
 export function clearSession(res: Response) {
-  res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: 'lax', secure: isProd || env.COOKIE_SECURE });
+  res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd || env.COOKIE_SECURE });
 }
 
 /** Resolves the session cookie (if any) into req.user. Never throws for anonymous visitors. */
