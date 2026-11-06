@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+﻿import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
 import { L, placeholderFor } from '../lib/format';
@@ -88,13 +88,13 @@ export function Header() {
 
   return (
     <>
-      <Announcement fallback={`${t.service.delivery}${settings?.commerce?.warrantyEnabled && months ? ` · ${t.service.warranty(months)}` : ''}`} />
+      <Announcement fallback={`${t.service.delivery}${settings?.commerce?.warrantyEnabled && months ? ` Â· ${t.service.warranty(months)}` : ''}`} />
       <header className={`header ${scrolled ? 'is-scrolled' : ''}`} onMouseLeave={() => setMega(false)}>
         <div className="container header__bar">
           <button className="icon-btn mobile-only" aria-label={t.nav.menu} aria-expanded={mobile} onClick={() => setMobile(true)}>
             <Icon name="menu" />
           </button>
-          <Link to={p('/')} aria-label="CELIBERY — home">
+          <Link to={p('/')} aria-label="CELIBERY â€” home">
             <Logo onDark={heroOverlay && !scrolled} />
           </Link>
           <nav className="header__nav" aria-label="Main">
@@ -104,9 +104,6 @@ export function Header() {
             <Link to={p('/bundles')}>{t.nav.bundles}</Link>
             <Link to={p('/track')}>{t.nav.track}</Link>
           </nav>
-          <div className="header__search">
-            <SearchBox />
-          </div>
           <div className="header__actions">
             <Link className="lang-switch" to={switchHref} hrefLang={lang === 'ar' ? 'en' : 'ar'} lang={lang === 'ar' ? 'en' : 'ar'} data-testid="lang-switch" aria-label={t.nav.language}>
               <span className="hide-sm">{t.nav.language}</span>
@@ -159,8 +156,8 @@ export function Header() {
               ))}
               <div className="mega__side">
                 <span className="muted">{t.home.bundlesText}</span>
-                <Link to={p('/bundles')}>{t.nav.bundles} →</Link>
-                <Link to={p('/shop')}>{t.nav.allProducts} →</Link>
+                <Link to={p('/bundles')}>{t.nav.bundles} â†’</Link>
+                <Link to={p('/shop')}>{t.nav.allProducts} â†’</Link>
               </div>
             </div>
           </div>
@@ -205,7 +202,7 @@ export function Header() {
   );
 }
 
-/** Announcement bar (Admin → Settings → Store): custom bilingual text and link, or the default delivery & warranty message. */
+/** Announcement bar (Admin â†’ Settings â†’ Store): custom bilingual text and link, or the default delivery & warranty message. */
 function Announcement({ fallback }: { fallback: string }) {
   const { lang, p } = useI18n();
   const settings = useSettings();
@@ -218,15 +215,16 @@ function Announcement({ fallback }: { fallback: string }) {
     const to = /^\/(ar|en)(\/|$)/.test(link) ? link : p(link);
     return (
       <Link className="announce announce--link" to={to}>
-        {text} <span aria-hidden="true">→</span>
+        {text} <span aria-hidden="true">â†’</span>
       </Link>
     );
   }
   return /^https:\/\//.test(link) ? (
     <a className="announce announce--link" href={link} rel="noopener noreferrer">
-      {text} <span aria-hidden="true">→</span>
+      {text} <span aria-hidden="true">â†’</span>
     </a>
   ) : (
     <div className="announce">{text}</div>
   );
 }
+

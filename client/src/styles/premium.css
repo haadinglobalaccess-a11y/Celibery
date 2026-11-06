@@ -1483,3 +1483,113 @@ main#main {
 .announce--link:focus-visible {
   text-decoration: underline;
 }
+
+/* CELIBERY PREMIUM NAVBAR ACTIONS */
+@media (min-width: 960px) {
+  .header__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header__actions > .icon-btn {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(15, 23, 42, .10);
+    background: rgba(255, 255, 255, .58);
+    color: var(--ink);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    transition: background .22s ease, border-color .22s ease,
+      box-shadow .22s ease, transform .22s ease;
+  }
+
+  .header__actions > .icon-btn:hover {
+    background: rgba(37, 195, 199, .12);
+    border-color: rgba(37, 195, 199, .55);
+    box-shadow: 0 0 18px rgba(37, 195, 199, .16);
+    transform: translateY(-1px);
+  }
+
+  .header__actions .lang-switch {
+    min-height: 38px;
+    padding-inline: 15px;
+    border-radius: 999px;
+    border: 1px solid rgba(15, 23, 42, .14);
+    background: rgba(255, 255, 255, .48);
+    color: var(--ink);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all .22s ease;
+  }
+
+  .header__actions .lang-switch:hover {
+    background: rgba(37, 195, 199, .12);
+    border-color: #19bfc3;
+    color: var(--ink);
+  }
+
+  .header__actions .badge-count {
+    border: 2px solid #fff;
+    background: #18bec3;
+    color: #07191d;
+    font-weight: 800;
+  }
+
+  .header.is-scrolled .header__actions > .icon-btn {
+    background: rgba(255, 255, 255, .72);
+    border-color: rgba(15, 23, 42, .10);
+    color: #17232d;
+  }
+
+  body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__actions > .icon-btn {
+    background: rgba(255, 255, 255, .10);
+    border-color: rgba(255, 255, 255, .28);
+    color: #fff;
+  }
+
+  body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__actions .lang-switch {
+    background: rgba(255, 255, 255, .08);
+    border-color: rgba(255, 255, 255, .38);
+    color: #fff;
+  }
+
+  body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__actions .lang-switch:hover {
+    background: rgba(255, 255, 255, .18);
+    border-color: #fff;
+    color: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header__actions > .icon-btn,
+  .header__actions .lang-switch {
+    transition: none;
+  }
+}
+
+/* Keep all desktop header actions grouped at the far right */
+@media (min-width: 960px) {
+  .header__actions {
+    margin-inline-start: auto !important;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    gap: 10px;
+  }
+
+  .header__actions .lang-switch {
+    order: 1;
+  }
+
+  .header__actions a[aria-label*="wishlist"],
+  .header__actions a[aria-label*="Wishlist"] {
+    order: 2;
+  }
+}
