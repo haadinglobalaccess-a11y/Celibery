@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ElementType, type ReactNode, type RefObject } from 'react';
+﻿import { useEffect, useRef, type CSSProperties, type ElementType, type ReactNode, type RefObject } from 'react';
 import { reducedMotion } from './env';
 
 /**
@@ -63,6 +63,11 @@ export function ScrollScene({ children, className = '', as: Tag = 'div', id, sty
   useScrollProgress(ref, (p, el) => {
     el.style.setProperty('--p', p.toFixed(4));
     el.style.setProperty('--pc', (p * 2 - 1).toFixed(4));
+    if (el.id === 'story') {
+      const rect = el.getBoundingClientRect();
+      const visibleEnough = rect.top <= 0 && rect.bottom >= Math.min(window.innerHeight * 0.65, rect.height * 0.65);
+      el.classList.toggle('story-scene--visible', visibleEnough);
+    }
   });
   return (
     <Tag ref={ref} id={id} className={`scene ${className}`} style={{ '--p': 0.5, '--pc': 0, ...style } as CSSProperties}>
@@ -70,3 +75,4 @@ export function ScrollScene({ children, className = '', as: Tag = 'div', id, sty
     </Tag>
   );
 }
+
