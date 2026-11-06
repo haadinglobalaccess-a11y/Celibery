@@ -200,7 +200,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
     try {
       const r = await post<{ status: string; message?: string }>(`/api/admin/orders/${o._id}/refund`, { amount: Math.round(Number(form.amount) * 100), reason: form.reason, idempotencyKey: refundKey });
       if (r.status === 'succeeded') toast('Refund completed');
-      else if (r.status === 'reconciliation_required') toast(r.message ?? 'Refund sent â€” waiting for gateway confirmation', 'error');
+      else if (r.status === 'reconciliation_required') toast(r.message ?? 'Refund sent — waiting for gateway confirmation', 'error');
       else toast(`Refund ${r.status}`);
       setAction(null);
       setLedgerKey((k) => k + 1);
@@ -273,9 +273,9 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
                 </>
               ) : null}
               <dt>Courier</dt>
-              <dd>{o.delivery.courier || 'â€”'}</dd>
+              <dd>{o.delivery.courier || '—'}</dd>
               <dt>Tracking</dt>
-              <dd>{o.delivery.trackingNumber || 'â€”'}</dd>
+              <dd>{o.delivery.trackingNumber || '—'}</dd>
               <dt>Customer language</dt>
               <dd>{o.lang === 'en' ? 'English' : 'Arabic'}</dd>
             </dl>
@@ -300,7 +300,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
                       <td>{en(i.name)}</td>
                       <td>{i.quantity}</td>
                       <td>{sar(i.unitPrice)}</td>
-                      <td>{i.discount ? `âˆ’${sar(i.discount)}` : 'â€”'}</td>
+                      <td>{i.discount ? `âˆ’${sar(i.discount)}` : '—'}</td>
                       <td>{sar(i.lineTotal - i.discount)}</td>
                     </tr>
                   ))}
@@ -341,7 +341,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
             actions={
               perms.has('orders:refund') && ['paid', 'partially_refunded', 'cod_collected'].includes(o.paymentStatus) ? (
                 <button className="btn btn--outline btn--sm" onClick={() => (setRefundKey(`rf_${uuid()}`), setErr(null), setAction('refund'))}>
-                  Refundâ€¦
+                  Refund…
                 </button>
               ) : null
             }
@@ -373,14 +373,14 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
                         {p.failureReason ? <div className="muted">{p.failureReason}</div> : null}
                       </td>
                       <td className="ltr" style={{ wordBreak: 'break-all' }}>
-                        {p.providerRef ?? 'â€”'}
+                        {p.providerRef ?? '—'}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            {!data.payments.length ? <p className="muted">{o.paymentMethod === 'cod' ? 'Cash on delivery â€” collected by the courier.' : 'No payment attempts yet.'}</p> : null}
+            {!data.payments.length ? <p className="muted">{o.paymentMethod === 'cod' ? 'Cash on delivery — collected by the courier.' : 'No payment attempts yet.'}</p> : null}
             <RefundLedger orderId={o._id} canRefund={perms.has('orders:refund')} refreshKey={ledgerKey} onChanged={reload} />
           </Card>
           <Card title="Timeline">
@@ -389,7 +389,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
                 <li key={i}>
                   <strong>{h.status}</strong> {!h.visibleToCustomer ? <span className="badge">internal</span> : null}
                   <div className="muted">
-                    {dt(h.at)} {h.by?.name ? `Â· ${h.by.name}` : ''} {h.note ? `Â· ${h.note}` : ''}
+                    {dt(h.at)} {h.by?.name ? `· ${h.by.name}` : ''} {h.note ? `· ${h.note}` : ''}
                   </div>
                 </li>
               ))}
@@ -409,7 +409,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
           </Card>
           <Card title="Ship to">
             <p>
-              {o.shippingAddress.fullName} Â· {o.shippingAddress.phone}
+              {o.shippingAddress.fullName} · {o.shippingAddress.phone}
               <br />
               {o.shippingAddress.street} {o.shippingAddress.buildingNumber}
               <br />
@@ -465,7 +465,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
             {data.notifications.map((n) => (
               <div key={n._id} className="picker__row">
                 <span>
-                  {n.channel} Â· {n.template}
+                  {n.channel} · {n.template}
                   <div className="muted">{dt(n.createdAt)}</div>
                 </span>
                 <span title={n.detail}>
@@ -475,7 +475,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
             ))}
             {!data.notifications.length ? <p className="muted">None yet.</p> : null}
             <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-              â€œskippedâ€ means the email/WhatsApp provider is not configured yet (Settings â†’ Integrations).
+              “skippedâ€ means the email/WhatsApp provider is not configured yet (Settings â†’ Integrations).
             </p>
           </Card>
         </div>
@@ -500,7 +500,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
                 <input type="checkbox" checked={form.restock} onChange={(e) => setForm({ ...form, restock: e.target.checked })} /> Return items to stock
               </label>
             ) : null}
-            {action === 'cancelled' && ['paid', 'cod_collected'].includes(o.paymentStatus) ? <p className="alert alert--warning">This order was paid â€” remember to issue a refund after cancelling.</p> : null}
+            {action === 'cancelled' && ['paid', 'cod_collected'].includes(o.paymentStatus) ? <p className="alert alert--warning">This order was paid — remember to issue a refund after cancelling.</p> : null}
             <F label="Note (visible to the customer)">
               <input className="input" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
             </F>
@@ -528,7 +528,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
               <input className="input" required value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
             </F>
             <button className="btn btn--primary" disabled={refundBusy}>
-              {refundBusy ? 'Refundingâ€¦' : 'Refund'}
+              {refundBusy ? 'Refunding…' : 'Refund'}
             </button>
           </form>
         </Modal>
@@ -601,18 +601,18 @@ function RefundLedger({ orderId, canRefund, refreshKey, onChanged }: { orderId: 
             onClick={() =>
               void run('reconcile', async () => {
                 const r = await post<{ results: { note: string }[] }>(`/api/admin/orders/${orderId}/refunds/reconcile`);
-                toast(r.results.map((x) => x.note).join(' Â· ') || 'Checked with the gateway');
+                toast(r.results.map((x) => x.note).join(' · ') || 'Checked with the gateway');
               })
             }
           >
-            {busy === 'reconcile' ? 'Checkingâ€¦' : 'Check with gateway'}
+            {busy === 'reconcile' ? 'Checking…' : 'Check with gateway'}
           </button>
         ) : null}
       </div>
       <ErrorBox error={err} />
       {open ? (
         <p className="alert alert--warning" style={{ fontSize: 13 }}>
-          A refund is awaiting gateway confirmation. Its amount stays reserved so it cannot be refunded twice. Do not refund it again from the gateway dashboard â€” use â€œCheck with gatewayâ€, or resolve it after checking the dashboard.
+          A refund is awaiting gateway confirmation. Its amount stays reserved so it cannot be refunded twice. Do not refund it again from the gateway dashboard — use “Check with gatewayâ€, or resolve it after checking the dashboard.
         </p>
       ) : null}
       <ul className="refund-list">
@@ -620,23 +620,23 @@ function RefundLedger({ orderId, canRefund, refreshKey, onChanged }: { orderId: 
           <li key={r._id}>
             <div className="refund-list__head">
               <span>
-                <strong>{sar(r.amount)}</strong> Â· {r.reason || 'â€”'} {r.legacy ? <span className="muted">(recorded before the ledger)</span> : null}
+                <strong>{sar(r.amount)}</strong> · {r.reason || '—'} {r.legacy ? <span className="muted">(recorded before the ledger)</span> : null}
               </span>
               <span className={`badge ${r.status === 'succeeded' ? 'badge--success' : r.status === 'failed' ? 'badge--danger' : 'badge--warning'}`}>{REFUND_LABEL[r.status] ?? r.status}</span>
             </div>
             <span className="muted" style={{ fontSize: 12 }}>
-              {dt(r.createdAt)} Â· {r.provider}
-              {r.requestedBy?.name ? ` Â· by ${r.requestedBy.name}` : ''}
-              {r.providerRefundId ? ` Â· gateway ref ${r.providerRefundId}` : ''}
+              {dt(r.createdAt)} · {r.provider}
+              {r.requestedBy?.name ? ` · by ${r.requestedBy.name}` : ''}
+              {r.providerRefundId ? ` · gateway ref ${r.providerRefundId}` : ''}
             </span>
             {r.lastError && r.status !== 'succeeded' ? <span className="muted" style={{ fontSize: 12 }}>{r.lastError}</span> : null}
             {canRefund && (r.status === 'reconciliation_required' || r.status === 'processing') ? (
               <div className="actions">
                 <button className="btn btn--ghost btn--sm" onClick={() => setResolve({ id: r._id, outcome: 'succeeded', note: '' })}>
-                  Gateway shows it refundedâ€¦
+                  Gateway shows it refunded…
                 </button>
                 <button className="btn btn--ghost btn--sm danger" onClick={() => setResolve({ id: r._id, outcome: 'failed', note: '' })}>
-                  Gateway shows no refundâ€¦
+                  Gateway shows no refund…
                 </button>
               </div>
             ) : null}

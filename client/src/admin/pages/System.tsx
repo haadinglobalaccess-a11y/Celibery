@@ -53,7 +53,7 @@ export function Staff() {
       const r = await post<{ inviteLink: string | null; emailStatus: string }>('/api/admin/staff', invite);
       setInvite(null);
       setLink(r.inviteLink);
-      toast(r.emailStatus === 'sent' ? 'Invitation emailed' : 'Account created â€” share the set-password link privately');
+      toast(r.emailStatus === 'sent' ? 'Invitation emailed' : 'Account created — share the set-password link privately');
       staff.reload();
     } catch (ex) {
       setErr(ex);
@@ -104,7 +104,7 @@ export function Staff() {
       {tab === 'staff' ? (
         <div className="a-card table-wrap staff-table-card">
           <p className="muted staff-note" style={{ fontSize: 13 }}>
-            Staff named by CELIBERY (Q27/Q39): Usama M. Usman (BDM, approver) and Shuja Mubeen (Online Sales Executive). Invite them with their work emails â€” they set their own passwords.
+            Staff named by CELIBERY (Q27/Q39): Usama M. Usman (BDM, approver) and Shuja Mubeen (Online Sales Executive). Invite them with their work emails — they set their own passwords.
           </p>
           <table className="table staff-table">
             <thead>
@@ -122,7 +122,7 @@ export function Staff() {
                   <td>
                     {s.name}
                     <div className="muted">
-                      {s.email} {s.title ? `Â· ${s.title}` : ''}
+                      {s.email} {s.title ? `· ${s.title}` : ''}
                     </div>
                   </td>
                   <td>

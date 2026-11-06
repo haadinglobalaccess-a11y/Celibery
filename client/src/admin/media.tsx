@@ -145,7 +145,7 @@ function putFile(target: { url: string; headers: Record<string, string>; direct:
       }
       reject(new ApiError(xhr.status, 'UPLOAD_FAILED', msg));
     };
-    xhr.onerror = () => reject(new ApiError(0, 'NETWORK', target.direct ? 'Upload to storage failed â€” check the bucket CORS settings (see docs/MEDIA-GUIDE.md)' : 'Network error during upload'));
+    xhr.onerror = () => reject(new ApiError(0, 'NETWORK', target.direct ? 'Upload to storage failed — check the bucket CORS settings (see docs/MEDIA-GUIDE.md)' : 'Network error during upload'));
     xhr.send(blob);
   });
 }
@@ -159,7 +159,7 @@ export async function uploadMedia(file: File, kind: 'image' | 'video', cfg: Medi
   const type = file.type === 'image/jpg' ? 'image/jpeg' : file.type;
   if (allowed.length && !allowed.includes(type)) throw new ApiError(400, 'TYPE', kind === 'image' ? 'Use a JPEG, PNG, WebP, AVIF or GIF image (SVG is not accepted for uploads).' : 'Use an MP4 or WebM video (convert .mov files to MP4 first).');
   const max = (kind === 'image' ? (cfg?.maxImageMb ?? 10) : (cfg?.maxVideoMb ?? 100)) * MB;
-  if (file.size > max) throw new ApiError(400, 'SIZE', `File is too large â€” maximum ${Math.round(max / MB)} MB`);
+  if (file.size > max) throw new ApiError(400, 'SIZE', `File is too large — maximum ${Math.round(max / MB)} MB`);
   onProgress(1);
   const prepared = kind === 'image' ? await prepareImage(file) : await prepareVideo(file);
   const parts = prepared.parts;
@@ -280,7 +280,7 @@ function UploadPanel({ kind, cfg, multiple, onDone }: { kind: 'image' | 'video';
       >
         <strong>{multiple ? `Drop ${kind}s here or click to choose` : `Drop ${kind === 'image' ? 'an image' : 'a video'} here or click to choose`}</strong>
         <span className="muted">
-          {kind === 'image' ? `JPEG, PNG, WebP, AVIF or GIF Â· up to ${cfg?.maxImageMb ?? 10} MB Â· resized WebP copies are created automatically` : `MP4 or WebM Â· up to ${cfg?.maxVideoMb ?? 100} MB Â· a poster frame is captured automatically`}
+          {kind === 'image' ? `JPEG, PNG, WebP, AVIF or GIF · up to ${cfg?.maxImageMb ?? 10} MB · resized WebP copies are created automatically` : `MP4 or WebM · up to ${cfg?.maxVideoMb ?? 100} MB · a poster frame is captured automatically`}
         </span>
         <input ref={input} type="file" hidden accept={acceptFor(kind)} multiple={multiple} onChange={(e) => e.target.files && void start([...e.target.files])} />
       </div>
@@ -288,7 +288,7 @@ function UploadPanel({ kind, cfg, multiple, onDone }: { kind: 'image' | 'video';
         <ul className="upload-list">
           {items.map((it) => (
             <li key={it.id}>
-              {it.preview ? <img src={it.preview} alt="" /> : <span className="upload-list__icon">â–¶</span>}
+              {it.preview ? <img src={it.preview} alt="" /> : <span className="upload-list__icon">▶</span>}
               <div>
                 <div className="upload-list__name">{it.name}</div>
                 {it.error ? <div className="alert alert--error">{it.error}</div> : <progress max={100} value={it.pct} aria-label={`Upload progress ${it.name}`} />}
@@ -389,7 +389,7 @@ function LibraryGrid({ kind, pickMode, multiple, onPick, onOpen, refreshKey = 0 
   return (
     <div>
       <div className="toolbar">
-        <input className="input" placeholder="Search by title, file name or URLâ€¦" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} aria-label="Search media" />
+        <input className="input" placeholder="Search by title, file name or URL…" value={q} onChange={(e) => (setQ(e.target.value), setPage(1))} aria-label="Search media" />
         <select className="select" value={source} onChange={(e) => (setSource(e.target.value), setPage(1))} aria-label="Source">
           <option value="">Uploads and URLs</option>
           <option value="upload">Uploaded files</option>
@@ -397,11 +397,11 @@ function LibraryGrid({ kind, pickMode, multiple, onPick, onOpen, refreshKey = 0 
         </select>
       </div>
       {error ? <p className="alert alert--error">{error}</p> : null}
-      {!data ? <p className="muted">Loadingâ€¦</p> : null}
+      {!data ? <p className="muted">Loading…</p> : null}
       {data && !data.items.length ? (
         <div className="empty-state">
           <strong>No {kind ?? 'media'} yet</strong>
-          <span className="muted">Upload files or add links â€” they appear here and can be reused across products, banners and pages.</span>
+          <span className="muted">Upload files or add links — they appear here and can be reused across products, banners and pages.</span>
         </div>
       ) : null}
       <div className="media-grid">
@@ -409,11 +409,11 @@ function LibraryGrid({ kind, pickMode, multiple, onPick, onOpen, refreshKey = 0 
           const isSel = selected.some((x) => x._id === a._id);
           return (
             <button type="button" key={a._id} className={`media-tile ${isSel ? 'is-selected' : ''}`} onClick={() => (pickMode ? toggle(a) : onOpen?.(a))} title={a.title || a.url}>
-              {a.kind === 'image' ? <img src={a.variants?.[0]?.url || a.url} alt="" loading="lazy" /> : a.posterUrl ? <img src={a.posterUrl} alt="" loading="lazy" /> : <span className="media-tile__video">â–¶ {a.videoProvider || 'video'}</span>}
+              {a.kind === 'image' ? <img src={a.variants?.[0]?.url || a.url} alt="" loading="lazy" /> : a.posterUrl ? <img src={a.posterUrl} alt="" loading="lazy" /> : <span className="media-tile__video">▶ {a.videoProvider || 'video'}</span>}
               <span className="media-tile__meta">
                 <span className="media-tile__title">{a.title || a.filename || a.url}</span>
                 <span className="muted">
-                  {a.source === 'upload' ? 'Upload' : 'URL'} {a.width && a.height ? `Â· ${a.width}Ã—${a.height}` : ''} {a.bytes ? `Â· ${fmtBytes(a.bytes)}` : ''}
+                  {a.source === 'upload' ? 'Upload' : 'URL'} {a.width && a.height ? `· ${a.width}×${a.height}` : ''} {a.bytes ? `· ${fmtBytes(a.bytes)}` : ''}
                 </span>
               </span>
             </button>
@@ -431,7 +431,7 @@ function LibraryGrid({ kind, pickMode, multiple, onPick, onOpen, refreshKey = 0 
 }
 
 // ---------------------------------------------------------------------------------------------
-// MediaField â€” one image or video, upload OR URL OR library
+// MediaField — one image or video, upload OR URL OR library
 // ---------------------------------------------------------------------------------------------
 
 export function MediaField({
@@ -453,7 +453,7 @@ export function MediaField({
 }) {
   const [picker, setPicker] = useState<PickTab | null>(null);
   const perms = usePerms();
-  const videoProblem = kind === 'video' && value.trim() && !classifyVideoUrl(value) ? 'Unsupported video link â€” use .mp4/.webm, YouTube or Vimeo' : '';
+  const videoProblem = kind === 'video' && value.trim() && !classifyVideoUrl(value) ? 'Unsupported video link — use .mp4/.webm, YouTube or Vimeo' : '';
   return (
     <div className={`field media-field ${span ? 'span-2' : ''}`}>
       <span className="label">{label}</span>
@@ -475,7 +475,7 @@ export function MediaField({
               </button>
             ) : null}
           </div>
-          <input className="input ltr" value={value} placeholder={kind === 'video' ? 'or paste a video URL (https://â€¦)' : 'or paste an image URL (https://â€¦)'} onChange={(e) => onChange(e.target.value)} aria-label={`${label} URL`} />
+          <input className="input ltr" value={value} placeholder={kind === 'video' ? 'or paste a video URL (https://…)' : 'or paste an image URL (https://…)'} onChange={(e) => onChange(e.target.value)} aria-label={`${label} URL`} />
           {videoProblem ? <span className="field-error">{videoProblem}</span> : null}
           {hint ? <span className="hint">{hint}</span> : null}
         </div>
@@ -497,7 +497,7 @@ export function MediaField({
 }
 
 // ---------------------------------------------------------------------------------------------
-// Product gallery â€” multiple images, primary, reorder, replace, remove, alt text
+// Product gallery — multiple images, primary, reorder, replace, remove, alt text
 // ---------------------------------------------------------------------------------------------
 
 export function ImageGallery({ images, onChange, max = 12 }: { images: GalleryImage[]; onChange: (next: GalleryImage[]) => void; max?: number }) {
@@ -569,13 +569,13 @@ export function ImageGallery({ images, onChange, max = 12 }: { images: GalleryIm
           >
             <img src={im.variants?.[0]?.url || im.url} alt={im.alt?.en || ''} loading="lazy" />
             {i === 0 ? <span className="gallery-tile__badge">Main photo</span> : null}
-            {!im.variants?.length && /^http:\/\//.test(im.url) ? <span className="gallery-tile__warn" title="Insecure http:// link â€” browsers may block it">http</span> : null}
+            {!im.variants?.length && /^http:\/\//.test(im.url) ? <span className="gallery-tile__warn" title="Insecure http:// link — browsers may block it">http</span> : null}
             <div className="gallery-tile__actions">
               <button type="button" className="icon-btn" aria-label="Move earlier" disabled={i === 0} onClick={() => move(i, i - 1)}>
-                â€¹
+                ‹
               </button>
               <button type="button" className="icon-btn" aria-label="Move later" disabled={i === images.length - 1} onClick={() => move(i, i + 1)}>
-                â€º
+                ›
               </button>
               {i !== 0 ? (
                 <button type="button" className="btn btn--ghost btn--sm" onClick={() => move(i, 0)}>
@@ -639,7 +639,7 @@ export function ImageGallery({ images, onChange, max = 12 }: { images: GalleryIm
       </div>
       {editAlt !== null && images[editAlt] ? (
         <div className="form-grid form-grid--2" style={{ marginTop: 12 }}>
-          <LocInput label={`Alt text â€” image ${editAlt + 1} (describes the photo for screen readers and search engines)`} value={images[editAlt].alt} onChange={(v) => onChange(images.map((x, j) => (j === editAlt ? { ...x, alt: v } : x)))} />
+          <LocInput label={`Alt text — image ${editAlt + 1} (describes the photo for screen readers and search engines)`} value={images[editAlt].alt} onChange={(v) => onChange(images.map((x, j) => (j === editAlt ? { ...x, alt: v } : x)))} />
         </div>
       ) : null}
       {picker ? (
@@ -778,7 +778,7 @@ function AssetDetails({ asset, onClose, onChanged }: { asset: MediaAsset; onClos
               <>
                 <dt>Dimensions</dt>
                 <dd>
-                  {asset.width}Ã—{asset.height}
+                  {asset.width}×{asset.height}
                 </dd>
               </>
             ) : null}
@@ -786,7 +786,7 @@ function AssetDetails({ asset, onClose, onChanged }: { asset: MediaAsset; onClos
               <>
                 <dt>Size</dt>
                 <dd>
-                  {fmtBytes(asset.bytes)} {asset.mime ? `Â· ${asset.mime}` : ''}
+                  {fmtBytes(asset.bytes)} {asset.mime ? `· ${asset.mime}` : ''}
                 </dd>
               </>
             ) : null}
@@ -805,7 +805,7 @@ function AssetDetails({ asset, onClose, onChanged }: { asset: MediaAsset; onClos
           <LocInput label="Default alt text" value={alt} onChange={setAlt} />
           <div className="field">
             <span className="label">Where it is used</span>
-            {usage === null ? <span className="muted">Checkingâ€¦</span> : usage.length ? (
+            {usage === null ? <span className="muted">Checking…</span> : usage.length ? (
               <ul className="usage-list">
                 {usage.map((u, i) => (
                   <li key={i}>
@@ -833,7 +833,7 @@ function AssetDetails({ asset, onClose, onChanged }: { asset: MediaAsset; onClos
               Delete
             </button>
           </div>
-          {live.length ? <p className="muted" style={{ fontSize: 13 }}>In use â€” replace it in the places above before deleting, so nothing on the website breaks.</p> : null}
+          {live.length ? <p className="muted" style={{ fontSize: 13 }}>In use — replace it in the places above before deleting, so nothing on the website breaks.</p> : null}
         </div>
       </div>
     </Modal>

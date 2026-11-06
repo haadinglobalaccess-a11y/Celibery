@@ -98,7 +98,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
                   <td>
                     <Link to={`/admin/products/${p._id}`}>{en(p.name)}</Link>
                     <div className="muted">
-                      {p.sku} {p.model ? `Â· ${p.model}` : ''} {p.dataSource === 'demo' ? <span className="badge badge--sample">sample</span> : null} {p.featured ? <span className="badge">featured</span> : null}
+                      {p.sku} {p.model ? `· ${p.model}` : ''} {p.dataSource === 'demo' ? <span className="badge badge--sample">sample</span> : null} {p.featured ? <span className="badge">featured</span> : null}
                     </div>
                   </td>
                   <td>{en(p.category?.name)}</td>
@@ -153,7 +153,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
       <ErrorBox error={err} />
       {report ? (
         <div className="alert" style={{ marginTop: 12 }}>
-          Rows: {report.rows} Â· created: {report.created} Â· updated: {report.updated} Â· skipped: {report.skipped}
+          Rows: {report.rows} · created: {report.created} · updated: {report.updated} · skipped: {report.skipped}
           {report.errors.length ? (
             <ul>
               {report.errors.map((e) => (
@@ -416,7 +416,7 @@ export function ProductEdit() {
           </Card>
           <Card title="Images">
             <p className="muted" style={{ fontSize: 13 }}>
-              Upload photos from your computer, pick them from the media library, or paste image URLs. Two photos per product on a plain background are recommended (Q15). The first image is the main photo â€” drag or use the arrows to reorder.
+              Upload photos from your computer, pick them from the media library, or paste image URLs. Two photos per product on a plain background are recommended (Q15). The first image is the main photo — drag or use the arrows to reorder.
             </p>
             <ImageGallery images={f.images} onChange={(images) => up({ images })} />
           </Card>
@@ -443,7 +443,7 @@ export function ProductEdit() {
                 onChange={(ids) => up({ bundleItems: ids.map((pid) => f.bundleItems.find((b) => b.product === pid) ?? { product: pid, quantity: 1 }) })}
               />
             ) : null}
-            <ProductPicker label="Related products (optional â€” defaults to the same category)" value={f.related} onChange={(ids) => up({ related: ids })} />
+            <ProductPicker label="Related products (optional — defaults to the same category)" value={f.related} onChange={(ids) => up({ related: ids })} />
           </Card>
           <Card title="SEO (optional)">
             <div className="form-grid">
@@ -472,7 +472,7 @@ export function ProductEdit() {
           </Card>
           <Card title="Category *">
             <select className="select" required value={f.category} onChange={(e) => up({ category: e.target.value })}>
-              <option value="">Chooseâ€¦</option>
+              <option value="">Choose…</option>
               {(cats.data ?? []).map((c) => (
                 <option key={c._id} value={c._id}>
                   {en(c.name)}
@@ -499,7 +499,7 @@ export function ProductEdit() {
                 </F>
               ) : (
                 <p>
-                  In stock: <strong>{f.stock}</strong> â€” <Link to={`/admin/inventory?q=${encodeURIComponent(f.sku)}`}>adjust in Inventory</Link>
+                  In stock: <strong>{f.stock}</strong> — <Link to={`/admin/inventory?q=${encodeURIComponent(f.sku)}`}>adjust in Inventory</Link>
                 </p>
               )}
               <F label="Low-stock alert at" hint="Empty = store default">
@@ -531,7 +531,7 @@ export function ProductEdit() {
                   ))}
                 </div>
               </div>
-              <F label="Colour key" hint="e.g. black, white, grey â€” used for the colour filter">
+              <F label="Colour key" hint="e.g. black, white, grey — used for the colour filter">
                 <input className="input" value={f.colorKey} onChange={(e) => up({ colorKey: e.target.value.toLowerCase() })} />
               </F>
               {f.colorKey ? (

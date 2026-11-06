@@ -105,17 +105,17 @@ function HomepageSettings() {
           <label className="check span-2">
             <input type="checkbox" checked={h.heroEnabled} onChange={(e) => setH({ ...h, heroEnabled: e.target.checked })} /> Show the hero section
           </label>
-          <MediaField label="Hero video â€” desktop" kind="video" value={h.heroVideoUrl} poster={h.heroPosterUrl} onChange={(url, a) => setH({ ...h, heroVideoUrl: url, heroPosterUrl: a?.posterUrl && !h.heroPosterUrl ? a.posterUrl : h.heroPosterUrl })} />
-          <MediaField label="Poster image â€” desktop" kind="image" value={h.heroPosterUrl} onChange={(url) => setH({ ...h, heroPosterUrl: url })} />
+          <MediaField label="Hero video — desktop" kind="video" value={h.heroVideoUrl} poster={h.heroPosterUrl} onChange={(url, a) => setH({ ...h, heroVideoUrl: url, heroPosterUrl: a?.posterUrl && !h.heroPosterUrl ? a.posterUrl : h.heroPosterUrl })} />
+          <MediaField label="Poster image — desktop" kind="image" value={h.heroPosterUrl} onChange={(url) => setH({ ...h, heroPosterUrl: url })} />
           <MediaField
-            label="Hero video â€” mobile (optional, vertical 9:16)"
+            label="Hero video — mobile (optional, vertical 9:16)"
             kind="video"
             value={h.heroMobileVideoUrl}
             poster={h.heroMobilePosterUrl}
             hint="Empty = the desktop video is used on phones."
             onChange={(url, a) => setH({ ...h, heroMobileVideoUrl: url, heroMobilePosterUrl: a?.posterUrl && !h.heroMobilePosterUrl ? a.posterUrl : h.heroMobilePosterUrl })}
           />
-          <MediaField label="Poster image â€” mobile (optional)" kind="image" value={h.heroMobilePosterUrl} onChange={(url) => setH({ ...h, heroMobilePosterUrl: url })} />
+          <MediaField label="Poster image — mobile (optional)" kind="image" value={h.heroMobilePosterUrl} onChange={(url) => setH({ ...h, heroMobilePosterUrl: url })} />
           <LocInput label="Hero headline (empty = default)" value={h.heroTitle} onChange={(v) => setH({ ...h, heroTitle: v })} />
           <F label="Hero sort order" hint="Combined with Hero banner sort order; lower numbers play first."><input className="input" type="number" step="1" value={h.heroSortOrder} onChange={e => setH({ ...h, heroSortOrder: Number(e.target.value) })} /></F>
           <F label="Hero image duration (seconds)" hint="Display this image for the specified number of seconds. Use a positive number."><input className="input" type="number" min="0" step="any" required value={h.heroDurationSec} onChange={e => setH({ ...h, heroDurationSec: Number(e.target.value) })} /></F>
@@ -123,8 +123,8 @@ function HomepageSettings() {
           <F label="Hero video fallback (seconds)" hint="Recovery window for failed playback, stalled streams or unavailable provider tracking. Separate from video duration."><input className="input" type="number" min="2" max="300" step="0.5" value={h.heroVideoFallbackSec} onChange={e => setH({ ...h, heroVideoFallbackSec: Number(e.target.value) })} /></F>
           <LocInput label="Hero description" value={h.heroDescription} onChange={v => setH({ ...h, heroDescription: v })} textarea />
           <LocInput label="Hero sub-headline" value={h.heroSubtitle} onChange={(v) => setH({ ...h, heroSubtitle: v })} />
-          <LocInput label="Button label (empty = â€œShop nowâ€)" value={h.heroCtaLabel} onChange={(v) => setH({ ...h, heroCtaLabel: v })} />
-          <F label="Button destination" hint="Site path like /shop or /c/power-banks (language added automatically), or https://â€¦">
+          <LocInput label="Button label (empty = “Shop nowâ€)" value={h.heroCtaLabel} onChange={(v) => setH({ ...h, heroCtaLabel: v })} />
+          <F label="Button destination" hint="Site path like /shop or /c/power-banks (language added automatically), or https://…">
             <input className="input ltr" value={h.heroCtaLink} placeholder="/shop" onChange={(e) => setH({ ...h, heroCtaLink: e.target.value })} />
           </F>
         </div>
@@ -133,7 +133,7 @@ function HomepageSettings() {
           <a href="/ar" target="_blank" rel="noreferrer">
             Arabic homepage â†—
           </a>{' '}
-          Â·{' '}
+          ·{' '}
           <a href="/en" target="_blank" rel="noreferrer">
             English homepage â†—
           </a>
@@ -199,7 +199,7 @@ function Banners() {
             {data.map((b) => (
               <tr key={b._id}>
                 <td>{b.placement}</td>
-                <td>{en(b.title) || 'â€”'}</td>
+                <td>{en(b.title) || '—'}</td>
                 <td>
                   {b.startsAt ? dt(b.startsAt) : 'Always'} {b.endsAt ? `â†’ ${dt(b.endsAt)}` : ''}
                 </td>
@@ -259,18 +259,18 @@ function Banners() {
             <F label="Sort order">
               <input className="input" type="number" value={edit.sortOrder} onChange={(e) => setEdit({ ...edit, sortOrder: Number(e.target.value) })} />
             </F>
-            <MediaField label="Image â€” desktop, Arabic site" kind="image" value={edit.imageUrl.ar} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, ar: url } })} />
-            <MediaField label="Image â€” desktop, English site" kind="image" value={edit.imageUrl.en} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, en: url } })} hint="Use the same image for both languages if it contains no text." />
-            <MediaField label="Image â€” mobile, Arabic (optional)" kind="image" value={edit.mobileImageUrl.ar} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, ar: url } })} />
-            <MediaField label="Image â€” mobile, English (optional)" kind="image" value={edit.mobileImageUrl.en} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, en: url } })} />
+            <MediaField label="Image — desktop, Arabic site" kind="image" value={edit.imageUrl.ar} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, ar: url } })} />
+            <MediaField label="Image — desktop, English site" kind="image" value={edit.imageUrl.en} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, en: url } })} hint="Use the same image for both languages if it contains no text." />
+            <MediaField label="Image — mobile, Arabic (optional)" kind="image" value={edit.mobileImageUrl.ar} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, ar: url } })} />
+            <MediaField label="Image — mobile, English (optional)" kind="image" value={edit.mobileImageUrl.en} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, en: url } })} />
             <MediaField
-              label="Video (optional â€” plays instead of the image)"
+              label="Video (optional — plays instead of the image)"
               kind="video"
               value={edit.videoUrl ?? ''}
               poster={edit.posterUrl}
               onChange={(url, a) => setEdit({ ...edit, videoUrl: url, posterUrl: a?.posterUrl && !edit.posterUrl ? a.posterUrl : edit.posterUrl })}
             />
-            <MediaField label="Video â€” mobile (optional)" kind="video" value={edit.mobileVideoUrl ?? ''} onChange={(url) => setEdit({ ...edit, mobileVideoUrl: url })} />
+            <MediaField label="Video — mobile (optional)" kind="video" value={edit.mobileVideoUrl ?? ''} onChange={(url) => setEdit({ ...edit, mobileVideoUrl: url })} />
             <MediaField label="Video poster image" kind="image" value={edit.posterUrl ?? ''} onChange={(url) => setEdit({ ...edit, posterUrl: url })} hint="Shown while the video loads and to visitors who prefer reduced motion. Defaults to the desktop image." />
             <F label="Starts">
               <input className="input" type="datetime-local" value={dateIn(edit.startsAt)} onChange={(e) => setEdit({ ...edit, startsAt: dateOut(e.target.value) })} />
@@ -315,7 +315,7 @@ function Collections() {
     <>
       <Card title="Collections" actions={<button className="btn btn--primary btn--sm" onClick={() => setEdit({ slug: '', kind: 'custom', title: emptyL, description: emptyL, products: [], active: true, showOnHome: false, sortOrder: 0 })}>+ New collection</button>}>
         <p className="muted" style={{ fontSize: 13 }}>
-          â€œbundlesâ€ is the Bundles &amp; Gift Kits menu item (Q17). â€œbest-sellersâ€ is only used until real sales data exists. â€œfor-travel / work / fitness / homeâ€ feed the use-case section.
+          “bundlesâ€ is the Bundles &amp; Gift Kits menu item (Q17). “best-sellersâ€ is only used until real sales data exists. “for-travel / work / fitness / homeâ€ feed the use-case section.
         </p>
         <div className="table-wrap collections-table-card"><table className="table collections-table">
           <thead>
@@ -427,9 +427,9 @@ function Campaigns() {
                   {en(c.title)} <span className="muted">/{c.slug}</span>
                 </td>
                 <td>
-                  {c.startsAt ? dt(c.startsAt) : 'â€”'} â†’ {c.endsAt ? dt(c.endsAt) : 'â€”'}
+                  {c.startsAt ? dt(c.startsAt) : '—'} â†’ {c.endsAt ? dt(c.endsAt) : '—'}
                 </td>
-                <td>{c.discountCode || 'â€”'}</td>
+                <td>{c.discountCode || '—'}</td>
                 <td>{c.active ? <span className="badge badge--success">active</span> : <span className="badge">inactive</span>}</td>
                 <td>
                   <button className="btn btn--ghost btn--sm" onClick={() => setEdit({ ...c, collection: c.collection ? String(c.collection) : null })}>
@@ -462,7 +462,7 @@ function Campaigns() {
             </F>
             <LocInput label="Description" textarea value={edit.description} onChange={(v) => setEdit({ ...edit, description: v })} />
             <MediaField label="Campaign hero image" kind="image" value={edit.heroImageUrl} onChange={(url) => setEdit({ ...edit, heroImageUrl: url })} />
-            <MediaField label="Campaign hero image â€” mobile (optional)" kind="image" value={edit.heroMobileImageUrl ?? ''} onChange={(url) => setEdit({ ...edit, heroMobileImageUrl: url })} />
+            <MediaField label="Campaign hero image — mobile (optional)" kind="image" value={edit.heroMobileImageUrl ?? ''} onChange={(url) => setEdit({ ...edit, heroMobileImageUrl: url })} />
             <MediaField label="Campaign video (optional)" kind="video" value={edit.heroVideoUrl ?? ''} poster={edit.heroImageUrl} onChange={(url) => setEdit({ ...edit, heroVideoUrl: url })} />
             <F label="Accent colour (e.g. #006C35 for National Day)">
               <input className="input" value={edit.accentColor} onChange={(e) => setEdit({ ...edit, accentColor: e.target.value })} />
@@ -519,7 +519,7 @@ function Pages() {
       const saved = await put<Page>(`/api/admin/content/pages/${edit!._id}`, { title: edit!.title, body: edit!.body, status: edit!.status, approvedBy: edit!.approvedBy, reason: edit!.reason ?? '' });
       setEdit(null);
       reload();
-      toast(saved.status === 'approved' ? 'Saved and approved' : 'Saved as draft â€” the previous version is kept in the history');
+      toast(saved.status === 'approved' ? 'Saved and approved' : 'Saved as draft — the previous version is kept in the history');
     } catch (ex) {
       setErr(ex);
     }
@@ -528,7 +528,7 @@ function Pages() {
     <>
       <Card title="Policy pages">
         <p className="muted" style={{ fontSize: 13 }}>
-          Privacy, Terms &amp; Conditions, Returns, Refunds, Shipping and Warranty â€” drafts prepared for review by CELIBERYâ€™s legal advisor (Q31). Replace every [bracketed] placeholder and remove the draft note.
+          Privacy, Terms &amp; Conditions, Returns, Refunds, Shipping and Warranty — drafts prepared for review by CELIBERY’s legal advisor (Q31). Replace every [bracketed] placeholder and remove the draft note.
           Every save keeps the previous version. {canApprove ? 'You can mark a policy as approved.' : 'Only staff with the legal & business permission can mark a policy as approved; editing an approved policy returns it to draft.'}
         </p>
         <div className="table-wrap pages-table-card"><table className="table pages-table">
@@ -537,7 +537,7 @@ function Pages() {
               <tr key={p._id}>
                 <td>{en(p.title)}</td>
                 <td>
-                  <Status value={p.status === 'approved' ? 'active' : 'draft'} /> {p.approvedBy ? <span className="muted">by {p.approvedBy}</span> : null} {p.version ? <span className="muted">Â· v{p.version}</span> : null}
+                  <Status value={p.status === 'approved' ? 'active' : 'draft'} /> {p.approvedBy ? <span className="muted">by {p.approvedBy}</span> : null} {p.version ? <span className="muted">· v{p.version}</span> : null}
                 </td>
                 <td>
                   <div className="actions">
@@ -599,10 +599,10 @@ function PageHistory({ page, onClose, onRestored }: { page: Page; onClose: () =>
     }
   };
   return (
-    <Modal title={`History â€” ${en(page.title)}`} onClose={onClose} wide>
+    <Modal title={`History — ${en(page.title)}`} onClose={onClose} wide>
       <ErrorBox error={err || error} />
       {!data ? <Spinner /> : null}
-      {data && !data.length ? <p className="muted">No earlier versions yet â€” a version is saved every time this policy changes.</p> : null}
+      {data && !data.length ? <p className="muted">No earlier versions yet — a version is saved every time this policy changes.</p> : null}
       {data?.length ? (
         <div className="table-wrap page-history-table-card"><table className="table page-history-table">
           <thead>

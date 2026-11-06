@@ -174,7 +174,7 @@ export function SettingsPage() {
           </Card>
           <Card title="Policies">
             <p style={{ margin: 0 }}>
-              Privacy, Terms &amp; Conditions, Returns, Refunds, Shipping and Warranty texts are edited in <a href="/admin/content">Website content → Policy pages</a>. Every save keeps a version history; marking a policy â€œapproved” requires this legal &amp; business permission.
+              Privacy, Terms &amp; Conditions, Returns, Refunds, Shipping and Warranty texts are edited in <a href="/admin/content">Website content → Policy pages</a>. Every save keeps a version history; marking a policy “approved” requires this legal &amp; business permission.
             </p>
           </Card>
         </>
@@ -245,7 +245,7 @@ export function SettingsPage() {
                 </select>
               </F>
             </div>
-            <p className="muted" style={{ fontSize: 13 }}>Save with the Delivery â€œSave” button above.</p>
+            <p className="muted" style={{ fontSize: 13 }}>Save with the Delivery “Save” button above.</p>
           </Card>
           {canPayments ? <Integrations only={['imile']} /> : null}
         </>
@@ -344,7 +344,7 @@ export function SettingsPage() {
                 </label>
               ))}
               <p className="muted" style={{ fontSize: 13 }}>
-                A method is shown to customers only when it is ticked here AND its gateway below is enabled. Cash on delivery is controlled in the â€œCash on delivery” tab.
+                A method is shown to customers only when it is ticked here AND its gateway below is enabled. Cash on delivery is controlled in the “Cash on delivery” tab.
                 {diag ? (
                   <>
                     {' '}
@@ -359,7 +359,7 @@ export function SettingsPage() {
             <Integrations only={['moyasar', 'tabby']} />
           ) : (
             <Card title="Payment gateways">
-              <p className="muted">Only Super Administrators (permission â€œpayments:manage”) can view or change payment gateway credentials.</p>
+              <p className="muted">Only Super Administrators (permission “payments:manage”) can view or change payment gateway credentials.</p>
             </Card>
           )}
         </>
@@ -410,7 +410,7 @@ export function SettingsPage() {
           </dl>
           {hosting.mediaStorage.reason ? <p className="alert alert--warning">{hosting.mediaStorage.reason}</p> : null}
           <p className="muted" style={{ fontSize: 13, marginTop: 12 }}>
-            These values are read-only on purpose. Moving customer data to another country or provider is an infrastructure migration that needs the legal advisorâ€™s approval (Q33) and a planned data transfer — it cannot be done with a dashboard switch. Ask the developer; see docs/DEPLOYMENT.md → â€œData residency”.
+            These values are read-only on purpose. Moving customer data to another country or provider is an infrastructure migration that needs the legal advisor’s approval (Q33) and a planned data transfer — it cannot be done with a dashboard switch. Ask the developer; see docs/DEPLOYMENT.md → “Data residency”.
           </p>
         </Card>
       ) : null}
@@ -630,7 +630,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
         <div className="gateway__activate">
           <strong>Use for payments</strong>
           <span className="muted" style={{ fontSize: 13 }}>
-            Enabling requires saved credentials that passed â€œTest connection”. Live mode processes real customer money.
+            Enabling requires saved credentials that passed “Test connection”. Live mode processes real customer money.
           </span>
           <div className="actions">
             {i.enabled ? (
@@ -666,7 +666,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
       {confirmLive ? (
         <Modal title="Confirm live payments" onClose={() => (setConfirmLive(null), setTyped(''))}>
           <p>
-            You are about to process <strong>real customer payments</strong> through {i.label}. Make sure the live credentials passed â€œTest connection”, the webhook is registered in the {i.label.split(' ')[0]} dashboard, and a small real payment + refund has been tested.
+            You are about to process <strong>real customer payments</strong> through {i.label}. Make sure the live credentials passed “Test connection”, the webhook is registered in the {i.label.split(' ')[0]} dashboard, and a small real payment + refund has been tested.
           </p>
           <F label='Type LIVE to confirm'>
             <input className="input ltr" value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus />
