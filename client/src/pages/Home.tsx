@@ -18,38 +18,6 @@ import { useToast } from '../state/toast';
 import { OrbitalShowcaseSlot } from '../three-d/OrbitalShowcaseSlot';
 import { Ambient, bannerVideo, CinematicHero, DimensionalIcon, PremiumButton, ScrollScene, SpatialCarousel, TiltCard, useLinkFor, useTilt } from '../three-d';
 
-function ServiceStrip() {
-  const { t } = useI18n();
-  const s = useSettings();
-  const months = s?.commerce?.warrantyEnabled ? s.commerce.warrantyMonths : 0;
-  const items = [
-    { icon: 'truck', text: t.service.delivery },
-    ...(months ? [{ icon: 'shield', text: t.service.warranty(months) }] : []),
-    { icon: 'lock', text: t.service.secure },
-    { icon: 'chat', text: t.service.support },
-  ];
-  const row = (hidden: boolean, k: string) => (
-    <ul className="service__row" aria-hidden={hidden || undefined} key={k}>
-      {[...items, ...items].map((i, n) => (
-        <li className="service__item" key={n}>
-          <DimensionalIcon name={i.icon} size="sm" tone="light" />
-          <span>{i.text}</span>
-        </li>
-      ))}
-    </ul>
-  );
-  return (
-    <section className="service" aria-label="Services" id="after-hero">
-      <div className="marquee">
-        <div className="marquee__track">
-          {row(false, 'a')}
-          {row(true, 'b')}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function SectionHead({ title, eyebrow, link, text }: { title: string; eyebrow?: string; link?: string; text?: string }) {
   const { t } = useI18n();
   return (
@@ -359,7 +327,6 @@ export default function Home() {
   return (
     <>
       {data.hero.enabled !== false ? <CinematicHero data={data} /> : null}
-      <ServiceStrip />
 
       <CategoryBento categories={data.categories} />
 

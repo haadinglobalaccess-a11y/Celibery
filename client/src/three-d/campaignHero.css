@@ -64,3 +64,18 @@ body:has(.campaign-hero-slider) .header:not(.is-scrolled) .logo { color: #fff; }
 
 .campaign-indicators span { transition: transform 160ms linear; }
 @media (prefers-reduced-motion: reduce) { .campaign-indicators span { transition: none; } }
+
+/* CELIBERY HERO — DESKTOP VIEWPORT FIT */
+@media (min-width: 640px) {
+  .campaign-hero-slider {
+    min-height: 100svh;
+  }
+
+  .campaign-content {
+    padding-block: clamp(24px, 4vh, 52px);
+  }
+
+  .campaign-controls {
+    padding-bottom: clamp(12px, 2vh, 24px);
+  }
+}
