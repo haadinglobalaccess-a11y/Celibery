@@ -13,7 +13,6 @@ import { prefersReducedMotion, Reveal } from '../lib/motion';
 import { useSeo } from '../lib/useSeo';
 import { BackgroundVideo, useMediaQuery } from '../lib/media';
 import type { Campaign, Category, HomeData, ProductCardData } from '../lib/types';
-import { useSettings } from '../state/settings';
 import { useToast } from '../state/toast';
 import { OrbitalShowcaseSlot } from '../three-d/OrbitalShowcaseSlot';
 import { Ambient, bannerVideo, CinematicHero, DimensionalIcon, PremiumButton, ScrollScene, SpatialCarousel, TiltCard, useLinkFor, useTilt } from '../three-d';
@@ -83,7 +82,7 @@ function CategoryBento({ categories }: { categories: Category[] }) {
   return (
     <section className="section">
       <div className="container">
-        <SectionHead title={t.home.categories} eyebrow={t.premium.exploreEyebrow} link={p('/shop')} />
+        <SectionHead title={t.home.categories} link={p('/shop')} />
         <Reveal className="bento bento--3d" stagger>
           {categories.map((c, i) => (
             <BentoTile key={c._id} c={c} i={i} />

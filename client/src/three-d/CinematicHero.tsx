@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
 import { L } from '../lib/format';
 import { classifyVideoUrl, useMediaQuery } from '../lib/media';
@@ -33,7 +32,7 @@ export const bannerVideo = (b: Banner, isPhone: boolean) => {
 
 
 export function CinematicHero({ data }: { data: HomeData }) {
-  const { t, lang, p } = useI18n();
+  const { t, lang } = useI18n();
   const linkFor = useLinkFor();
   const phone = useMediaQuery('(max-width: 639px)');
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -88,11 +87,9 @@ export function CinematicHero({ data }: { data: HomeData }) {
     })}</div>
     <div className="container campaign-content"><div key={`${slide.id}:${visit}`} className="campaign-copy">
       <span className="eyebrow eyebrow--line">{t.premium.heroEyebrow}</span>
-      <h1 className="cine__title">{slide.title || L(data.hero.title, lang) || t.home.heroTitle}</h1>
-      <p className="cine__sub">{slide.subtitle || L(data.hero.subtitle, lang) || t.home.heroSubtitle}</p>
-      {slide.description && <p className="cine__sub campaign-description">{slide.description}</p>}
-      <div className="cine__ctas"><PremiumButton to={linkFor(slide.link)} variant="light" size="lg">{slide.cta || t.home.shopNow}<span className="arrow"> &rarr;</span></PremiumButton><PremiumButton to={p('/bundles')} variant="on-dark" size="lg">{t.nav.bundles}</PremiumButton></div>
-      {data.categories.length > 0 && <ul className="cine__chips" aria-label={t.home.categories}>{data.categories.map(c => <li key={c._id}><Link to={p(`/c/${c.slug}`)}>{L(c.name, lang)}</Link></li>)}</ul>}
+      {(slide.title || L(data.hero.title, lang)) && <h1 className="cine__title">{slide.title || L(data.hero.title, lang)}</h1>}
+      {(slide.subtitle || L(data.hero.subtitle, lang)) && <p className="cine__sub">{slide.subtitle || L(data.hero.subtitle, lang)}</p>}
+      <div className="cine__ctas"><PremiumButton to={linkFor(slide.link)} variant="light" size="lg">{slide.cta || t.home.shopNow}<span className="arrow"> &rarr;</span></PremiumButton></div>
     </div></div>
     <div className="container campaign-controls">
       {slides.length > 1 && <button aria-label={label('Previous slide', 'الشريحة السابقة')} onClick={() => go(index - 1)}>&larr;</button>}<div className="campaign-indicators">{slides.map((s, i) => <button key={s.id} data-completed={i < index} aria-label={`${label('Slide', 'الشريحة')} ${i + 1}`} aria-current={i === index ? 'true' : undefined} onClick={() => go(i)}><span /></button>)}</div>{slides.length > 1 && <button aria-label={label('Next slide', 'الشريحة التالية')} onClick={() => go(index + 1)}>&rarr;</button>}
