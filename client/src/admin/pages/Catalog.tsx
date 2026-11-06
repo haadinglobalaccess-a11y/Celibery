@@ -39,9 +39,9 @@ export function Categories() {
           + New category
         </button>
       </AHead>
-      <p className="muted">The six confirmed categories are seeded. Storefront filters per category are a proposal pending CELIBERY approval (Q18).</p>
-      <div className="a-card table-wrap">
-        <table className="table">
+      <p className="muted categories-note">The six confirmed categories are seeded. Storefront filters per category are a proposal pending CELIBERY approval (Q18).</p>
+      <div className="a-card table-wrap categories-table-card">
+        <table className="table categories-table">
           <thead>
             <tr>
               <th>#</th>
@@ -175,7 +175,7 @@ export function Inventory({ canWrite }: { canWrite: boolean }) {
       />
       {tab === 'stock' ? (
         <>
-          <div className="a-filters">
+          <div className="a-filters inventory-filters">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -201,11 +201,11 @@ export function Inventory({ canWrite }: { canWrite: boolean }) {
               Low stock only
             </label>
           </div>
-          <div className="a-card table-wrap">
+          <div className="a-card table-wrap inventory-table-card">
             {!rows ? (
               <Spinner />
             ) : (
-              <table className="table">
+              <table className="table inventory-table">
                 <thead>
                   <tr>
                     <th>SKU</th>
@@ -250,11 +250,11 @@ export function Inventory({ canWrite }: { canWrite: boolean }) {
           </div>
         </>
       ) : (
-        <div className="a-card table-wrap">
+        <div className="a-card table-wrap inventory-table-card">
           {!history.data ? (
             <Spinner />
           ) : (
-            <table className="table">
+            <table className="table inventory-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -354,20 +354,20 @@ export function Customers() {
       {tab === 'customers' ? (
         <>
           <form
-            className="a-filters"
+            className="a-filters customers-filters"
             onSubmit={(e) => {
               e.preventDefault();
               setPage(1);
               setSearch(q);
             }}
           >
-            <input className="input" placeholder="Search name, email, phone…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input className="input customers-search-input" placeholder="Search name, email, phone…" value={q} onChange={(e) => setQ(e.target.value)} />
           </form>
-          <div className="a-card table-wrap">
+          <div className="a-card table-wrap customers-table-card">
             {!rows ? (
               <Spinner />
             ) : (
-              <table className="table">
+              <table className="table customers-table">
                 <thead>
                   <tr>
                     <th>Customer</th>
@@ -402,7 +402,7 @@ export function Customers() {
           </div>
         </>
       ) : (
-        <Card title={`${nl.data?.length ?? 0} subscribers`} actions={<button className="btn btn--outline btn--sm" onClick={exportNl}>Export CSV</button>}>
+        <div className="customers-newsletter-card"><Card title={`${nl.data?.length ?? 0} subscribers`} actions={<button className="btn btn--outline btn--sm" onClick={exportNl}>Export CSV</button>}>
           {nl.data?.map((s) => (
             <div key={s._id} className="picker__row">
               <span>{s.email}</span>
@@ -411,7 +411,7 @@ export function Customers() {
               </span>
             </div>
           ))}
-        </Card>
+        </Card></div>
       )}
     </>
   );
@@ -574,8 +574,8 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
           </button>
         ) : null}
       </AHead>
-      <div className="a-card table-wrap">
-        <table className="table">
+      <div className="a-card table-wrap discounts-table-card">
+        <table className="table discounts-table">
           <thead>
             <tr>
               <th>Code</th>
@@ -618,7 +618,7 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
       </div>
       {edit ? (
         <Modal title={edit._id ? `Edit ${edit.code}` : 'New discount code'} onClose={() => setEdit(null)} wide>
-          <form className="form-grid form-grid--2" onSubmit={save}>
+          <form className="form-grid form-grid--2 discounts-form" onSubmit={save}>
             <div className="span-2">
               <ErrorBox error={err} />
             </div>
@@ -679,4 +679,8 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
     </>
   );
 }
+
+
+
+
 

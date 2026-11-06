@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
 import { ErrorState, Spinner } from '../../components/ui';
 import { patch, post, put } from '../../lib/api';
 import { useApi } from '../../lib/hooks';
@@ -53,7 +53,7 @@ export function Staff() {
       const r = await post<{ inviteLink: string | null; emailStatus: string }>('/api/admin/staff', invite);
       setInvite(null);
       setLink(r.inviteLink);
-      toast(r.emailStatus === 'sent' ? 'Invitation emailed' : 'Account created — share the set-password link privately');
+      toast(r.emailStatus === 'sent' ? 'Invitation emailed' : 'Account created â€” share the set-password link privately');
       staff.reload();
     } catch (ex) {
       setErr(ex);
@@ -102,11 +102,11 @@ export function Staff() {
         </div>
       ) : null}
       {tab === 'staff' ? (
-        <div className="a-card table-wrap">
-          <p className="muted" style={{ fontSize: 13 }}>
-            Staff named by CELIBERY (Q27/Q39): Usama M. Usman (BDM, approver) and Shuja Mubeen (Online Sales Executive). Invite them with their work emails — they set their own passwords.
+        <div className="a-card table-wrap staff-table-card">
+          <p className="muted staff-note" style={{ fontSize: 13 }}>
+            Staff named by CELIBERY (Q27/Q39): Usama M. Usman (BDM, approver) and Shuja Mubeen (Online Sales Executive). Invite them with their work emails â€” they set their own passwords.
           </p>
-          <table className="table">
+          <table className="table staff-table">
             <thead>
               <tr>
                 <th>Name</th>
@@ -122,7 +122,7 @@ export function Staff() {
                   <td>
                     {s.name}
                     <div className="muted">
-                      {s.email} {s.title ? `· ${s.title}` : ''}
+                      {s.email} {s.title ? `Â· ${s.title}` : ''}
                     </div>
                   </td>
                   <td>
@@ -179,8 +179,8 @@ export function Staff() {
           </table>
         </div>
       ) : (
-        <div className="a-card table-wrap">
-          <table className="table">
+        <div className="a-card table-wrap staff-table-card">
+          <table className="table staff-table">
             <thead>
               <tr>
                 <th>Role</th>
@@ -205,7 +205,7 @@ export function Staff() {
       )}
       {invite ? (
         <Modal title="Invite staff member" onClose={() => setInvite(null)}>
-          <form className="form-grid" onSubmit={sendInvite}>
+          <form className="form-grid staff-invite-form" onSubmit={sendInvite}>
             <ErrorBox error={err} />
             <F label="Full name">
               <input className="input" required value={invite.name} onChange={(e) => setInvite({ ...invite, name: e.target.value })} />
@@ -231,7 +231,7 @@ export function Staff() {
       ) : null}
       {roleEdit ? (
         <Modal title={roleEdit._id ? 'Edit role' : 'New role'} onClose={() => setRoleEdit(null)} wide>
-          <form className="form-grid form-grid--2" onSubmit={saveRole}>
+          <form className="form-grid form-grid--2 staff-role-form" onSubmit={saveRole}>
             <div className="span-2">
               <ErrorBox error={err} />
             </div>
@@ -242,7 +242,7 @@ export function Staff() {
             <LocInput label="Name" required value={roleEdit.name} onChange={(v) => setRoleEdit({ ...roleEdit, name: v })} />
             <div className="field span-2">
               <span className="label">Permissions</span>
-              <div className="perm-grid">
+              <div className="perm-grid staff-perm-grid">
                 {PERMISSIONS.map(([p, label]) => (
                   <label key={p} className="check" title={p}>
                     <input
@@ -270,8 +270,8 @@ export function ActivityLog() {
   return (
     <>
       <AHead title="Activity log" />
-      <div className="a-card table-wrap">
-        <table className="table">
+      <div className="a-card table-wrap activity-table-card">
+        <table className="table activity-table">
           <thead>
             <tr>
               <th>When</th>
@@ -297,3 +297,5 @@ export function ActivityLog() {
     </>
   );
 }
+
+

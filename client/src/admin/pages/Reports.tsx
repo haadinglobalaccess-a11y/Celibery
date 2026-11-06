@@ -28,7 +28,7 @@ export function Reports() {
           Export orders CSV
         </a>
       </AHead>
-      <div className="a-filters">
+      <div className="a-filters reports-filters">
         <F label="From">
           <input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </F>
@@ -41,7 +41,7 @@ export function Reports() {
           <p className="muted" style={{ fontSize: 13 }}>
             Counts paid online orders and cash-on-delivery orders that were not cancelled or returned. Dates are in Riyadh time.
           </p>
-          <div className="kpis">
+          <div className="kpis reports-kpis">
             <div className="kpi">
               <span>Orders</span>
               <strong>{data.summary.orders}</strong>
@@ -71,12 +71,12 @@ export function Reports() {
               <strong>{sar(data.summary.vat)}</strong>
             </div>
           </div>
-          <Card title="Revenue by day">
+          <div className="reports-chart-card"><Card title="Revenue by day">
             <BarChart data={data.daily} value="revenue" label={sar} />
-          </Card>
-          <div className="a-grid-2 a-grid-even">
+          </Card></div>
+          <div className="a-grid-2 a-grid-even reports-grid">
             <Card title="By category">
-              <table className="table">
+              <table className="table reports-table">
                 <tbody>
                   {data.byCategory.map((c) => (
                     <tr key={c._id ?? 'none'}>
@@ -89,7 +89,7 @@ export function Reports() {
               </table>
             </Card>
             <Card title="By payment method">
-              <table className="table">
+              <table className="table reports-table">
                 <tbody>
                   {data.byPaymentMethod.map((c) => (
                     <tr key={c._id}>
@@ -102,7 +102,7 @@ export function Reports() {
               </table>
             </Card>
             <Card title="Top products">
-              <table className="table">
+              <table className="table reports-table">
                 <tbody>
                   {data.topProducts.map((p) => (
                     <tr key={p._id}>
@@ -117,7 +117,7 @@ export function Reports() {
               </table>
             </Card>
             <Card title="Discount codes used">
-              <table className="table">
+              <table className="table reports-table">
                 <tbody>
                   {data.discounts.map((d) => (
                     <tr key={d._id}>
@@ -136,3 +136,4 @@ export function Reports() {
     </>
   );
 }
+

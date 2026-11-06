@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+﻿import { useEffect, useState, type FormEvent } from 'react';
 import { ErrorState, Spinner } from '../../components/ui';
 import { del, get, patch, post, put } from '../../lib/api';
 import { invalidateCache, useApi } from '../../lib/hooks';
@@ -105,17 +105,17 @@ function HomepageSettings() {
           <label className="check span-2">
             <input type="checkbox" checked={h.heroEnabled} onChange={(e) => setH({ ...h, heroEnabled: e.target.checked })} /> Show the hero section
           </label>
-          <MediaField label="Hero video — desktop" kind="video" value={h.heroVideoUrl} poster={h.heroPosterUrl} onChange={(url, a) => setH({ ...h, heroVideoUrl: url, heroPosterUrl: a?.posterUrl && !h.heroPosterUrl ? a.posterUrl : h.heroPosterUrl })} />
-          <MediaField label="Poster image — desktop" kind="image" value={h.heroPosterUrl} onChange={(url) => setH({ ...h, heroPosterUrl: url })} />
+          <MediaField label="Hero video â€” desktop" kind="video" value={h.heroVideoUrl} poster={h.heroPosterUrl} onChange={(url, a) => setH({ ...h, heroVideoUrl: url, heroPosterUrl: a?.posterUrl && !h.heroPosterUrl ? a.posterUrl : h.heroPosterUrl })} />
+          <MediaField label="Poster image â€” desktop" kind="image" value={h.heroPosterUrl} onChange={(url) => setH({ ...h, heroPosterUrl: url })} />
           <MediaField
-            label="Hero video — mobile (optional, vertical 9:16)"
+            label="Hero video â€” mobile (optional, vertical 9:16)"
             kind="video"
             value={h.heroMobileVideoUrl}
             poster={h.heroMobilePosterUrl}
             hint="Empty = the desktop video is used on phones."
             onChange={(url, a) => setH({ ...h, heroMobileVideoUrl: url, heroMobilePosterUrl: a?.posterUrl && !h.heroMobilePosterUrl ? a.posterUrl : h.heroMobilePosterUrl })}
           />
-          <MediaField label="Poster image — mobile (optional)" kind="image" value={h.heroMobilePosterUrl} onChange={(url) => setH({ ...h, heroMobilePosterUrl: url })} />
+          <MediaField label="Poster image â€” mobile (optional)" kind="image" value={h.heroMobilePosterUrl} onChange={(url) => setH({ ...h, heroMobilePosterUrl: url })} />
           <LocInput label="Hero headline (empty = default)" value={h.heroTitle} onChange={(v) => setH({ ...h, heroTitle: v })} />
           <F label="Hero sort order" hint="Combined with Hero banner sort order; lower numbers play first."><input className="input" type="number" step="1" value={h.heroSortOrder} onChange={e => setH({ ...h, heroSortOrder: Number(e.target.value) })} /></F>
           <F label="Hero image duration (seconds)" hint="Display this image for the specified number of seconds. Use a positive number."><input className="input" type="number" min="0" step="any" required value={h.heroDurationSec} onChange={e => setH({ ...h, heroDurationSec: Number(e.target.value) })} /></F>
@@ -123,19 +123,19 @@ function HomepageSettings() {
           <F label="Hero video fallback (seconds)" hint="Recovery window for failed playback, stalled streams or unavailable provider tracking. Separate from video duration."><input className="input" type="number" min="2" max="300" step="0.5" value={h.heroVideoFallbackSec} onChange={e => setH({ ...h, heroVideoFallbackSec: Number(e.target.value) })} /></F>
           <LocInput label="Hero description" value={h.heroDescription} onChange={v => setH({ ...h, heroDescription: v })} textarea />
           <LocInput label="Hero sub-headline" value={h.heroSubtitle} onChange={(v) => setH({ ...h, heroSubtitle: v })} />
-          <LocInput label="Button label (empty = “Shop now”)" value={h.heroCtaLabel} onChange={(v) => setH({ ...h, heroCtaLabel: v })} />
-          <F label="Button destination" hint="Site path like /shop or /c/power-banks (language added automatically), or https://…">
+          <LocInput label="Button label (empty = â€œShop nowâ€)" value={h.heroCtaLabel} onChange={(v) => setH({ ...h, heroCtaLabel: v })} />
+          <F label="Button destination" hint="Site path like /shop or /c/power-banks (language added automatically), or https://â€¦">
             <input className="input ltr" value={h.heroCtaLink} placeholder="/shop" onChange={(e) => setH({ ...h, heroCtaLink: e.target.value })} />
           </F>
         </div>
         <p className="muted" style={{ fontSize: 13 }}>
           Preview after saving:{' '}
           <a href="/ar" target="_blank" rel="noreferrer">
-            Arabic homepage ↗
+            Arabic homepage â†—
           </a>{' '}
-          ·{' '}
+          Â·{' '}
           <a href="/en" target="_blank" rel="noreferrer">
-            English homepage ↗
+            English homepage â†—
           </a>
         </p>
       </Card>
@@ -154,7 +154,6 @@ function HomepageSettings() {
 }
 
 type Banner = { description?: Localized; durationSec?: number; videoDurationSec?: number; videoFallbackSec?: number; _id?: string; placement: string; title: Localized; subtitle: Localized; ctaLabel: Localized; link: string; imageUrl: Localized; mobileImageUrl: Localized; videoUrl?: string; mobileVideoUrl?: string; posterUrl?: string; theme: string; active: boolean; startsAt?: string | null; endsAt?: string | null; sortOrder: number };
-
 function Banners() {
   const { data, error, loading, reload } = useApi<Banner[]>('/api/admin/content/banners');
   const [edit, setEdit] = useState<Banner | null>(null);
@@ -186,7 +185,7 @@ function Banners() {
           </button>
         }
       >
-        <table className="table">
+        <div className="table-wrap banners-table-card"><table className="table banners-table">
           <thead>
             <tr>
               <th>Placement</th>
@@ -200,9 +199,9 @@ function Banners() {
             {data.map((b) => (
               <tr key={b._id}>
                 <td>{b.placement}</td>
-                <td>{en(b.title) || '—'}</td>
+                <td>{en(b.title) || 'â€”'}</td>
                 <td>
-                  {b.startsAt ? dt(b.startsAt) : 'Always'} {b.endsAt ? `→ ${dt(b.endsAt)}` : ''}
+                  {b.startsAt ? dt(b.startsAt) : 'Always'} {b.endsAt ? `â†’ ${dt(b.endsAt)}` : ''}
                 </td>
                 <td>{b.active ? 'Yes' : 'No'}</td>
                 <td className="actions">
@@ -224,12 +223,12 @@ function Banners() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         {!data.length ? <p className="muted">No banners yet. Hero banners replace the animated product slider; lifestyle banners appear mid-page.</p> : null}
       </Card>
       {edit ? (
         <Modal title={edit._id ? 'Edit banner' : 'New banner'} onClose={() => setEdit(null)} wide>
-          <form className="form-grid form-grid--2" onSubmit={save}>
+          <form className="form-grid form-grid--2 banners-form" onSubmit={save}>
             <div className="span-2">
               <ErrorBox error={err} />
             </div>
@@ -260,18 +259,18 @@ function Banners() {
             <F label="Sort order">
               <input className="input" type="number" value={edit.sortOrder} onChange={(e) => setEdit({ ...edit, sortOrder: Number(e.target.value) })} />
             </F>
-            <MediaField label="Image — desktop, Arabic site" kind="image" value={edit.imageUrl.ar} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, ar: url } })} />
-            <MediaField label="Image — desktop, English site" kind="image" value={edit.imageUrl.en} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, en: url } })} hint="Use the same image for both languages if it contains no text." />
-            <MediaField label="Image — mobile, Arabic (optional)" kind="image" value={edit.mobileImageUrl.ar} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, ar: url } })} />
-            <MediaField label="Image — mobile, English (optional)" kind="image" value={edit.mobileImageUrl.en} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, en: url } })} />
+            <MediaField label="Image â€” desktop, Arabic site" kind="image" value={edit.imageUrl.ar} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, ar: url } })} />
+            <MediaField label="Image â€” desktop, English site" kind="image" value={edit.imageUrl.en} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, en: url } })} hint="Use the same image for both languages if it contains no text." />
+            <MediaField label="Image â€” mobile, Arabic (optional)" kind="image" value={edit.mobileImageUrl.ar} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, ar: url } })} />
+            <MediaField label="Image â€” mobile, English (optional)" kind="image" value={edit.mobileImageUrl.en} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, en: url } })} />
             <MediaField
-              label="Video (optional — plays instead of the image)"
+              label="Video (optional â€” plays instead of the image)"
               kind="video"
               value={edit.videoUrl ?? ''}
               poster={edit.posterUrl}
               onChange={(url, a) => setEdit({ ...edit, videoUrl: url, posterUrl: a?.posterUrl && !edit.posterUrl ? a.posterUrl : edit.posterUrl })}
             />
-            <MediaField label="Video — mobile (optional)" kind="video" value={edit.mobileVideoUrl ?? ''} onChange={(url) => setEdit({ ...edit, mobileVideoUrl: url })} />
+            <MediaField label="Video â€” mobile (optional)" kind="video" value={edit.mobileVideoUrl ?? ''} onChange={(url) => setEdit({ ...edit, mobileVideoUrl: url })} />
             <MediaField label="Video poster image" kind="image" value={edit.posterUrl ?? ''} onChange={(url) => setEdit({ ...edit, posterUrl: url })} hint="Shown while the video loads and to visitors who prefer reduced motion. Defaults to the desktop image." />
             <F label="Starts">
               <input className="input" type="datetime-local" value={dateIn(edit.startsAt)} onChange={(e) => setEdit({ ...edit, startsAt: dateOut(e.target.value) })} />
@@ -291,7 +290,6 @@ function Banners() {
 }
 
 type Collection = { _id?: string; slug: string; kind: string; title: Localized; description: Localized; products: string[]; active: boolean; showOnHome: boolean; sortOrder: number };
-
 function Collections() {
   const { data, error, loading, reload } = useApi<Collection[]>('/api/admin/content/collections');
   const [edit, setEdit] = useState<Collection | null>(null);
@@ -317,9 +315,9 @@ function Collections() {
     <>
       <Card title="Collections" actions={<button className="btn btn--primary btn--sm" onClick={() => setEdit({ slug: '', kind: 'custom', title: emptyL, description: emptyL, products: [], active: true, showOnHome: false, sortOrder: 0 })}>+ New collection</button>}>
         <p className="muted" style={{ fontSize: 13 }}>
-          “bundles” is the Bundles &amp; Gift Kits menu item (Q17). “best-sellers” is only used until real sales data exists. “for-travel / work / fitness / home” feed the use-case section.
+          â€œbundlesâ€ is the Bundles &amp; Gift Kits menu item (Q17). â€œbest-sellersâ€ is only used until real sales data exists. â€œfor-travel / work / fitness / homeâ€ feed the use-case section.
         </p>
-        <table className="table">
+        <div className="table-wrap collections-table-card"><table className="table collections-table">
           <thead>
             <tr>
               <th>Title</th>
@@ -346,11 +344,11 @@ function Collections() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </Card>
       {edit ? (
         <Modal title={edit._id ? `Edit ${edit.slug}` : 'New collection'} onClose={() => setEdit(null)} wide>
-          <form className="form-grid form-grid--2" onSubmit={save}>
+          <form className="form-grid form-grid--2 collections-form" onSubmit={save}>
             <div className="span-2">
               <ErrorBox error={err} />
             </div>
@@ -384,7 +382,6 @@ function Collections() {
 }
 
 type Campaign = { _id?: string; slug: string; kind: string; title: Localized; description: Localized; heroImageUrl: string; heroMobileImageUrl?: string; heroVideoUrl?: string; accentColor: string; collection?: string | null; discountCode: string; active: boolean; showOnHome: boolean; startsAt?: string | null; endsAt?: string | null };
-
 function Campaigns() {
   const { data, error, loading, reload } = useApi<Campaign[]>('/api/admin/content/campaigns');
   const cols = useApi<Collection[]>('/api/admin/content/collections');
@@ -413,7 +410,7 @@ function Campaigns() {
         <p className="muted" style={{ fontSize: 13 }}>
           Ramadan, Eid, National Day and Umrah &amp; travel templates are pre-created and inactive. Set dates, a collection and (optionally) a discount code from Discounts, then activate. Each campaign gets a landing page at /campaign/&lt;slug&gt;.
         </p>
-        <table className="table">
+        <div className="table-wrap campaigns-table-card"><table className="table campaigns-table">
           <thead>
             <tr>
               <th>Campaign</th>
@@ -430,9 +427,9 @@ function Campaigns() {
                   {en(c.title)} <span className="muted">/{c.slug}</span>
                 </td>
                 <td>
-                  {c.startsAt ? dt(c.startsAt) : '—'} → {c.endsAt ? dt(c.endsAt) : '—'}
+                  {c.startsAt ? dt(c.startsAt) : 'â€”'} â†’ {c.endsAt ? dt(c.endsAt) : 'â€”'}
                 </td>
-                <td>{c.discountCode || '—'}</td>
+                <td>{c.discountCode || 'â€”'}</td>
                 <td>{c.active ? <span className="badge badge--success">active</span> : <span className="badge">inactive</span>}</td>
                 <td>
                   <button className="btn btn--ghost btn--sm" onClick={() => setEdit({ ...c, collection: c.collection ? String(c.collection) : null })}>
@@ -442,11 +439,11 @@ function Campaigns() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </Card>
       {edit ? (
         <Modal title={edit._id ? `Edit ${edit.slug}` : 'New campaign'} onClose={() => setEdit(null)} wide>
-          <form className="form-grid form-grid--2" onSubmit={save}>
+          <form className="form-grid form-grid--2 campaigns-form" onSubmit={save}>
             <div className="span-2">
               <ErrorBox error={err} />
             </div>
@@ -465,7 +462,7 @@ function Campaigns() {
             </F>
             <LocInput label="Description" textarea value={edit.description} onChange={(v) => setEdit({ ...edit, description: v })} />
             <MediaField label="Campaign hero image" kind="image" value={edit.heroImageUrl} onChange={(url) => setEdit({ ...edit, heroImageUrl: url })} />
-            <MediaField label="Campaign hero image — mobile (optional)" kind="image" value={edit.heroMobileImageUrl ?? ''} onChange={(url) => setEdit({ ...edit, heroMobileImageUrl: url })} />
+            <MediaField label="Campaign hero image â€” mobile (optional)" kind="image" value={edit.heroMobileImageUrl ?? ''} onChange={(url) => setEdit({ ...edit, heroMobileImageUrl: url })} />
             <MediaField label="Campaign video (optional)" kind="video" value={edit.heroVideoUrl ?? ''} poster={edit.heroImageUrl} onChange={(url) => setEdit({ ...edit, heroVideoUrl: url })} />
             <F label="Accent colour (e.g. #006C35 for National Day)">
               <input className="input" value={edit.accentColor} onChange={(e) => setEdit({ ...edit, accentColor: e.target.value })} />
@@ -505,7 +502,6 @@ function Campaigns() {
 
 type Page = { _id: string; slug: string; title: Localized; body: Localized; status: string; approvedBy: string; approvedAt?: string; version?: number; updatedAt?: string };
 type PageRevision = { _id: string; title: Localized; status: string; approvedBy: string; savedByName: string; reason: string; createdAt: string };
-
 function Pages() {
   const { data, error, loading, reload } = useApi<Page[]>('/api/admin/content/pages');
   const perms = usePerms();
@@ -523,7 +519,7 @@ function Pages() {
       const saved = await put<Page>(`/api/admin/content/pages/${edit!._id}`, { title: edit!.title, body: edit!.body, status: edit!.status, approvedBy: edit!.approvedBy, reason: edit!.reason ?? '' });
       setEdit(null);
       reload();
-      toast(saved.status === 'approved' ? 'Saved and approved' : 'Saved as draft — the previous version is kept in the history');
+      toast(saved.status === 'approved' ? 'Saved and approved' : 'Saved as draft â€” the previous version is kept in the history');
     } catch (ex) {
       setErr(ex);
     }
@@ -532,16 +528,16 @@ function Pages() {
     <>
       <Card title="Policy pages">
         <p className="muted" style={{ fontSize: 13 }}>
-          Privacy, Terms &amp; Conditions, Returns, Refunds, Shipping and Warranty — drafts prepared for review by CELIBERY’s legal advisor (Q31). Replace every [bracketed] placeholder and remove the draft note.
+          Privacy, Terms &amp; Conditions, Returns, Refunds, Shipping and Warranty â€” drafts prepared for review by CELIBERYâ€™s legal advisor (Q31). Replace every [bracketed] placeholder and remove the draft note.
           Every save keeps the previous version. {canApprove ? 'You can mark a policy as approved.' : 'Only staff with the legal & business permission can mark a policy as approved; editing an approved policy returns it to draft.'}
         </p>
-        <table className="table">
+        <div className="table-wrap pages-table-card"><table className="table pages-table">
           <tbody>
             {data.map((p) => (
               <tr key={p._id}>
                 <td>{en(p.title)}</td>
                 <td>
-                  <Status value={p.status === 'approved' ? 'active' : 'draft'} /> {p.approvedBy ? <span className="muted">by {p.approvedBy}</span> : null} {p.version ? <span className="muted">· v{p.version}</span> : null}
+                  <Status value={p.status === 'approved' ? 'active' : 'draft'} /> {p.approvedBy ? <span className="muted">by {p.approvedBy}</span> : null} {p.version ? <span className="muted">Â· v{p.version}</span> : null}
                 </td>
                 <td>
                   <div className="actions">
@@ -556,11 +552,11 @@ function Pages() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </Card>
       {edit ? (
         <Modal title={en(edit.title)} onClose={() => setEdit(null)} wide>
-          <form className="form-grid form-grid--2" onSubmit={save}>
+          <form className="form-grid form-grid--2 pages-form" onSubmit={save}>
             <div className="span-2">
               <ErrorBox error={err} />
             </div>
@@ -588,7 +584,6 @@ function Pages() {
     </>
   );
 }
-
 function PageHistory({ page, onClose, onRestored }: { page: Page; onClose: () => void; onRestored: () => void }) {
   const { data, error } = useApi<PageRevision[]>(`/api/admin/content/pages/${page._id}/revisions`);
   const [err, setErr] = useState<unknown>(null);
@@ -604,12 +599,12 @@ function PageHistory({ page, onClose, onRestored }: { page: Page; onClose: () =>
     }
   };
   return (
-    <Modal title={`History — ${en(page.title)}`} onClose={onClose} wide>
+    <Modal title={`History â€” ${en(page.title)}`} onClose={onClose} wide>
       <ErrorBox error={err || error} />
       {!data ? <Spinner /> : null}
-      {data && !data.length ? <p className="muted">No earlier versions yet — a version is saved every time this policy changes.</p> : null}
+      {data && !data.length ? <p className="muted">No earlier versions yet â€” a version is saved every time this policy changes.</p> : null}
       {data?.length ? (
-        <table className="table">
+        <div className="table-wrap page-history-table-card"><table className="table page-history-table">
           <thead>
             <tr>
               <th>Saved</th>
@@ -636,7 +631,7 @@ function PageHistory({ page, onClose, onRestored }: { page: Page; onClose: () =>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       ) : null}
     </Modal>
   );
@@ -650,11 +645,11 @@ function Reviews() {
   if (loading || !data) return <Spinner />;
   return (
     <Card title="Customer reviews">
-      <p className="muted" style={{ fontSize: 13 }}>
+      <p className="muted reviews-note" style={{ fontSize: 13 }}>
         Only customers with a delivered order can review a product. Reviews stay hidden on the store until “Show reviews” is enabled in Settings (Q19: no imported reviews).
       </p>
       {data.map((r) => (
-        <div key={r._id} className="picker__row" style={{ alignItems: 'flex-start' }}>
+        <div key={r._id} className="picker__row reviews-row" style={{ alignItems: 'flex-start' }}>
           <div>
             <strong>{'★'.repeat(r.rating)}</strong> {r.title} — <span className="muted">{r.product?.sku}</span>
             <div>{r.body}</div>
@@ -693,3 +688,4 @@ function Reviews() {
     </Card>
   );
 }
+

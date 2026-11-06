@@ -104,13 +104,13 @@ export function SettingsPage() {
   return (
     <>
       <AHead title="Settings" />
-      <Tabs tabs={tabs} value={tab} onChange={(t) => (setErr(null), setTab(t))} />
+      <div className="settings-tabs"><Tabs tabs={tabs} value={tab} onChange={(t) => (setErr(null), setTab(t))} /></div>
       <ErrorBox error={err} />
 
       {tab === 'store' ? (
         <>
           <Card title="Store information" actions={saveBtn(() => save({ business: pick(b, ['name', 'description', 'address', 'email', 'phone', 'whatsappNumber', 'supportHours', 'social']) }))}>
-            <div className="form-grid form-grid--2">
+            <div className="form-grid form-grid--2 settings-form-grid">
               <LocInput label="Store name" value={b.name} onChange={(v) => set('business', 'name', v)} />
               <LocInput label="Store description (footer / search results)" textarea value={b.description} onChange={(v) => set('business', 'description', v)} />
               <F label="Support email">
@@ -133,7 +133,7 @@ export function SettingsPage() {
             </div>
           </Card>
           <Card title="Announcement bar" actions={saveBtn(() => save({ announcement: s.announcement }))}>
-            <div className="form-grid form-grid--2">
+            <div className="form-grid form-grid--2 settings-form-grid">
               <label className="check span-2">
                 <input type="checkbox" checked={s.announcement.enabled} onChange={(e) => set('announcement', 'enabled', e.target.checked)} /> Show the announcement bar above the header
               </label>
@@ -155,7 +155,7 @@ export function SettingsPage() {
             <p className="muted" style={{ fontSize: 13 }}>
               Enter only official values supplied by CELIBERY (Q29/Q30). Empty fields are hidden on the store — nothing is ever invented. Changes are recorded in the activity log.
             </p>
-            <div className="form-grid form-grid--2">
+            <div className="form-grid form-grid--2 settings-form-grid">
               <LocInput label="Legal (registered) name" value={b.legalName} onChange={(v) => set('business', 'legalName', v)} />
               <F label="Commercial Registration (CR) number">
                 <input className="input ltr" value={b.crNumber} onChange={(e) => set('business', 'crNumber', e.target.value)} />
@@ -182,7 +182,7 @@ export function SettingsPage() {
 
       {tab === 'brand' ? (
         <Card title="Brand" actions={saveBtn(() => save({ brand: s.brand }))}>
-          <div className="form-grid form-grid--2">
+          <div className="form-grid form-grid--2 settings-form-grid">
             <F label="Accent colour (buttons & offers)" hint="Q2: CELIBERY's brand accent — the current value is a placeholder until the client approves one.">
               <div style={{ display: 'flex', gap: 8 }}>
                 <input type="color" value={s.brand.accentColor} onChange={(e) => set('brand', 'accentColor', e.target.value)} style={{ width: 48, height: 44, border: 0 }} aria-label="Pick accent colour" />
@@ -211,7 +211,7 @@ export function SettingsPage() {
               }),
             )}
           >
-            <div className="form-grid form-grid--2">
+            <div className="form-grid form-grid--2 settings-form-grid">
               <label className="check span-2">
                 <input type="checkbox" checked={c.shippingAvailable} onChange={(e) => set('commerce', 'shippingAvailable', e.target.checked)} /> Accept orders for delivery (untick to pause checkout, e.g. during a courier outage)
               </label>
@@ -229,7 +229,7 @@ export function SettingsPage() {
             </div>
           </Card>
           <Card title="Courier & fulfilment (I Mile Logistics — Q24)">
-            <div className="form-grid form-grid--2">
+            <div className="form-grid form-grid--2 settings-form-grid">
               <F label="Courier name shown to customers">
                 <input className="input" value={c.courierName} onChange={(e) => set('commerce', 'courierName', e.target.value)} />
               </F>
@@ -269,7 +269,7 @@ export function SettingsPage() {
             }),
           )}
         >
-          <div className="form-grid form-grid--2">
+          <div className="form-grid form-grid--2 settings-form-grid">
             <label className="check span-2">
               <input type="checkbox" checked={c.codEnabled} onChange={(e) => set('commerce', 'codEnabled', e.target.checked)} /> Offer cash on delivery at checkout (enable once CELIBERY confirms the COD rules)
             </label>
@@ -306,7 +306,7 @@ export function SettingsPage() {
             }),
           )}
         >
-          <div className="form-grid form-grid--2">
+          <div className="form-grid form-grid--2 settings-form-grid">
             <label className="check">
               <input type="checkbox" checked={c.warrantyEnabled} onChange={(e) => set('commerce', 'warrantyEnabled', e.target.checked)} /> Show warranty
             </label>
@@ -386,7 +386,7 @@ export function SettingsPage() {
 
       {tab === 'seo' ? (
         <Card title="Search engines & AI assistants" actions={saveBtn(() => save({ seo: s.seo }))}>
-          <div className="form-grid form-grid--2">
+          <div className="form-grid form-grid--2 settings-form-grid">
             <LocInput label="Default page title" value={s.seo.title} onChange={(v) => set('seo', 'title', v)} />
             <LocInput label="Default description" value={s.seo.description} onChange={(v) => set('seo', 'description', v)} />
             <label className="check span-2">
@@ -578,7 +578,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
         value={mode}
         onChange={(v) => (setMode(v), setDraft({}), setReplacing({}))}
       />
-      <div className="form-grid form-grid--2">
+      <div className="form-grid form-grid--2 settings-form-grid">
         {i.fieldDefs.map((f) => {
           const view = m.fields.find((x) => x.key === f.key);
           const editing = !f.secret || replacing[f.key] || !view?.set;
@@ -683,4 +683,5 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
 export function isApiError(e: unknown): e is ApiError {
   return e instanceof ApiError;
 }
+
 
