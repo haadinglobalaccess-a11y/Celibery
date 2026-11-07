@@ -8,6 +8,7 @@ import { q } from '../../middleware/validate';
 import { availablePaymentMethods, initiatePayment, retryPayment, verifyOrderPayment } from '../payments/payment.service';
 import * as svc from './order.service';
 import { trackSchema } from './order.schemas';
+import { cancelReturnByCustomer, createReturn, returnOptions, toCustomerReturn } from '../returns/return.service';
 
 export async function checkoutOptions(_req: Request, res: Response) {
   const s = await getSettings();
@@ -113,4 +114,22 @@ export async function myOrders(req: Request, res: Response) {
   if (req.user?.type !== 'customer') throw forbidden();
   const orders = await Order.find({ customer: req.user.id }).sort({ createdAt: -1 }).limit(100).lean();
   return ok(res, orders.map(svc.toCustomerOrder));
+}
+
+/** Return options and existing return requests for an order the caller can access. */
+export async function orderReturns(req: Request, res: Response) {
+  const order = await loadAccessibleOrder(req, req.params.orderNumber, (req.query.token as string) || undefined);
+  return ok(res, await returnOptions(order));
+}
+
+export async function requestReturn(req: Request, res: Response) {
+  const order = await loadAccessibleOrder(req, req.params.orderNumber, req.body?.token);
+  const customerId = req.user?.type === 'customer' ? req.user.id : undefined;
+  const r = await createReturn(order, { items: req.body.items, reason: req.body.reason, details: req.body.details }, { byCustomer: req.user?.type !== 'staff', userId: req.user?.id, customerId });
+  return ok(res, toCustomerReturn(r), 201);
+}
+
+export async function cancelReturn(req: Request, res: Response) {
+  const order = await loadAccessibleOrder(req, req.params.orderNumber, req.body?.token);
+  return ok(res, toCustomerReturn(await cancelReturnByCustomer(req.params.returnNumber, order._id)));
 }

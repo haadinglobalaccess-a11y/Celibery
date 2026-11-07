@@ -2,6 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { env, isProd } from '../../config/env';
 import { safeKey } from '../../lib/media-rules';
+import { randomToken } from '../../lib/tokens';
+import { integration } from '../credentials';
+import type { CredentialCheck } from '../payments/types';
 import { presignUrl, signHeaders, UNSIGNED_PAYLOAD, type Credentials } from './sigv4';
 
 /**
@@ -68,8 +71,50 @@ const localProvider: StorageProvider = {
   },
 };
 
-function s3Creds(): Credentials {
-  return { accessKeyId: env.S3_ACCESS_KEY_ID, secretAccessKey: env.S3_SECRET_ACCESS_KEY, region: env.S3_REGION || 'auto', service: 's3' };
+/**
+ * Signing key: the key pair managed in Admin → Settings → Hosting & data when one is enabled there,
+ * otherwise S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY from the server environment.
+ */
+function s3KeyPair(): { accessKeyId: string; secretAccessKey: string } | null {
+  const i = integration('s3');
+  if (!i.enabled || !i.values.accessKeyId || !i.values.secretAccessKey) return null;
+  return { accessKeyId: i.values.accessKeyId, secretAccessKey: i.values.secretAccessKey };
+}
+
+function s3Creds(pair = s3KeyPair()): Credentials {
+  if (!pair) throw new Error('No media storage access key is configured');
+  return { ...pair, region: env.S3_REGION || 'auto', service: 's3' };
+}
+
+/** Bucket location settings that must come from the server environment (see credentials/definitions). */
+export function s3LocationConfigured() {
+  return Boolean(env.S3_ENDPOINT && env.S3_BUCKET && env.MEDIA_PUBLIC_BASE_URL);
+}
+
+/**
+ * Tests a key pair against the configured bucket the way uploads use it: writes a tiny probe
+ * object, then deletes it. Nothing else in the bucket is read or changed.
+ */
+export async function verifyS3(values: Record<string, string>): Promise<CredentialCheck> {
+  if (!s3LocationConfigured()) return { ok: false, status: 'failed', message: 'S3_ENDPOINT, S3_BUCKET and MEDIA_PUBLIC_BASE_URL must be set on the server first' };
+  if (!values.accessKeyId || !values.secretAccessKey) return { ok: false, status: 'failed', message: 'Access key ID and secret are required' };
+  const creds = s3Creds({ accessKeyId: values.accessKeyId, secretAccessKey: values.secretAccessKey });
+  try {
+    // A key in the same shape as real media keys (safeKey), under a period no upload ever uses.
+    const url = objectUrl(`media/0000/00/healthcheck-${randomToken(12)}.txt`);
+    const put = await fetch(url, {
+      method: 'PUT',
+      headers: signHeaders({ method: 'PUT', url, creds, payloadHash: UNSIGNED_PAYLOAD, headers: { 'content-type': 'text/plain' } }),
+      body: 'ok',
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!put.ok) return { ok: false, status: 'failed', message: put.status === 403 ? 'Access denied: the key cannot write to the bucket' : `The bucket rejected the test upload (${put.status})` };
+    const del = await fetch(url, { method: 'DELETE', headers: signHeaders({ method: 'DELETE', url, creds }), signal: AbortSignal.timeout(20_000) });
+    if (!del.ok && del.status !== 404) return { ok: false, status: 'failed', message: `Upload works but deleting failed (${del.status}) — the key also needs delete permission` };
+    return { ok: true, status: 'ok', message: `Write and delete verified on bucket ${env.S3_BUCKET}` };
+  } catch (e) {
+    return { ok: false, status: 'failed', message: `Could not reach the storage endpoint: ${String((e as Error).message).slice(0, 150)}` };
+  }
 }
 
 function objectUrl(key: string) {
@@ -119,9 +164,12 @@ export function storageStatus() {
     uploadsEnabled = false;
     reason = 'Direct uploads are disabled: local disk storage is not persistent on this hosting. The developer must configure S3-compatible storage (MEDIA_STORAGE=s3). Image and video URLs still work.';
   }
-  if (provider === 's3' && (!env.S3_ENDPOINT || !env.S3_BUCKET || !env.S3_ACCESS_KEY_ID || !env.S3_SECRET_ACCESS_KEY || !env.MEDIA_PUBLIC_BASE_URL)) {
+  if (provider === 's3' && !s3LocationConfigured()) {
     uploadsEnabled = false;
-    reason = 'Direct uploads are disabled: S3 storage is selected but not fully configured on the server.';
+    reason = 'Direct uploads are disabled: S3 storage is selected but S3_ENDPOINT, S3_BUCKET or MEDIA_PUBLIC_BASE_URL is missing on the server.';
+  } else if (provider === 's3' && !s3KeyPair()) {
+    uploadsEnabled = false;
+    reason = 'Direct uploads are disabled: no storage access key is enabled. A Super Administrator can add one in Settings → Hosting & data.';
   }
   return {
     provider,

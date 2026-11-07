@@ -13,6 +13,7 @@ import { useAuth } from '../state/auth';
 import { useToast } from '../state/toast';
 import { useWishlist } from '../state/wishlist';
 import { storeCopy } from '../storefront/copy';
+import { OrderReturns } from '../components/OrderReturns';
 
 export function AccountLayout() {
   const { t, p } = useI18n();
@@ -92,7 +93,12 @@ export function AccountOrderDetail() {
   if (error?.status === 404) return <NotFound />;
   if (error) return <ErrorState onRetry={reload} />;
   if (loading || !data) return <Spinner />;
-  return <OrderDetails order={data} />;
+  return (
+    <>
+      <OrderDetails order={data} />
+      <OrderReturns orderNumber={data.orderNumber} />
+    </>
+  );
 }
 
 const emptyAddr: Address = { label: '', fullName: '', phone: '', city: '', district: '', street: '', buildingNumber: '', postalCode: '', shortAddress: '', notes: '', isDefault: false };

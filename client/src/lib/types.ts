@@ -188,6 +188,10 @@ export type Quote = {
   codAvailable: boolean;
   /** '' | disabled | below_min | above_max | city */
   codUnavailableReason?: string;
+  /** 'paused' = delivery paused store-wide; 'city' = the city is outside every delivery zone. */
+  shippingUnavailableReason?: '' | 'paused' | 'city';
+  /** Delivery zone that priced the quote (once the delivery city is known). */
+  zone?: { key: string; name: Localized; estimatedDelivery: Localized } | null;
   shippingAvailable?: boolean;
   total: number;
   vatRate: number;

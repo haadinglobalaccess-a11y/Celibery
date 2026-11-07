@@ -15,6 +15,7 @@ import { tabbyProvider } from '../../integrations/payments/tabby';
 import type { CredentialCheck } from '../../integrations/payments/types';
 import { decryptSecret } from '../../lib/secrets';
 import { IntegrationCredential, Notification, WITH_SECRETS } from '../../models';
+import { verifyS3 } from '../../integrations/storage';
 import { limiter } from '../../middleware/security';
 
 /**
@@ -50,6 +51,7 @@ const verifiers: Partial<Record<IntegrationKey, (values: Record<string, string>)
   tabby: (v) => tabbyProvider.verifyCredentials(v),
   smtp: (v) => verifySmtp(v),
   whatsapp: (v) => verifyWhatsApp(v),
+  s3: (v) => verifyS3(v),
 };
 
 const verifyLimiter = limiter(10 * 60_000, 30);

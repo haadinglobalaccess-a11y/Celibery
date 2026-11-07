@@ -14,3 +14,5 @@ export * from './Refund';
 export * from './MediaAsset';
 export * from './PageRevision';
 export * from './IntegrationCredential';
+export * from './ReturnRequest';
+export * from './MessageTemplate';

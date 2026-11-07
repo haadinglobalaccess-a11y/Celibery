@@ -23,7 +23,7 @@ export type FieldDef = {
 export type IntegrationDef = {
   key: IntegrationKey;
   label: string;
-  kind: 'payment' | 'shipping' | 'notification';
+  kind: 'payment' | 'shipping' | 'notification' | 'storage';
   fields: FieldDef[];
   /** Whether the server can test the credentials against the provider's API. */
   verifiable: boolean;
@@ -42,7 +42,7 @@ export type IntegrationDef = {
   verifyFields?: string[];
 };
 
-export const INTEGRATION_KEYS = ['moyasar', 'tabby', 'imile', 'smtp', 'whatsapp'] as const;
+export const INTEGRATION_KEYS = ['moyasar', 'tabby', 'imile', 'smtp', 'whatsapp', 's3'] as const;
 export type IntegrationKey = (typeof INTEGRATION_KEYS)[number];
 
 export const INTEGRATIONS: Record<IntegrationKey, IntegrationDef> = {
@@ -119,6 +119,26 @@ export const INTEGRATIONS: Record<IntegrationKey, IntegrationDef> = {
       { key: 'templateLangEn', label: 'English template language', secret: false, required: false, hint: 'Default: en', maxLength: 10 },
     ],
   },
+  /**
+   * Access key for the S3-compatible media bucket. Only the key pair is managed here: the
+   * endpoint, bucket and public URL stay server settings (S3_ENDPOINT, S3_BUCKET,
+   * MEDIA_PUBLIC_BASE_URL) because stored media URLs, deletions and the upload CSP depend on them —
+   * changing them at runtime would break existing images. Rotating the key does not.
+   */
+  s3: {
+    key: 's3',
+    label: 'Media storage (S3) access key',
+    kind: 'storage',
+    verifiable: true,
+    inUse: true,
+    singleMode: true,
+    docsUrl: '',
+    verifyFields: ['accessKeyId', 'secretAccessKey'],
+    fields: [
+      { key: 'accessKeyId', label: 'Access key ID', secret: false, required: true, hint: 'Key with write + delete permission on the media bucket only', maxLength: 128 },
+      { key: 'secretAccessKey', label: 'Secret access key', secret: true, required: true, maxLength: 128 },
+    ],
+  },
 };
 
 export function isIntegrationKey(v: string): v is IntegrationKey {
@@ -142,6 +162,7 @@ export function validateFieldValue(integration: IntegrationKey, field: string, m
     if (field === 'from' && !/^(?:[^<>\r\n]{1,120}<[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>|[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)$/.test(value))
       return 'Sender must be an email address, optionally with a name: Name <address@domain>';
   }
+  if (integration === 's3' && field === 'accessKeyId' && !/^[A-Za-z0-9_-]{16,128}$/.test(value)) return 'Access key IDs are 16–128 letters and digits (e.g. AKIA… or a Cloudflare R2 key)';
   if (integration === 'whatsapp') {
     if (field === 'phoneNumberId' && !/^\d{5,30}$/.test(value)) return 'Phone number ID is the numeric ID from Meta (not the phone number itself)';
     if (field === 'orderTemplate' && !/^[a-z0-9_]{1,120}$/.test(value)) return 'Template names use lowercase letters, numbers and underscores';

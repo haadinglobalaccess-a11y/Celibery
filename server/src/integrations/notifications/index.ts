@@ -1,5 +1,5 @@
 import { logger } from '../../lib/logger';
-import { Notification, getSettings } from '../../models';
+import { Notification, getSettings, templateOverride } from '../../models';
 import { integration } from '../credentials';
 import { activeSmtp, activeWhatsApp, smtpTransport, whatsappMessagesUrl } from './providers';
 import { orderEmail, passwordResetEmail, staffInviteEmail, whatsappStatusText, type OrderEvent } from './templates';
@@ -87,11 +87,13 @@ type NotifiableOrder = {
 };
 
 /** Sends order updates by email and WhatsApp (Q28). Never throws. */
-export async function notifyOrder(order: NotifiableOrder, event: OrderEvent, link: string) {
+export async function notifyOrder(order: NotifiableOrder, event: OrderEvent, link: string, extra: { returnNumber?: string; refundAmount?: string; note?: string } = {}) {
   try {
     const settings = await getSettings();
     const lang = (order.lang === 'en' ? 'en' : 'ar') as 'ar' | 'en';
     const tasks: Promise<unknown>[] = [];
+    // Admin-edited wording (Settings → Notifications → Message templates), defaults otherwise.
+    const override = await templateOverride(`order.${event}`);
     if (settings?.notifications?.emailOrderUpdates !== false) {
       const content = orderEmail(lang, event, {
         name: order.contact.name,
@@ -99,12 +101,13 @@ export async function notifyOrder(order: NotifiableOrder, event: OrderEvent, lin
         total: order.total,
         trackingNumber: order.delivery?.trackingNumber ?? undefined,
         link,
-      });
+        ...extra,
+      }, override);
       tasks.push(sendEmail(order.contact.email, content, { template: `order.${event}`, order: order._id }));
     }
     if (settings?.notifications?.whatsappOrderUpdates !== false) {
       tasks.push(
-        sendWhatsAppTemplate(order.contact.phone, lang, [order.contact.name, whatsappStatusText(lang, event, order.orderNumber), link], {
+        sendWhatsAppTemplate(order.contact.phone, lang, [order.contact.name, whatsappStatusText(lang, event, order.orderNumber, override, { name: order.contact.name, total: order.total, trackingNumber: order.delivery?.trackingNumber ?? undefined, ...extra }), link], {
           template: `order.${event}`,
           order: order._id,
         }),
@@ -118,9 +121,9 @@ export async function notifyOrder(order: NotifiableOrder, event: OrderEvent, lin
 
 export async function sendPasswordResetEmail(user: { _id: unknown; name: string; email: string; preferredLang?: string | null }, link: string) {
   const lang = user.preferredLang === 'en' ? 'en' : 'ar';
-  return sendEmail(user.email, passwordResetEmail(lang, user.name, link), { template: 'auth.password_reset', user: user._id });
+  return sendEmail(user.email, passwordResetEmail(lang, user.name, link, await templateOverride('auth.password_reset')), { template: 'auth.password_reset', user: user._id });
 }
 
 export async function sendStaffInviteEmail(user: { _id: unknown; name: string; email: string }, link: string) {
-  return sendEmail(user.email, staffInviteEmail('en', user.name, link), { template: 'staff.invite', user: user._id });
+  return sendEmail(user.email, staffInviteEmail('en', user.name, link, await templateOverride('staff.invite')), { template: 'staff.invite', user: user._id });
 }

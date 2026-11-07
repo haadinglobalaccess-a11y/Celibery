@@ -23,7 +23,11 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!assets/|placeholders/|media/|llms.txt|favicon.svg).*)",
+      "source": "/llms.txt",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/((?!assets/|placeholders/|media/|favicon.svg).*)",
       "destination": "/index.html"
     }
   ],

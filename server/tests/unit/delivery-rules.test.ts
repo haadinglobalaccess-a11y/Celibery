@@ -40,3 +40,16 @@ describe('cash on delivery rules', () => {
     expect(normalizeCity('Al-Khobar')).toBe(normalizeCity('khobar'));
   });
 });
+
+describe('city aliases (Arabic ↔ English)', () => {
+  it('one spelling in the admin matches the customer typing the other language or a common variant', async () => {
+    const { canonicalCity, codEligibility, zoneForCity } = await import('../../src/modules/orders/delivery-rules');
+    expect(canonicalCity('الرياض')).toBe(canonicalCity('Riyadh'));
+    expect(canonicalCity('Mecca')).toBe(canonicalCity('مكة المكرمة'));
+    expect(canonicalCity('Al-Khobar')).toBe(canonicalCity('الخبر'));
+    expect(canonicalCity('Hofuf')).toBe(canonicalCity('الأحساء'));
+    expect(canonicalCity('Unaizah')).toBe('unaizah'); // unknown cities keep their own spelling
+    expect(codEligibility({ codEnabled: true, codAllowedCities: ['Jeddah'] }, 1000, 'جدة').available).toBe(true);
+    expect(zoneForCity([{ key: 'west', cities: ['المدينة المنورة'] }], 'Medina')?.key).toBe('west');
+  });
+});

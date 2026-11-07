@@ -12,6 +12,7 @@ import { AuditLog, Notification, Settings, getSettings } from '../../models';
 import { emailConfigured, whatsappConfigured } from '../../integrations/notifications';
 import { gatewayDiagnostics } from '../payments/payment.service';
 import { releaseExpiredReservations } from '../orders/order.service';
+import { canonicalCity } from '../orders/delivery-rules';
 import { reportQuery } from './admin.schemas';
 import * as reports from './reports.service';
 
@@ -19,6 +20,37 @@ const loc = z.object({ ar: z.string().trim().max(5000).default(''), en: z.string
 const str = (max = 300) => z.string().trim().max(max);
 const urlish = z.string().trim().max(1000).refine((v) => v === '' || /^https?:\/\//.test(v) || v.startsWith('/'), 'Must be a URL');
 const hex = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Use a hex colour like #1A2B3C');
+
+/** One delivery zone as entered in the admin (money in SAR). */
+const shippingZoneInput = z.object({
+  key: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{2,40}$/, 'Use 2–40 lowercase letters, numbers or -'),
+  name: loc,
+  active: z.boolean().default(true),
+  cities: z.array(z.string().trim().min(1).max(60)).min(1, 'Add at least one city').max(300),
+  freeDelivery: z.boolean().default(false),
+  deliveryFee: z.number().min(0).max(1000).default(0),
+  freeDeliveryThreshold: z.number().min(0).max(1_000_000).nullable().default(null),
+  codEnabled: z.boolean().default(true),
+  codFee: z.number().min(0).max(1000).nullable().default(null),
+  estimatedDelivery: loc.default({ ar: '', en: '' }),
+});
+
+/** Zone keys are unique and a city belongs to at most one active zone (otherwise pricing is ambiguous). */
+function zonesConsistent(zones: z.infer<typeof shippingZoneInput>[], ctx: z.RefinementCtx) {
+  const keys = new Set<string>();
+  const owner = new Map<string, string>();
+  zones.forEach((zone, i) => {
+    if (keys.has(zone.key)) ctx.addIssue({ code: 'custom', path: [i, 'key'], message: `Zone key "${zone.key}" is used twice` });
+    keys.add(zone.key);
+    if (!zone.active) return;
+    for (const city of zone.cities) {
+      const n = canonicalCity(city);
+      const other = owner.get(n);
+      if (other && other !== zone.key) ctx.addIssue({ code: 'custom', path: [i, 'cities'], message: `${city} is already in zone "${other}"` });
+      else owner.set(n, zone.key);
+    }
+  });
+}
 
 /** Every field optional: the admin sends only the section it edits. Money inputs are in SAR. */
 const settingsUpdate = z
@@ -65,6 +97,10 @@ const settingsUpdate = z
         lowStockThreshold: z.number().int().min(0).max(10000),
         reservationMinutes: z.number().int().min(5).max(1440),
         maxQuantityPerItem: z.number().int().min(1).max(99),
+        shippingZones: z.array(shippingZoneInput).max(50).superRefine(zonesConsistent),
+        deliverToUnlistedCities: z.boolean(),
+        returnsEnabled: z.boolean(),
+        returnWindowDays: z.number().int().min(0).max(365),
       })
       .partial(),
     payments: z.object({ card: z.boolean(), applepay: z.boolean(), stcpay: z.boolean(), tabby: z.boolean() }).partial(),
@@ -185,6 +221,16 @@ adminSystemRoutes.put(
 
     const c = body.commerce as Record<string, unknown> | undefined;
     if (c) for (const k of MONEY_FIELDS) if (typeof c[k] === 'number') c[k] = toHalalas(c[k] as number);
+    if (c && Array.isArray(c.shippingZones)) {
+      c.shippingZones = (c.shippingZones as Record<string, unknown>[]).map((zone) => {
+        const out: Record<string, unknown> = { ...zone, deliveryFee: toHalalas(zone.deliveryFee as number) };
+        for (const k of ['freeDeliveryThreshold', 'codFee']) {
+          if (typeof zone[k] === 'number') out[k] = toHalalas(zone[k] as number);
+          else delete out[k]; // null = not set: no threshold / store-wide COD fee
+        }
+        return out;
+      });
+    }
     await getSettings();
     const set = toSetPaths(body as Record<string, unknown>);
     const unset: Record<string, 1> = {};

@@ -3,7 +3,8 @@ import { env } from '../../config/env';
 import { conflict, notFound, unprocessable } from '../../lib/errors';
 import { ok } from '../../lib/http';
 import { q } from '../../middleware/validate';
-import { Category, NewsletterSubscription, Order, Page, Product, Review, getSettings } from '../../models';
+import { Campaign, Category, NewsletterSubscription, Order, Page, Product, Review, getSettings } from '../../models';
+import { availablePaymentMethods } from '../payments/payment.service';
 import * as svc from './catalog.service';
 import { productListQuery } from './catalog.schemas';
 
@@ -103,6 +104,75 @@ export async function robots(_req: Request, res: Response) {
   const settings = await getSettings();
   res.type('text/plain').setHeader('Cache-Control', 'public, max-age=300');
   res.send(robotsTxt(settings?.seo?.allowAiCrawlers !== false, env.PUBLIC_SITE_URL));
+}
+
+type LlmsInput = {
+  siteUrl: string;
+  storeName: string;
+  description: string;
+  categories: { slug: string; name: string; productCount: number }[];
+  campaigns: { slug: string; title: string }[];
+  pages: { slug: string; title: string; approved: boolean }[];
+  delivery: string;
+  payments: string[];
+  contact: { email?: string; phone?: string; whatsapp?: string };
+};
+
+/** llms.txt (https://llmstxt.org) — a plain summary of the public store for AI assistants (Q37). */
+export function llmsTxt(d: LlmsInput): string {
+  const base = d.siteUrl.replace(/\/$/, '');
+  const out = [`# ${d.storeName}`, '', `> ${d.description || 'Online store in Saudi Arabia.'} Arabic is the default language (${base}/ar); English is available at ${base}/en.`, ''];
+  if (d.delivery || d.payments.length) {
+    out.push('## Buying');
+    if (d.delivery) out.push(`- Delivery: ${d.delivery}`);
+    if (d.payments.length) out.push(`- Payment methods: ${d.payments.join(', ')}`);
+    out.push('');
+  }
+  if (d.categories.length) {
+    out.push('## Shop', ...d.categories.map((c) => `- [${c.name}](${base}/en/c/${c.slug}): ${c.productCount} product${c.productCount === 1 ? '' : 's'}`), `- [Bundles & Gift Kits](${base}/en/bundles)`, '');
+  }
+  if (d.campaigns.length) out.push('## Current campaigns', ...d.campaigns.map((c) => `- [${c.title}](${base}/en/campaign/${c.slug})`), '');
+  if (d.pages.length) out.push('## Policies', ...d.pages.map((p) => `- [${p.title}](${base}/en/page/${p.slug})${p.approved ? '' : ' (draft, pending approval)'}`), '');
+  const contact = [d.contact.email && `Email: ${d.contact.email}`, d.contact.phone && `Phone: ${d.contact.phone}`, d.contact.whatsapp && `WhatsApp: +${d.contact.whatsapp.replace(/^\+/, '')}`].filter(Boolean);
+  if (contact.length) out.push('## Contact', ...contact.map((c) => `- ${c}`), '');
+  out.push(`Sitemap: ${base}/sitemap.xml`, '');
+  return out.join('\n');
+}
+
+export async function llms(_req: Request, res: Response) {
+  const now = new Date();
+  const [s, cats, campaigns, pages] = await Promise.all([
+    getSettings(),
+    svc.listCategories(),
+    Campaign.find({ active: true, $and: [{ $or: [{ startsAt: null }, { startsAt: { $exists: false } }, { startsAt: { $lte: now } }] }, { $or: [{ endsAt: null }, { endsAt: { $exists: false } }, { endsAt: { $gte: now } }] }] })
+      .select('slug title')
+      .lean(),
+    Page.find().select('slug title status').sort({ slug: 1 }).lean(),
+  ]);
+  const en = (l?: { en?: string; ar?: string }) => l?.en || l?.ar || '';
+  const c = s?.commerce ?? {};
+  const sar = (h: number) => `SAR ${(h / 100).toFixed(2)}`;
+  const delivery = c.shippingAvailable === false
+    ? 'temporarily paused'
+    : c.freeDelivery !== false
+      ? 'free delivery across Saudi Arabia'
+      : `${sar(c.deliveryFee ?? 0)}${c.freeDeliveryThreshold ? `, free on orders from ${sar(c.freeDeliveryThreshold)}` : ''}`;
+  const pm = availablePaymentMethods(s);
+  const payments = [pm.card && 'mada / Visa / Mastercard', pm.applepay && 'Apple Pay', pm.stcpay && 'STC Pay', pm.tabby && 'Tabby', pm.cod && 'Cash on delivery'].filter(Boolean) as string[];
+  res.type('text/plain').setHeader('Cache-Control', 'public, max-age=300');
+  res.send(
+    llmsTxt({
+      siteUrl: env.PUBLIC_SITE_URL,
+      storeName: en(s?.business?.name) || 'CELIBERY International',
+      description: en(s?.business?.description),
+      categories: cats.map((x) => ({ slug: x.slug, name: en(x.name as { en?: string }), productCount: x.productCount })),
+      campaigns: campaigns.map((x) => ({ slug: x.slug, title: en(x.title as { en?: string }) })),
+      pages: pages.map((p) => ({ slug: p.slug, title: en(p.title as { en?: string }) || p.slug, approved: p.status === 'approved' })),
+      delivery: c.warrantyEnabled && c.warrantyMonths ? `${delivery}; ${c.warrantyMonths}-month warranty` : delivery,
+      payments,
+      contact: { email: s?.business?.email || undefined, phone: s?.business?.phone || undefined, whatsapp: s?.business?.whatsappNumber || undefined },
+    }),
+  );
 }
 
 export async function sitemap(_req: Request, res: Response) {

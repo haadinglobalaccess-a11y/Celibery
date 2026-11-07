@@ -9,6 +9,7 @@ import { formatPrice } from '../lib/format';
 import { useSeo } from '../lib/useSeo';
 import type { OrderView } from '../lib/types';
 import { tokenFor } from './Checkout';
+import { OrderReturns } from '../components/OrderReturns';
 
 /** Payment return page: asks the SERVER to verify the payment with the gateway. */
 export function CheckoutReturn() {
@@ -182,7 +183,11 @@ export function TrackOrder() {
         {!order ? <p className="muted">{t.track.text}</p> : null}
       </div>
       {order ? (
-        <OrderDetails order={order} />
+        <>
+          <OrderDetails order={order} />
+          {/* Returns need the order access token (full view) — not the limited phone lookup. */}
+          {tokenParam && params.get('order') === order.orderNumber ? <OrderReturns orderNumber={order.orderNumber} token={tokenParam} /> : null}
+        </>
       ) : busy && tokenParam ? (
         <Spinner />
       ) : (

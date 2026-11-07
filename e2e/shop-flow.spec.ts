@@ -48,8 +48,10 @@ test.describe.serial('complete shopping flow (required end-to-end test)', () => 
 
   test('4. search and category-specific filters', async ({ page }) => {
     await page.goto('/en');
-    await page.locator('#search-d').fill('power bank');
-    await page.locator('#search-d').press('Enter');
+    // The header search icon opens the search field (desktop and mobile).
+    await page.getByTestId('search-toggle').click();
+    await page.locator('#search-m').fill('power bank');
+    await page.locator('#search-m').press('Enter');
     await expect(page).toHaveURL(/\/en\/search\?q=power/);
     await expect(page.getByTestId('result-count')).toContainText('3 products');
 

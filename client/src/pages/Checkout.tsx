@@ -92,6 +92,7 @@ export default function Checkout() {
     const id = setTimeout(() => setCityForQuote(addr.city), 400);
     return () => clearTimeout(id);
   }, [addr.city]);
+  const cityUnavailable = quote?.shippingUnavailableReason === 'city';
   const shippingPaused = options?.shippingAvailable === false || quote?.shippingAvailable === false;
   const codNote =
     options?.paymentMethods?.cod && quote && !quote.codAvailable
@@ -353,9 +354,14 @@ export default function Checkout() {
               </li>
             ))}
           </ul>
+          {quote?.zone ? (
+            <p className="muted" style={{ fontSize: 13 }} data-testid="delivery-zone">
+              {t.checkout.zoneDelivery(L(quote.zone.name, lang) || quote.zone.key, L(quote.zone.estimatedDelivery, lang))}
+            </p>
+          ) : null}
           {shippingPaused ? (
             <p className="alert alert--warning" role="alert">
-              {L(options?.shippingUnavailableMessage, lang) || t.checkout.shippingPaused}
+              {cityUnavailable ? t.checkout.cityUnavailable : L(options?.shippingUnavailableMessage, lang) || t.checkout.shippingPaused}
             </p>
           ) : null}
           {serverError || quoteError ? (

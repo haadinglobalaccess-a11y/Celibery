@@ -75,7 +75,8 @@ Vercel's file system is not persistent, so uploads need an S3-compatible bucket 
 
 1. Create a bucket; allow public read of objects (or put a CDN in front) → `MEDIA_PUBLIC_BASE_URL`.
 2. Bucket CORS: allow `PUT` with header `Content-Type` from your store origin(s).
-3. Create an access key limited to that bucket → `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`; set `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` (`S3_FORCE_PATH_STYLE=true` for providers that need it), `MEDIA_STORAGE=s3`.
+3. Set `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `MEDIA_PUBLIC_BASE_URL` (`S3_FORCE_PATH_STYLE=true` for providers that need it) and `MEDIA_STORAGE=s3`. These stay server settings: saved image/video URLs, deletions and the upload Content-Security-Policy depend on them, so they are not editable in the dashboard.
+   Create an access key limited to that bucket (write + delete). Either set it as `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`, **or** leave both empty and let a Super Administrator add it in **Admin → Settings → Hosting & data → Media storage (S3) access key** (encrypted, masked, tested with a real write + delete before it can be enabled; rotate it there without a redeploy). Without a key the site runs normally and only direct uploads are disabled.
 4. Redeploy: the build adds the bucket origin to the Content-Security-Policy `connect-src`.
 Browsers upload straight to the bucket with 15-minute pre-signed URLs; the server then checks each file's real content before it can be used. On a single server with a persistent disk you may instead use `MEDIA_STORAGE=local` with `ALLOW_LOCAL_MEDIA_STORAGE=true` (files under `./uploads`, served at `/media`).
 

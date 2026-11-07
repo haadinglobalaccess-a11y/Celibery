@@ -123,7 +123,7 @@ export function Header() {
                 {t.nav.languageShort}
               </span>
             </Link>
-            <button className="icon-btn mobile-only" aria-label={t.nav.search} onClick={() => setSearchOpen((v) => !v)}>
+            <button className="icon-btn" aria-label={t.nav.search} aria-expanded={searchOpen} data-testid="search-toggle" onClick={() => setSearchOpen((v) => !v)}>
               <Icon name="search" />
             </button>
             <Link className="icon-btn hide-sm" to={p('/wishlist')} aria-label={t.nav.wishlist}>

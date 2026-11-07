@@ -111,6 +111,9 @@ function fromEnv(provider: IntegrationKey): ResolvedIntegration {
       configured: true,
     };
   }
+  if (provider === 's3' && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY) {
+    return { provider, source: 'env', enabled: true, mode: 'live', values: { accessKeyId: env.S3_ACCESS_KEY_ID, secretAccessKey: env.S3_SECRET_ACCESS_KEY }, configured: true };
+  }
   return { provider, source: 'none', enabled: false, mode: INTEGRATIONS[provider].singleMode ? 'live' : 'test', values: {}, configured: false };
 }
 

@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => ({
       '/api': 'http://localhost:4000',
       '/sitemap.xml': 'http://localhost:4000',
       '/robots.txt': 'http://localhost:4000',
+      '/llms.txt': 'http://localhost:4000',
       // Uploaded media when MEDIA_STORAGE=local.
       '/media': 'http://localhost:4000',
     },

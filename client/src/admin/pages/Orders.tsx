@@ -415,6 +415,8 @@ type Detail = {
     discountTotal: number;
     discount?: { code?: string };
     deliveryFee: number;
+    /** Delivery zone that priced delivery ('' = store-wide rules). */
+    shippingZone?: string;
     codFee: number;
     total: number;
     vatAmount: number;
@@ -702,7 +704,10 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
               </dt>
               <dd>{o.discountTotal ? `−${sar(o.discountTotal)}` : '—'}</dd>
               <dt>{t.order.delivery}</dt>
-              <dd>{o.deliveryFee ? sar(o.deliveryFee) : t.common.free}</dd>
+              <dd>
+                {o.deliveryFee ? sar(o.deliveryFee) : t.common.free}
+                {o.shippingZone ? <span className="a-sub ltr"> · {o.shippingZone}</span> : null}
+              </dd>
               {o.codFee ? (
                 <>
                   <dt>{t.order.codFee}</dt>

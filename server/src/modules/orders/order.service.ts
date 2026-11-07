@@ -23,7 +23,7 @@ import {
   type PaymentMethod,
 } from '../../models';
 import type { CheckoutInput } from './order.schemas';
-import { codEligibility, deliveryFeeFor } from './delivery-rules';
+import { codEligibility, deliveryFeeFor, resolveDelivery } from './delivery-rules';
 
 type CartLine = { productId: string; quantity: number };
 
@@ -56,6 +56,10 @@ export type Quote = {
   codUnavailableReason: string;
   /** false while delivery is paused in Admin → Settings → Shipping. */
   shippingAvailable: boolean;
+  /** Why delivery is unavailable: 'paused' (store-wide pause) or 'city' (outside every delivery zone). */
+  shippingUnavailableReason: '' | 'paused' | 'city';
+  /** Delivery zone that priced this quote (only once the city is known). */
+  zone: { key: string; name: { ar: string; en: string }; estimatedDelivery: { ar: string; en: string } } | null;
   total: number;
   vatRate: number;
   vatAmount: number;
@@ -182,13 +186,15 @@ export async function quote(
     }
   }
 
-  const commerce = settings?.commerce ?? null;
-  const deliveryFee = deliveryFeeFor(commerce, subtotal - discountTotal);
+  // Delivery zone for the city (Admin → Settings → Shipping); store-wide rules when none applies.
+  const delivery = resolveDelivery(settings?.commerce ?? null, opts.city);
+  const rules = delivery.rules;
+  const deliveryFee = deliveryFeeFor(rules, subtotal - discountTotal);
   const preCod = subtotal - discountTotal + deliveryFee;
-  const cod = codEligibility(commerce, preCod, opts.city);
+  const cod = codEligibility(rules, preCod, opts.city);
   const codAvailable = cod.available;
-  const shippingAvailable = commerce?.shippingAvailable !== false;
-  const codFee = opts.paymentMethod === 'cod' && codAvailable ? (settings?.commerce?.codFee ?? 0) : 0;
+  const shippingAvailable = delivery.unavailable === '';
+  const codFee = opts.paymentMethod === 'cod' && codAvailable ? (rules.codFee ?? 0) : 0;
   const total = preCod + codFee;
   const vatRate = settings?.commerce?.vatRatePercent ?? 0;
 
@@ -204,6 +210,8 @@ export async function quote(
     codAvailable,
     codUnavailableReason: cod.reason,
     shippingAvailable,
+    shippingUnavailableReason: delivery.unavailable,
+    zone: delivery.zone ? { key: delivery.zone.key, name: { ar: delivery.zone.name?.ar ?? '', en: delivery.zone.name?.en ?? '' }, estimatedDelivery: { ar: delivery.zone.estimatedDelivery?.ar ?? '', en: delivery.zone.estimatedDelivery?.en ?? '' } } : null,
     total,
     vatRate,
     vatAmount: vatIncluded(total, vatRate),
@@ -235,6 +243,7 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
   // Any change (unavailable item, reduced stock) must be reviewed by the customer first.
   if (q.issues.length) throw unprocessable('CART_CHANGED', 'Some items in your cart changed. Please review your cart.', { issues: q.issues });
   if (input.discountCode && q.discountError) throw unprocessable('DISCOUNT_INVALID', q.discountError);
+  if (q.shippingUnavailableReason === 'city') throw unprocessable('SHIPPING_CITY_UNAVAILABLE', 'We do not deliver to this city yet. Please choose another delivery address or contact us.');
   if (!q.shippingAvailable) throw unprocessable('SHIPPING_PAUSED', 'Delivery is temporarily unavailable. Please try again later.');
   if (input.paymentMethod === 'cod' && !q.codAvailable) throw unprocessable('COD_UNAVAILABLE', 'Cash on delivery is not available for this order');
   if (input.paymentMethod !== 'cod') {
@@ -302,6 +311,7 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
           subtotal: q.subtotal,
           discountTotal: q.discountTotal,
           deliveryFee: q.deliveryFee,
+          shippingZone: q.zone?.key ?? '',
           codFee: q.codFee,
           total: q.total,
           vatRate: q.vatRate,

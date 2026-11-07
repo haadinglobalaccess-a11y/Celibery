@@ -7,6 +7,24 @@ import { LocalizedSchema } from './common';
  * so it can be changed from the admin dashboard without code changes.
  * Empty values are never replaced with invented data: the storefront hides or marks them.
  */
+/** One delivery zone (amounts in halalas). */
+const ShippingZoneSchema = new Schema(
+  {
+    key: { type: String, required: true, trim: true, lowercase: true, maxlength: 40 },
+    name: { type: LocalizedSchema, default: () => ({}) },
+    active: { type: Boolean, default: true },
+    cities: { type: [String], default: [] },
+    freeDelivery: { type: Boolean, default: false },
+    deliveryFee: { type: Number, default: 0, min: 0 },
+    freeDeliveryThreshold: { type: Number, min: 0 },
+    codEnabled: { type: Boolean, default: true },
+    /** Unset = the store-wide COD fee. */
+    codFee: { type: Number, min: 0 },
+    estimatedDelivery: { type: LocalizedSchema, default: () => ({}) },
+  },
+  { _id: false },
+);
+
 const SettingsSchema = new Schema(
   {
     key: { type: String, required: true, unique: true, default: 'store' },
@@ -67,6 +85,20 @@ const SettingsSchema = new Schema(
       codMinOrderTotal: { type: Number, min: 0 },
       /** Empty = COD everywhere in KSA. Matched case-insensitively against the checkout city. */
       codAllowedCities: { type: [String], default: [] },
+      /**
+       * Delivery zones: a group of cities with its own delivery fee / free-delivery rule and COD
+       * availability. Cities outside every zone use the store-wide rules above, or are refused when
+       * deliverToUnlistedCities is false. Empty = store-wide rules everywhere (previous behaviour).
+       */
+      shippingZones: { type: [ShippingZoneSchema], default: [] },
+      deliverToUnlistedCities: { type: Boolean, default: true },
+      /** Customers can request returns from their order page (Admin → Returns handles them). */
+      returnsEnabled: { type: Boolean, default: true },
+      /**
+       * Days after delivery during which a return can be requested. 7 = the consumer withdrawal
+       * period of the Saudi E-Commerce Law regulations; the returns policy states the final number.
+       */
+      returnWindowDays: { type: Number, default: 7, min: 0, max: 365 },
       lowStockThreshold: { type: Number, default: 5, min: 0 },
       /** Minutes an unpaid online order holds its stock before it is released. */
       reservationMinutes: { type: Number, default: 30, min: 5, max: 1440 },

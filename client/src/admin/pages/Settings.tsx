@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
 import { Spinner } from '../../components/ui';
-import { ApiError, get, post, put } from '../../lib/api';
+import { ApiError, del, get, post, put } from '../../lib/api';
 import { invalidateCache } from '../../lib/hooks';
 import type { Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
@@ -228,6 +228,15 @@ export function SettingsPage() {
               <LocInput label="Estimated delivery text (e.g. 2–4 business days)" value={c.estimatedDelivery} onChange={(v) => set('commerce', 'estimatedDelivery', v)} />
             </div>
           </Card>
+          <ShippingZones
+            zones={(c.shippingZones ?? []) as ZoneStored[]}
+            deliverToUnlistedCities={c.deliverToUnlistedCities !== false}
+            saving={saving}
+            onSave={async (zones, deliverToUnlistedCities) => {
+              await save({ commerce: { shippingZones: zones, deliverToUnlistedCities } }, 'Delivery zones saved');
+              load();
+            }}
+          />
           <Card title="Courier & fulfilment (I Mile Logistics — Q24)">
             <div className="form-grid form-grid--2 settings-form-grid">
               <F label="Courier name shown to customers">
@@ -292,7 +301,7 @@ export function SettingsPage() {
 
       {tab === 'orders' ? (
         <Card
-          title="Warranty, VAT and stock"
+          title="Warranty, returns, VAT and stock"
           actions={saveBtn(() =>
             save({
               commerce: {
@@ -302,6 +311,8 @@ export function SettingsPage() {
                 lowStockThreshold: Number(c.lowStockThreshold),
                 reservationMinutes: Number(c.reservationMinutes),
                 maxQuantityPerItem: Number(c.maxQuantityPerItem),
+                returnsEnabled: c.returnsEnabled !== false,
+                returnWindowDays: Number(c.returnWindowDays ?? 7),
               },
             }),
           )}
@@ -312,6 +323,12 @@ export function SettingsPage() {
             </label>
             <F label="Default warranty (months)" hint="Q32: 2-year warranty confirmed">
               <input className="input" type="number" value={c.warrantyMonths} onChange={(e) => set('commerce', 'warrantyMonths', e.target.value)} />
+            </F>
+            <label className="check">
+              <input type="checkbox" checked={c.returnsEnabled !== false} onChange={(e) => set('commerce', 'returnsEnabled', e.target.checked)} /> Customers can request returns from their order page
+            </label>
+            <F label="Return window (days after delivery)" hint="7 days is the consumer withdrawal period in the Saudi E-Commerce Law regulations. Make sure it matches the approved returns policy.">
+              <input className="input" type="number" min={0} max={365} value={c.returnWindowDays ?? 7} onChange={(e) => set('commerce', 'returnWindowDays', e.target.value)} />
             </F>
             <F label="VAT rate (%) — prices are VAT inclusive">
               <input className="input" type="number" value={c.vatRatePercent} onChange={(e) => set('commerce', 'vatRatePercent', e.target.value)} />
@@ -383,6 +400,7 @@ export function SettingsPage() {
               <p className="muted">Only Super Administrators (permission “payments:manage”) can view or change the email (SMTP) and WhatsApp credentials.</p>
             </Card>
           )}
+          <MessageTemplates />
           {perms.has('orders:read') ? <NotificationLog /> : null}
           <Card title="Product reviews" actions={saveBtn(() => save({ reviews: s.reviews }))}>
             <label className="check">
@@ -418,11 +436,295 @@ export function SettingsPage() {
           </dl>
           {hosting.mediaStorage.reason ? <p className="alert alert--warning">{hosting.mediaStorage.reason}</p> : null}
           <p className="muted" style={{ fontSize: 13, marginTop: 12 }}>
-            These values are read-only on purpose. Moving customer data to another country or provider is an infrastructure migration that needs the legal advisor’s approval (Q33) and a planned data transfer — it cannot be done with a dashboard switch. Ask the developer; see docs/DEPLOYMENT.md → “Data residency”.
+            Regions and the bucket location (S3_ENDPOINT, S3_BUCKET, MEDIA_PUBLIC_BASE_URL) are read-only on purpose: saved image and video links point at them, so changing them needs a planned file migration. Moving customer data to another country or provider is an infrastructure migration that needs the legal advisor’s approval (Q33) and a planned data transfer — it cannot be done with a dashboard switch. Ask the developer; see docs/DEPLOYMENT.md → “Data residency”.
           </p>
         </Card>
       ) : null}
+      {tab === 'hosting' && hosting?.mediaStorage.provider === 's3' ? (
+        canPayments ? (
+          <Integrations only={['s3']} />
+        ) : (
+          <Card title="Media storage access key">
+            <p className="muted">Only Super Administrators (permission “payments:manage”) can view or rotate the storage access key.</p>
+          </Card>
+        )
+      ) : null}
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Delivery zones
+// ---------------------------------------------------------------------------------------------
+
+/** As stored (amounts in halalas). */
+type ZoneStored = {
+  key: string;
+  name: Localized;
+  active: boolean;
+  cities: string[];
+  freeDelivery: boolean;
+  deliveryFee: number;
+  freeDeliveryThreshold?: number | null;
+  codEnabled: boolean;
+  codFee?: number | null;
+  estimatedDelivery: Localized;
+};
+/** As edited (amounts as SAR text, cities one per line). */
+type ZoneDraft = Omit<ZoneStored, 'deliveryFee' | 'freeDeliveryThreshold' | 'codFee' | 'cities'> & { deliveryFee: string; freeDeliveryThreshold: string; codFee: string; citiesText: string };
+
+const toDraft = (z: ZoneStored): ZoneDraft => ({
+  ...z,
+  name: z.name ?? emptyL,
+  estimatedDelivery: z.estimatedDelivery ?? emptyL,
+  deliveryFee: toSarInput(z.deliveryFee),
+  freeDeliveryThreshold: toSarInput(z.freeDeliveryThreshold),
+  codFee: toSarInput(z.codFee),
+  citiesText: (z.cities ?? []).join('\n'),
+});
+
+function ShippingZones({ zones, deliverToUnlistedCities, saving, onSave }: { zones: ZoneStored[]; deliverToUnlistedCities: boolean; saving: boolean; onSave: (zones: unknown[], deliverToUnlistedCities: boolean) => Promise<void> }) {
+  const [drafts, setDrafts] = useState<ZoneDraft[]>(() => zones.map(toDraft));
+  const [unlisted, setUnlisted] = useState(deliverToUnlistedCities);
+  const upd = (i: number, patch: Partial<ZoneDraft>) => setDrafts(drafts.map((d, j) => (j === i ? { ...d, ...patch } : d)));
+  const sarOrNull = (v: string) => (v.trim() === '' ? null : Number(v));
+  const submit = () =>
+    onSave(
+      drafts.map((d) => ({
+        key: d.key,
+        name: d.name,
+        active: d.active,
+        cities: d.citiesText.split(/[\n,،]/).map((x) => x.trim()).filter(Boolean),
+        freeDelivery: d.freeDelivery,
+        deliveryFee: Number(d.deliveryFee || 0),
+        freeDeliveryThreshold: sarOrNull(d.freeDeliveryThreshold),
+        codEnabled: d.codEnabled,
+        codFee: sarOrNull(d.codFee),
+        estimatedDelivery: d.estimatedDelivery,
+      })),
+      unlisted,
+    );
+  return (
+    <Card
+      title="Delivery zones"
+      actions={
+        <>
+          <button
+            className="btn btn--ghost btn--sm"
+            type="button"
+            onClick={() => setDrafts([...drafts, { key: `zone-${drafts.length + 1}`, name: { ...emptyL }, active: true, citiesText: '', freeDelivery: false, deliveryFee: '0', freeDeliveryThreshold: '', codEnabled: true, codFee: '', estimatedDelivery: { ...emptyL } }])}
+          >
+            + Add zone
+          </button>
+          <button className="btn btn--primary btn--sm" disabled={saving} onClick={() => void submit()}>
+            {saving ? 'Saving…' : 'Save zones'}
+          </button>
+        </>
+      }
+    >
+      <p className="muted" style={{ fontSize: 13 }}>
+        A zone groups cities with their own delivery fee and cash-on-delivery rule. The checkout prices delivery with the zone of the delivery city; other cities use the store-wide settings above. The store-wide delivery pause, COD switch, COD limits and COD city list always still apply.
+      </p>
+      <label className="check">
+        <input type="checkbox" checked={unlisted} onChange={(e) => setUnlisted(e.target.checked)} /> Deliver to cities that are not in any zone (with the store-wide rules)
+      </label>
+      {drafts.length === 0 ? <p className="muted">No zones — the store-wide rules apply everywhere.</p> : null}
+      {drafts.map((d, i) => (
+        <fieldset key={i} className="zone" data-testid="zone" style={{ border: '1px solid var(--line, #ddd)', borderRadius: 12, padding: 16, margin: '12px 0' }}>
+          <legend style={{ padding: '0 6px' }}>
+            <strong>{d.name.en || d.name.ar || d.key}</strong> {d.active ? null : <span className="badge">inactive</span>}
+          </legend>
+          <div className="form-grid form-grid--2 settings-form-grid">
+            <F label="Zone key" hint="Short id, e.g. riyadh, western-region">
+              <input className="input ltr" value={d.key} onChange={(e) => upd(i, { key: e.target.value })} />
+            </F>
+            <label className="check">
+              <input type="checkbox" checked={d.active} onChange={(e) => upd(i, { active: e.target.checked })} /> Active
+            </label>
+            <LocInput label="Zone name" value={d.name} onChange={(v) => upd(i, { name: v })} />
+            <F label="Cities (one per line, Arabic or English)" span hint="Matched loosely: الرياض = Riyadh variants with/without “Al-” and Arabic letter forms">
+              <textarea className="input" rows={3} value={d.citiesText} onChange={(e) => upd(i, { citiesText: e.target.value })} />
+            </F>
+            <label className="check span-2">
+              <input type="checkbox" checked={d.freeDelivery} onChange={(e) => upd(i, { freeDelivery: e.target.checked })} /> Free delivery in this zone
+            </label>
+            <F label="Delivery fee (SAR)">
+              <input className="input" inputMode="decimal" disabled={d.freeDelivery} value={d.deliveryFee} onChange={(e) => upd(i, { deliveryFee: e.target.value })} />
+            </F>
+            <F label="Free delivery from (SAR, optional)">
+              <input className="input" inputMode="decimal" disabled={d.freeDelivery} value={d.freeDeliveryThreshold} onChange={(e) => upd(i, { freeDeliveryThreshold: e.target.value })} />
+            </F>
+            <label className="check">
+              <input type="checkbox" checked={d.codEnabled} onChange={(e) => upd(i, { codEnabled: e.target.checked })} /> Cash on delivery available (if enabled store-wide)
+            </label>
+            <F label="COD fee (SAR, optional)" hint="Empty = store-wide COD fee">
+              <input className="input" inputMode="decimal" disabled={!d.codEnabled} value={d.codFee} onChange={(e) => upd(i, { codFee: e.target.value })} />
+            </F>
+            <LocInput label="Estimated delivery in this zone" value={d.estimatedDelivery} onChange={(v) => upd(i, { estimatedDelivery: v })} />
+          </div>
+          <button type="button" className="btn btn--ghost btn--sm danger" onClick={() => window.confirm(`Remove zone ${d.key}?`) && setDrafts(drafts.filter((_, j) => j !== i))}>
+            Remove zone
+          </button>
+        </fieldset>
+      ))}
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Message templates (email + WhatsApp status text)
+// ---------------------------------------------------------------------------------------------
+
+type TplContent = { subject: string; body: string; whatsapp: string };
+type TemplateView = {
+  key: string;
+  label: string;
+  group: 'order' | 'return' | 'account';
+  variables: string[];
+  whatsapp: boolean;
+  defaults: Record<'ar' | 'en', TplContent>;
+  effective: Record<'ar' | 'en', TplContent>;
+  customized: boolean;
+};
+type Preview = { email: { subject: string; html: string; text: string }; whatsapp: string | null };
+
+function MessageTemplates() {
+  const [list, setList] = useState<TemplateView[] | null>(null);
+  const [key, setKey] = useState('order.order_placed');
+  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const [draft, setDraft] = useState<Record<'ar' | 'en', TplContent> | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [err, setErr] = useState<unknown>(null);
+  const [busy, setBusy] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    get<TemplateView[]>('/api/admin/templates').then(setList).catch(setErr);
+  }, []);
+  const tpl = list?.find((x) => x.key === key) ?? null;
+  useEffect(() => {
+    if (tpl) setDraft({ ar: { ...tpl.effective.ar }, en: { ...tpl.effective.en } });
+    setPreview(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, tpl?.effective.ar.subject, tpl?.effective.en.subject, tpl?.effective.ar.body, tpl?.effective.en.body, tpl?.effective.ar.whatsapp, tpl?.effective.en.whatsapp]);
+
+  if (!list) return <Card title="Message templates">{err ? <ErrorBox error={err} /> : <Spinner />}</Card>;
+  if (!tpl || !draft) return null;
+  const d = draft[lang];
+  const setField = (f: keyof TplContent, v: string) => setDraft({ ...draft, [lang]: { ...d, [f]: v } });
+  // Store only what differs from the built-in wording; equal text = default (empty).
+  const toOverride = (l: 'ar' | 'en') =>
+    Object.fromEntries((['subject', 'body', 'whatsapp'] as const).filter((f) => f !== 'whatsapp' || tpl.whatsapp).map((f) => [f, draft[l][f] === tpl.defaults[l][f] ? '' : draft[l][f]]));
+  const run = async (label: string, fn: () => Promise<void>) => {
+    setErr(null);
+    setBusy(label);
+    try {
+      await fn();
+    } catch (e) {
+      setErr(e);
+    } finally {
+      setBusy('');
+    }
+  };
+  const replace = (next: TemplateView) => setList(list.map((x) => (x.key === next.key ? next : x)));
+
+  return (
+    <Card
+      title="Message templates"
+      actions={
+        <select className="select" value={key} onChange={(e) => setKey(e.target.value)} aria-label="Template">
+          {(['order', 'return', 'account'] as const).map((g) => (
+            <optgroup key={g} label={g === 'order' ? 'Order updates' : g === 'return' ? 'Returns' : 'Account'}>
+              {list
+                .filter((x) => x.group === g)
+                .map((x) => (
+                  <option key={x.key} value={x.key}>
+                    {x.label}
+                    {x.customized ? ' (edited)' : ''}
+                  </option>
+                ))}
+            </optgroup>
+          ))}
+        </select>
+      }
+    >
+      <p className="muted" style={{ fontSize: 13 }}>
+        Plain text with placeholders. Available: {tpl.variables.map((v) => <code key={v} className="ltr" style={{ marginInlineEnd: 6 }}>{`{{${v}}}`}</code>)}. The CELIBERY header,{' '}
+        {tpl.group === 'order' ? 'order total, tracking number and ' : ''}the button with the link are added automatically and cannot be removed.
+      </p>
+      <ErrorBox error={err} />
+      <Tabs tabs={[['ar', 'العربية'], ['en', 'English']]} value={lang} onChange={(l) => (setLang(l), setPreview(null))} />
+      <div className="form-grid settings-form-grid" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+        <F label="Email subject">
+          <input className="input" value={d.subject} onChange={(e) => setField('subject', e.target.value)} />
+        </F>
+        <F label="Email text" hint="Blank line = new paragraph">
+          <textarea className="input" rows={5} value={d.body} onChange={(e) => setField('body', e.target.value)} />
+        </F>
+        {tpl.whatsapp ? (
+          <F
+            label="WhatsApp status text (template parameter {{2}})"
+            hint="Sent inside your Meta-approved WhatsApp template (name set in the WhatsApp integration). One line, max 1024 characters. Changing the template itself requires re-approval in Meta WhatsApp Manager."
+          >
+            <input className="input" value={d.whatsapp} onChange={(e) => setField('whatsapp', e.target.value)} />
+          </F>
+        ) : null}
+      </div>
+      <div className="actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+        <button
+          className="btn btn--outline btn--sm"
+          disabled={Boolean(busy)}
+          onClick={() => void run('preview', async () => setPreview(await post<Preview>(`/api/admin/templates/${tpl.key}/preview`, { lang, content: { subject: d.subject, body: d.body, ...(tpl.whatsapp ? { whatsapp: d.whatsapp } : {}) } })))}
+        >
+          {busy === 'preview' ? 'Rendering…' : 'Preview'}
+        </button>
+        <button
+          className="btn btn--primary btn--sm"
+          disabled={Boolean(busy)}
+          onClick={() =>
+            void run('save', async () => {
+              replace(await put<TemplateView>(`/api/admin/templates/${tpl.key}`, { ar: toOverride('ar'), en: toOverride('en') }));
+              toast('Template saved');
+            })
+          }
+        >
+          {busy === 'save' ? 'Saving…' : 'Save both languages'}
+        </button>
+        {tpl.customized ? (
+          <button
+            className="btn btn--ghost btn--sm danger"
+            disabled={Boolean(busy)}
+            onClick={() =>
+              window.confirm('Restore the built-in wording for this message (both languages)?') &&
+              void run('reset', async () => {
+                replace(await del<TemplateView>(`/api/admin/templates/${tpl.key}`));
+                toast('Default wording restored');
+              })
+            }
+          >
+            Reset to default
+          </button>
+        ) : null}
+      </div>
+      {preview ? (
+        <div className="template-preview" data-testid="template-preview" dir={lang === 'ar' ? 'rtl' : 'ltr'} style={{ marginTop: 16, border: '1px solid var(--line, #ddd)', borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ background: '#111', color: '#fff', padding: '12px 16px', letterSpacing: 2, fontWeight: 700 }}>CELIBERY</div>
+          <div style={{ padding: 16 }}>
+            <p className="muted" style={{ fontSize: 12, margin: 0 }}>Subject</p>
+            <p style={{ marginTop: 0 }}>
+              <strong>{preview.email.subject}</strong>
+            </p>
+            <div style={{ whiteSpace: 'pre-wrap' }}>{preview.email.text.replace(/\nhttps?:\/\/\S+$/, '')}</div>
+          </div>
+          {preview.whatsapp != null ? (
+            <div style={{ padding: 16, borderTop: '1px solid var(--line, #ddd)' }}>
+              <p className="muted" style={{ fontSize: 12, margin: 0 }}>WhatsApp parameter {'{{2}}'}</p>
+              <p style={{ margin: 0 }}>{preview.whatsapp}</p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </Card>
   );
 }
 
@@ -717,8 +1019,11 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
 
       {i.inUse && i.singleMode ? (
         <div className="gateway__activate">
-          <strong>Use for sending</strong>
-          <span className="muted" style={{ fontSize: 13 }}>Enabling requires saved settings that passed “Test connection”. While disabled, messages are not sent and are logged as skipped.</span>
+          <strong>{i.kind === 'storage' ? 'Use for media uploads' : 'Use for sending'}</strong>
+          <span className="muted" style={{ fontSize: 13 }}>
+            Enabling requires saved settings that passed “Test connection”.{' '}
+            {i.kind === 'storage' ? 'While enabled, this key replaces the one in the server environment; disabling falls back to it.' : 'While disabled, messages are not sent and are logged as skipped.'}
+          </span>
           <div className="actions">
             {i.enabled ? (
               <button className="btn btn--ghost btn--sm danger" disabled={Boolean(busy)} onClick={() => window.confirm(`Disable ${i.label}? Customers will stop receiving these messages.`) && requestActivate(false, 'live')}>

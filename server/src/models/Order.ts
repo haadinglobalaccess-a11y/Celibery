@@ -82,6 +82,8 @@ const OrderSchema = new Schema(
     subtotal: { type: Number, required: true, min: 0 },
     discountTotal: { type: Number, default: 0, min: 0 },
     deliveryFee: { type: Number, default: 0, min: 0 },
+    /** Delivery zone (Admin → Settings → Shipping) that priced delivery; '' = store-wide rules. */
+    shippingZone: { type: String, default: '' },
     codFee: { type: Number, default: 0, min: 0 },
     total: { type: Number, required: true, min: 0 },
     vatRate: { type: Number, default: 0 },

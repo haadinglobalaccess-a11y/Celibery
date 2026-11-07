@@ -103,8 +103,12 @@ export function assertProductionConfig() {
     problems.push('CORS_ORIGINS must contain explicit HTTPS origins');
   if (env.CRON_SECRET.length < 32 || /replace-with/i.test(env.CRON_SECRET)) problems.push('CRON_SECRET must be a unique secret of at least 32 characters');
   if (env.MEDIA_STORAGE === 'local' && !env.ALLOW_LOCAL_MEDIA_STORAGE) problems.push('Use MEDIA_STORAGE=s3, or explicitly allow persistent local media storage');
-  if (env.MEDIA_STORAGE === 's3' && (!env.S3_ENDPOINT || !env.S3_BUCKET || !env.S3_ACCESS_KEY_ID || !env.S3_SECRET_ACCESS_KEY || !env.MEDIA_PUBLIC_BASE_URL))
-    problems.push('Complete S3 storage configuration is required');
+  // Bucket location is infrastructure (stored media URLs depend on it). The access key may instead be
+  // managed in Admin → Settings → Hosting & data; without either, the site runs and only uploads are off.
+  if (env.MEDIA_STORAGE === 's3' && (!env.S3_ENDPOINT || !env.S3_BUCKET || !env.MEDIA_PUBLIC_BASE_URL))
+    problems.push('S3 storage requires S3_ENDPOINT, S3_BUCKET and MEDIA_PUBLIC_BASE_URL');
+  if (env.MEDIA_STORAGE === 's3' && Boolean(env.S3_ACCESS_KEY_ID) !== Boolean(env.S3_SECRET_ACCESS_KEY))
+    problems.push('Set both S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY, or neither (and manage the key in the admin)');
   if (env.PAYMENT_GATEWAY === 'sandbox' && !env.ALLOW_SANDBOX_PAYMENTS)
     problems.push('PAYMENT_GATEWAY=sandbox is not allowed in production (set a real gateway or ALLOW_SANDBOX_PAYMENTS=true for private staging)');
   if (!env.CREDENTIALS_ENCRYPTION_KEY) {
