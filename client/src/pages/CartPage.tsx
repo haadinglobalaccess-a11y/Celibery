@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductImage } from '../components/ProductCard';
 import { EmptyState, Quantity } from '../components/ui';
@@ -15,20 +15,36 @@ export function Summary({ quote, children, showCode = true }: { quote: Quote | n
   const { t, lang } = useI18n();
   const cart = useCart();
   const [code, setCode] = useState(cart.discountCode);
-  const apply = (e: FormEvent) => {
-    e.preventDefault();
-    cart.setDiscountCode(code.trim().toUpperCase());
+  const apply = () => {
+    const next = code.trim().toUpperCase();
+    if (next) cart.setDiscountCode(next);
   };
   return (
     <aside className="summary" aria-label={t.checkout.summary}>
       <h2>{t.checkout.summary}</h2>
       {showCode ? (
         <>
-          <form className="code-form" onSubmit={apply}>
+          {/* Not a <form>: on Checkout this summary sits inside the checkout <form>, and a nested
+              form submits natively (full page reload) instead of applying the code. */}
+          <div className="code-form" role="group" aria-label={t.cart.code}>
             <label className="sr-only" htmlFor="code">
               {t.cart.code}
             </label>
-            <input id="code" className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder={t.cart.code} autoComplete="off" />
+            <input
+              id="code"
+              className="input"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                // Enter applies the code; it must never submit (place) the surrounding checkout form.
+                e.preventDefault();
+                if (!cart.discountCode) apply();
+              }}
+              placeholder={t.cart.code}
+              autoComplete="off"
+              enterKeyHint="done"
+            />
             {cart.discountCode ? (
               <button
                 type="button"
@@ -41,9 +57,11 @@ export function Summary({ quote, children, showCode = true }: { quote: Quote | n
                 {t.cart.removeCode}
               </button>
             ) : (
-              <button className="btn btn--outline">{t.cart.applyCode}</button>
+              <button type="button" className="btn btn--outline" onClick={apply}>
+                {t.cart.applyCode}
+              </button>
             )}
-          </form>
+          </div>
           {quote?.discountError ? <p className="alert alert--error">{quote.discountError}</p> : null}
         </>
       ) : null}
