@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ApiError, api, qs } from '../../lib/api';
+import { ApiError, api, post, qs } from '../../lib/api';
+import { useToast } from '../../state/toast';
 import { useAT } from '../i18n';
-import { EmptyState, ErrorPanel, SkeletonTable, Status } from '../kit';
+import { EmptyState, ErrorPanel, SkeletonTable, Status, usePerms } from '../kit';
 
 type Row = { _id: string; orderNumber: string; contact: { name: string; phone: string }; total: number; paymentStatus: string; paymentMethod: string; createdAt: string; items: { quantity: number }[] };
 
@@ -17,6 +18,20 @@ export function Returns() {
   const [pages, setPages] = useState(1);
   const [error, setError] = useState<ApiError | null>(null);
   const [nonce, setNonce] = useState(0);
+  const canRefund = usePerms().has('orders:refund');
+  const toast = useToast();
+  const [checking, setChecking] = useState(false);
+  const reconcile = async () => {
+    setChecking(true);
+    try {
+      const r = await post<{ payments: number; reconciled: number; errors: number }>('/api/admin/orders/refunds/reconcile-all');
+      toast(t.returnsPage.reconcileDone(r.payments, r.errors), r.errors ? 'error' : 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setChecking(false);
+    }
+  };
   useEffect(() => {
     let alive = true;
     setRows(null);
@@ -40,6 +55,11 @@ export function Returns() {
           <h1>{t.returnsPage.title}</h1>
           <p className="a-muted">{t.returnsPage.lead}</p>
         </div>
+        {canRefund ? (
+          <button className="btn btn--outline btn--sm" disabled={checking} onClick={() => void reconcile()} title={t.returnsPage.reconcileHint}>
+            {checking ? '…' : t.returnsPage.reconcile}
+          </button>
+        ) : null}
       </div>
       <p className="a-note">{t.returnsPage.workflowNote}</p>
       <div className="a-card a-card--flush">

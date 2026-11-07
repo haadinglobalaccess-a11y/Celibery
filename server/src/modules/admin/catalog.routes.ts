@@ -6,7 +6,7 @@ import { ah, ok } from '../../lib/http';
 import { toHalalas } from '../../lib/money';
 import { requirePermission } from '../../middleware/auth';
 import { q, validate } from '../../middleware/validate';
-import { Category, Discount, Product } from '../../models';
+import { Category, Discount, Order, Product } from '../../models';
 import { categoryInput, discountInput, idParam, objectId, productCreate, productListAdmin, productUpdate, stockAdjust } from './admin.schemas';
 import { crudRouter } from './crud';
 import { importProductsCsv } from './import.service';
@@ -135,4 +135,9 @@ export const adminDiscountRoutes = crudRouter(Discount, discountInput, {
     maxDiscount: b.maxDiscount == null ? null : toHalalas(b.maxDiscount as number),
     minOrderTotal: toHalalas((b.minOrderTotal as number) ?? 0),
   }),
+  // Orders keep a reference to the code (reports, refunds, per-customer limits): codes that were
+  // used are deactivated instead of deleted.
+  beforeDelete: async (id) => {
+    if (await Order.exists({ 'discount.id': id })) throw conflict('DISCOUNT_IN_USE', 'This code was used on orders, so it cannot be deleted. Untick “Active” to stop it instead.');
+  },
 });

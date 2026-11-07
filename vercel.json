@@ -19,7 +19,11 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!assets/|placeholders/|media/|robots.txt|llms.txt|favicon.svg).*)",
+      "source": "/robots.txt",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/((?!assets/|placeholders/|media/|llms.txt|favicon.svg).*)",
       "destination": "/index.html"
     }
   ],

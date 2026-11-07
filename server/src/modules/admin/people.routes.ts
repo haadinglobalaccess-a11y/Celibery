@@ -7,7 +7,7 @@ import { q, validate } from '../../middleware/validate';
 import { NewsletterSubscription, Order, Role, User } from '../../models';
 import { emailConfigured, sendStaffInviteEmail } from '../../integrations/notifications';
 import { createResetToken, resetLink } from '../auth/auth.service';
-import { customerListQuery, idParam, roleInput, staffCreate, staffUpdate } from './admin.schemas';
+import { customerListQuery, customerStatus, idParam, roleInput, staffCreate, staffUpdate } from './admin.schemas';
 
 // ---- Customers ---------------------------------------------------------------------------
 export const adminCustomerRoutes = Router();
@@ -60,6 +60,26 @@ adminCustomerRoutes.get(
       .limit(100)
       .lean();
     return ok(res, { ...c, wishlistCount: c.wishlist?.length ?? 0, wishlist: undefined, orders });
+  }),
+);
+
+/**
+ * Suspends or reactivates a customer account. Suspending signs the customer out everywhere
+ * immediately and blocks sign-in; past orders stay intact and remain trackable by order link.
+ */
+adminCustomerRoutes.patch(
+  '/:id/status',
+  requirePermission('customers:write'),
+  validate(idParam, 'params'),
+  validate(customerStatus),
+  ah(async (req, res) => {
+    const { active, reason } = req.body as { active: boolean; reason: string };
+    const update: Record<string, unknown> = { $set: { active } };
+    if (!active) update.$inc = { tokenVersion: 1 };
+    const c = await User.findOneAndUpdate({ _id: req.params.id, type: 'customer' }, update, { new: true }).select('name email phone active').lean();
+    if (!c) throw notFound('Customer');
+    await audit(req, active ? 'customer_reactivate' : 'customer_suspend', 'customer', req.params.id, `${c.email}${reason ? ` — ${reason}` : ''}`);
+    return ok(res, c);
   }),
 );
 

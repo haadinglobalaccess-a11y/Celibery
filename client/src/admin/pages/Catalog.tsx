@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ErrorState, Spinner } from '../../components/ui';
-import { api, del, post, put, qs } from '../../lib/api';
+import { api, del, patch, post, put, qs } from '../../lib/api';
 import { useApi } from '../../lib/hooks';
 import type { Category, Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
-import { AHead, Card, dt, en, ErrorBox, F, LocInput, Modal, Pager, ProductPicker, sar, Status, Tabs, toSarInput } from '../kit';
+import { AHead, Card, dt, en, ErrorBox, F, LocInput, Modal, Pager, ProductPicker, sar, Status, Tabs, toSarInput, usePerms } from '../kit';
 import { MediaField } from '../media';
 
 const FILTERS = ['price', 'capacityMah', 'powerW', 'connector', 'color', 'availability'];
@@ -419,7 +419,11 @@ export function Customers() {
 
 export function CustomerDetail() {
   const { id } = useParams();
-  const { data, error, loading } = useApi<{
+  const canWrite = usePerms().has('customers:write');
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const { data, error, loading, reload } = useApi<{
+    active: boolean;
     name: string;
     email: string;
     phone: string;
@@ -436,6 +440,30 @@ export function CustomerDetail() {
   return (
     <>
       <AHead title={data.name}>
+        {data.active === false ? <span className="badge badge--danger">suspended</span> : null}
+        {canWrite ? (
+          <button
+            className={`btn btn--sm ${data.active === false ? 'btn--outline' : 'btn--ghost danger'}`}
+            disabled={busy}
+            onClick={async () => {
+              const suspend = data.active !== false;
+              const reason = window.prompt(suspend ? 'Suspend this account? The customer is signed out and cannot sign in. Orders are kept. Reason (optional):' : 'Reactivate this account? Reason (optional):', '');
+              if (reason === null) return;
+              setBusy(true);
+              try {
+                await patch(`/api/admin/customers/${id}/status`, { active: !suspend, reason });
+                toast(suspend ? 'Account suspended' : 'Account reactivated');
+                reload();
+              } catch (ex) {
+                toast((ex as Error).message, 'error');
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {data.active === false ? 'Reactivate account' : 'Suspend account'}
+          </button>
+        ) : null}
         <Link to="/admin/customers" className="btn btn--ghost btn--sm">
           ← Customers
         </Link>
@@ -605,9 +633,26 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
                 <td>{d.active ? <span className="badge badge--success">active</span> : <span className="badge">inactive</span>}</td>
                 <td>
                   {canWrite ? (
-                    <button className="btn btn--ghost btn--sm" onClick={() => open(d)}>
-                      Edit
-                    </button>
+                    <>
+                      <button className="btn btn--ghost btn--sm" onClick={() => open(d)}>
+                        Edit
+                      </button>
+                      <button
+                        className="btn btn--ghost btn--sm"
+                        onClick={async () => {
+                          if (!window.confirm(`Delete discount code ${d.code}?`)) return;
+                          try {
+                            await del(`/api/admin/discounts/${d._id}`);
+                            toast('Discount deleted');
+                            reload();
+                          } catch (ex) {
+                            toast((ex as Error).message, 'error');
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </>
                   ) : null}
                 </td>
               </tr>

@@ -46,6 +46,8 @@ run(async () => {
     if (r.key === 'admin') for (const p of PERMISSIONS) if (!perms.has(p)) add.push(p);
     if ((perms.has('content:write') || perms.has('products:write')) && !perms.has('media:write') && r.key !== 'sales_executive') add.push('media:write');
     if (perms.has('settings:write') && !perms.has('business:write')) add.push('business:write');
+    // customers:write (suspend / reactivate accounts) was added later: grant it to the default roles defined with it.
+    if (r.permissions.includes('customers:write') && !perms.has('customers:write')) add.push('customers:write');
     if (add.length) {
       log(`Role ${r.key}: add ${[...new Set(add)].join(', ')}`);
       if (!dry) await Role.updateOne({ _id: existing._id }, { $addToSet: { permissions: { $each: [...new Set(add)] } } });

@@ -20,7 +20,7 @@ import { apiLimiter, csrfGuard } from './middleware/security';
 import { accountRoutes } from './modules/account/account.routes';
 import { adminRoutes } from './modules/admin';
 import { authRoutes } from './modules/auth/auth.routes';
-import { sitemap } from './modules/catalog/catalog.controller';
+import { robots, sitemap } from './modules/catalog/catalog.controller';
 import { catalogRoutes } from './modules/catalog/catalog.routes';
 import { orderRoutes } from './modules/orders/order.routes';
 import { releaseExpiredReservations } from './modules/orders/order.service';
@@ -85,6 +85,7 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
 
   app.get('/api/health', (_req, res) => ok(res, { status: databaseReady() ? 'ok' : 'unavailable', time: new Date().toISOString() }, databaseReady() ? 200 : 503));
   app.get('/sitemap.xml', ah(sitemap));
+  app.get('/robots.txt', ah(robots));
 
   app.use('/api', apiLimiter, csrfGuard, integrationsMiddleware, loadUser);
 

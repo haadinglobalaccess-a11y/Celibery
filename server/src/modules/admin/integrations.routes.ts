@@ -8,12 +8,13 @@ import { fingerprint, maskSecret } from '../../lib/secrets';
 import { requirePermission } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { encryptFor, integration, invalidateIntegrations, keyRing, loadIntegrations, secretContext } from '../../integrations/credentials';
-import { INTEGRATIONS, MODES, isIntegrationKey, missingRequired, validateFieldValue, type IntegrationKey, type Mode } from '../../integrations/credentials/definitions';
+import { INTEGRATIONS, MODES, SINGLE_MODE_SLOT, isIntegrationKey, missingRequired, validateFieldValue, verificationSubject, type IntegrationKey, type Mode } from '../../integrations/credentials/definitions';
+import { smtpTransport, toSmtpConfig, verifySmtp, verifyWhatsApp } from '../../integrations/notifications/providers';
 import { moyasarProvider } from '../../integrations/payments/moyasar';
 import { tabbyProvider } from '../../integrations/payments/tabby';
 import type { CredentialCheck } from '../../integrations/payments/types';
 import { decryptSecret } from '../../lib/secrets';
-import { IntegrationCredential, WITH_SECRETS } from '../../models';
+import { IntegrationCredential, Notification, WITH_SECRETS } from '../../models';
 import { limiter } from '../../middleware/security';
 
 /**
@@ -47,6 +48,8 @@ const activateInput = z.object({
 const verifiers: Partial<Record<IntegrationKey, (values: Record<string, string>) => Promise<CredentialCheck>>> = {
   moyasar: (v) => moyasarProvider.verifyCredentials(v),
   tabby: (v) => tabbyProvider.verifyCredentials(v),
+  smtp: (v) => verifySmtp(v),
+  whatsapp: (v) => verifyWhatsApp(v),
 };
 
 const verifyLimiter = limiter(10 * 60_000, 30);
@@ -79,13 +82,14 @@ function publicView(key: IntegrationKey, doc: any) {
     key,
     label: def.label,
     kind: def.kind,
+    singleMode: Boolean(def.singleMode),
     inUse: def.inUse,
     verifiable: def.verifiable,
     docsUrl: def.docsUrl,
     fieldDefs: def.fields,
     managed: Boolean(doc),
     enabled: Boolean(doc?.enabled),
-    activeMode: (doc?.activeMode as Mode) ?? 'test',
+    activeMode: def.singleMode ? SINGLE_MODE_SLOT : ((doc?.activeMode as Mode) ?? 'test'),
     liveConfirmedAt: doc?.liveConfirmedAt ?? null,
     updatedAt: doc?.updatedAt ?? null,
     modes,
@@ -117,7 +121,13 @@ async function runVerification(key: IntegrationKey, values: Record<string, strin
   return v(values);
 }
 
-const secretFingerprint = (values: Record<string, string>) => fingerprint(values.secretKey ?? values.apiKey ?? '');
+/** Ties a verification result to the exact values it tested (see verificationSubject). */
+const secretFingerprint = (key: IntegrationKey, values: Record<string, string>) => fingerprint(verificationSubject(key, values));
+
+/** Single-mode integrations (email, WhatsApp) keep their one credential set in the live slot. */
+function assertModeAllowed(key: IntegrationKey, mode: Mode) {
+  if (INTEGRATIONS[key].singleMode && mode !== SINGLE_MODE_SLOT) throw badRequest('MODE_NOT_SUPPORTED', `${INTEGRATIONS[key].label} has a single set of credentials (no test/live modes)`);
+}
 
 function actor(req: Request) {
   return `${req.user?.name ?? ''} <${req.user?.email ?? ''}>`;
@@ -146,6 +156,7 @@ adminIntegrationRoutes.put(
     const key = req.params.provider as IntegrationKey;
     const mode = req.params.mode as Mode;
     const def = INTEGRATIONS[key];
+    assertModeAllowed(key, mode);
     if (!keyRing()) throw serviceUnavailable('ENCRYPTION_KEY_MISSING', 'CREDENTIALS_ENCRYPTION_KEY is not configured on the server. Ask the developer to set it before storing credentials.');
 
     const input = req.body.values as Record<string, string | null>;
@@ -169,9 +180,9 @@ adminIntegrationRoutes.put(
 
     // Replacing the credentials of the live configuration in use: test them first so a typo can
     // never take payments down.
-    const inUse = Boolean(doc?.enabled) && doc?.activeMode === mode;
+    const inUse = Boolean(doc?.enabled) && (def.singleMode ? true : doc?.activeMode === mode);
     let verification: CredentialCheck | null = null;
-    const secretChanged = secretFingerprint(next) !== secretFingerprint(current);
+    const secretChanged = secretFingerprint(key, next) !== secretFingerprint(key, current);
     if (inUse && def.verifiable && secretChanged) {
       verification = await runVerification(key, next);
       if (!verification.ok) throw unprocessable('VERIFICATION_FAILED', `The new credentials were not saved: ${verification.message}`);
@@ -197,7 +208,7 @@ adminIntegrationRoutes.put(
     }
     if (secretChanged || Object.keys(input).some((k) => k === 'merchantCode')) {
       set[`modes.${mode}.verification`] = verification
-        ? { status: verification.status, message: verification.message, checkedAt: new Date(), fingerprint: secretFingerprint(next) }
+        ? { status: verification.status, message: verification.message, checkedAt: new Date(), fingerprint: secretFingerprint(key, next) }
         : { status: 'unverified', message: 'Credentials changed — run “Test connection”', checkedAt: null, fingerprint: '' };
     }
     // A gateway in use cannot be left without its required credentials.
@@ -221,13 +232,14 @@ adminIntegrationRoutes.post(
   ah(async (req, res) => {
     const key = req.params.provider as IntegrationKey;
     const mode = req.params.mode as Mode;
+    assertModeAllowed(key, mode);
     const doc = await IntegrationCredential.findOne({ provider: key }).select(WITH_SECRETS).lean();
     if (!doc) throw notFound('Saved credentials');
     const values = decryptedValues(key, mode, doc);
     const check = await runVerification(key, values);
     await IntegrationCredential.updateOne(
       { provider: key },
-      { $set: { [`modes.${mode}.verification`]: { status: check.status, message: check.message, checkedAt: new Date(), fingerprint: secretFingerprint(values) } } },
+      { $set: { [`modes.${mode}.verification`]: { status: check.status, message: check.message, checkedAt: new Date(), fingerprint: secretFingerprint(key, values) } } },
     );
     invalidateIntegrations();
     await audit(req, 'credentials_verify', 'integration', key, `${mode}: ${check.status}`);
@@ -244,6 +256,7 @@ adminIntegrationRoutes.post(
     const key = req.params.provider as IntegrationKey;
     const def = INTEGRATIONS[key];
     const { enabled, mode, confirm } = req.body as z.infer<typeof activateInput>;
+    assertModeAllowed(key, mode);
     const doc = await IntegrationCredential.findOne({ provider: key }).select(WITH_SECRETS).lean();
     if (!doc && enabled) throw unprocessable('NOT_CONFIGURED', 'Save the credentials first');
 
@@ -253,20 +266,56 @@ adminIntegrationRoutes.post(
       const missing = missingRequired(key, Object.fromEntries(Object.keys(values).map((k) => [k, Boolean(values[k])])));
       if (missing.length) throw unprocessable('NOT_CONFIGURED', `Missing ${mode} credentials: ${missing.join(', ')}`);
       const v = doc?.modes?.[mode]?.verification;
-      if (def.verifiable && (v?.status !== 'ok' || v?.fingerprint !== secretFingerprint(values))) {
+      if (def.verifiable && (v?.status !== 'ok' || v?.fingerprint !== secretFingerprint(key, values))) {
         throw unprocessable('NOT_VERIFIED', `Run “Test connection” for the ${mode} credentials successfully before enabling`);
       }
-      const goingLive = mode === 'live' && !(doc?.enabled && doc?.activeMode === 'live');
+      // Typing LIVE is required where live mode means real customer money (payment gateways).
+      const goingLive = def.kind === 'payment' && mode === 'live' && !(doc?.enabled && doc?.activeMode === 'live');
       if (goingLive && confirm !== 'LIVE') throw unprocessable('LIVE_CONFIRMATION_REQUIRED', 'Type LIVE to confirm that real customer payments will be processed');
     }
 
     const set: Record<string, unknown> = { enabled, activeMode: mode, updatedBy: actor(req) };
-    if (enabled && mode === 'live' && confirm === 'LIVE') Object.assign(set, { liveConfirmedBy: actor(req), liveConfirmedAt: new Date() });
+    if (enabled && def.kind === 'payment' && mode === 'live' && confirm === 'LIVE') Object.assign(set, { liveConfirmedBy: actor(req), liveConfirmedAt: new Date() });
     await IntegrationCredential.updateOne({ provider: key }, { $set: set }, { upsert: true });
     invalidateIntegrations();
     await loadIntegrations(true);
     await audit(req, enabled ? 'integration_enable' : 'integration_disable', 'integration', key, `${enabled ? 'enabled' : 'disabled'} in ${mode} mode`);
     const fresh = await IntegrationCredential.findOne({ provider: key }).lean();
     return ok(res, publicView(key, fresh));
+  }),
+);
+
+/**
+ * Sends a real test email to the signed-in administrator with the saved SMTP settings — works
+ * before email is enabled, so delivery can be confirmed first. Recorded in the notification log.
+ */
+adminIntegrationRoutes.post(
+  '/smtp/test-message',
+  verifyLimiter,
+  ah(async (req, res) => {
+    const doc = await IntegrationCredential.findOne({ provider: 'smtp' }).select(WITH_SECRETS).lean();
+    if (!doc) throw notFound('Saved email settings');
+    const smtp = toSmtpConfig(decryptedValues('smtp', SINGLE_MODE_SLOT, doc));
+    if (!smtp) throw unprocessable('NOT_CONFIGURED', 'Save the SMTP server and sender address first');
+    const to = req.user!.email;
+    const t = smtpTransport(smtp, { fresh: true });
+    try {
+      await t.sendMail({
+        from: smtp.from,
+        to,
+        subject: 'CELIBERY — test email',
+        text: `This is a test email from the CELIBERY admin dashboard, sent through ${smtp.host}:${smtp.port}. Email delivery is working.`,
+        html: `<p>This is a test email from the CELIBERY admin dashboard, sent through <strong>${smtp.host}:${smtp.port}</strong>.</p><p>Email delivery is working.</p>`,
+      });
+      await Notification.create({ channel: 'email', to, template: 'admin.smtp_test', user: req.user!.id, status: 'sent' });
+      await audit(req, 'credentials_test_message', 'integration', 'smtp', `sent to ${to}`);
+      return ok(res, { sent: true, to });
+    } catch (e) {
+      const detail = String((e as Error).message ?? e).slice(0, 300);
+      await Notification.create({ channel: 'email', to, template: 'admin.smtp_test', user: req.user!.id, status: 'failed', detail });
+      throw unprocessable('SEND_FAILED', `The test email could not be sent: ${detail}`);
+    } finally {
+      t.close();
+    }
   }),
 );

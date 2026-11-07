@@ -200,3 +200,9 @@ export const customerListQuery = z.object({
 });
 
 export const reviewModerate = z.object({ status: z.enum(['approved', 'rejected', 'pending']) });
+
+export const customerStatus = z.object({
+  active: z.boolean(),
+  /** Optional note for the audit log (e.g. "fraud report", "customer asked to close account"). */
+  reason: z.string().trim().max(200).default(''),
+});

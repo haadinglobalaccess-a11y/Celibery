@@ -1,5 +1,5 @@
 // Vercel serverless entry point. All /api/* requests (and /sitemap.xml) are rewritten here
-// and handled by the same Express application used for local development.
+// (and /robots.txt) and handled by the same Express application used for local development.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createApp } from '../server/src/app';
 import { assertProductionConfig } from '../server/src/config/env';

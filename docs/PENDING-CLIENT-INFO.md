@@ -46,8 +46,8 @@ Approver for all items: **Usama M. Usman (BDM)** — Q39.
 | 21 | Cash-on-delivery rules: enable? fee (client says 0 — cost in price)? maximum order? | Q23 | Settings → Delivery, warranty & COD (currently **disabled**) |
 | 22 | I Mile Logistics: tracking URL format and (optionally) API credentials | Q24 | Settings → Courier tracking URL template |
 | 23 | Estimated delivery time text | Q25 | Settings → Delivery |
-| 24 | SMTP credentials for order emails | Q28 | `SMTP_*` |
-| 25 | WhatsApp Business Cloud API token, phone number id, approved `order_update` template | Q28 | `WHATSAPP_*` |
+| 24 | SMTP credentials for order emails | Q28 | Admin → Settings → Notifications (Email) |
+| 25 | WhatsApp Business Cloud API token, phone number id, approved `order_update` template | Q28 | Admin → Settings → Notifications (WhatsApp) |
 | 26 | Staff work emails for Usama M. Usman and Shuja Mubeen | Q27 | `npm run create-staff …` or Admin → Staff |
 
 ## Access & launch

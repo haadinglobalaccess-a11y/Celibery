@@ -18,6 +18,7 @@ const PERMISSIONS: [string, string][] = [
   ['inventory:read', 'View stock'],
   ['inventory:write', 'Adjust stock'],
   ['customers:read', 'View customers'],
+  ['customers:write', 'Suspend / reactivate customer accounts'],
   ['discounts:read', 'View discounts'],
   ['discounts:write', 'Edit discounts'],
   ['content:write', 'Website content & policy drafts'],

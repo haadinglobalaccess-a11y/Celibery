@@ -85,12 +85,38 @@ function fromEnv(provider: IntegrationKey): ResolvedIntegration {
       configured: Boolean(env.TABBY_MERCHANT_CODE),
     };
   }
-  return { provider, source: 'none', enabled: false, mode: 'test', values: {}, configured: false };
+  if (provider === 'smtp' && env.SMTP_HOST) {
+    return {
+      provider,
+      source: 'env',
+      enabled: true,
+      mode: 'live',
+      values: { host: env.SMTP_HOST, port: String(env.SMTP_PORT), user: env.SMTP_USER, pass: env.SMTP_PASS, from: env.EMAIL_FROM },
+      configured: true,
+    };
+  }
+  if (provider === 'whatsapp' && env.WHATSAPP_ACCESS_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID) {
+    return {
+      provider,
+      source: 'env',
+      enabled: true,
+      mode: 'live',
+      values: {
+        phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID,
+        accessToken: env.WHATSAPP_ACCESS_TOKEN,
+        orderTemplate: env.WHATSAPP_ORDER_TEMPLATE,
+        templateLangAr: env.WHATSAPP_TEMPLATE_LANG_AR,
+        templateLangEn: env.WHATSAPP_TEMPLATE_LANG_EN,
+      },
+      configured: true,
+    };
+  }
+  return { provider, source: 'none', enabled: false, mode: INTEGRATIONS[provider].singleMode ? 'live' : 'test', values: {}, configured: false };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function resolveRecord(provider: IntegrationKey, doc: any): ResolvedIntegration {
-  const mode: Mode = doc.activeMode === 'live' ? 'live' : 'test';
+  const mode: Mode = INTEGRATIONS[provider].singleMode || doc.activeMode === 'live' ? 'live' : 'test';
   const m = doc.modes?.[mode] ?? {};
   const values: Record<string, string> = {};
   const toObj = (x: unknown) => (x instanceof Map ? Object.fromEntries(x) : ((x as Record<string, string>) ?? {}));

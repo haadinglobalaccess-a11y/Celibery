@@ -1,43 +1,30 @@
-import nodemailer, { type Transporter } from 'nodemailer';
-import { env, isProd } from '../../config/env';
 import { logger } from '../../lib/logger';
 import { Notification, getSettings } from '../../models';
+import { integration } from '../credentials';
+import { activeSmtp, activeWhatsApp, smtpTransport, whatsappMessagesUrl } from './providers';
 import { orderEmail, passwordResetEmail, staffInviteEmail, whatsappStatusText, type OrderEvent } from './templates';
 
 /**
- * Notification providers are configured through environment variables.
- * When a provider is not configured, the attempt is recorded with status "skipped" —
- * the system never reports a message as sent unless the provider accepted it.
+ * Email (SMTP) and WhatsApp credentials are managed in Admin → Settings → Notifications
+ * (encrypted at rest), with the legacy SMTP_* / WHATSAPP_* environment variables as fallback.
+ * When a provider is not configured or is disabled, the attempt is recorded with status
+ * "skipped" — the system never reports a message as sent unless the provider accepted it.
  */
 
-let transporter: Transporter | null = null;
-export const emailConfigured = () => Boolean(env.SMTP_HOST);
-export const whatsappConfigured = () => Boolean(env.WHATSAPP_ACCESS_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID);
-
-function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465,
-      requireTLS: isProd && env.SMTP_PORT !== 465,
-      disableFileAccess: true,
-      disableUrlAccess: true,
-      auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined,
-    });
-  }
-  return transporter;
-}
+/** Synchronous status (the credentials snapshot is refreshed on every API request). */
+export const emailConfigured = () => integration('smtp').enabled;
+export const whatsappConfigured = () => integration('whatsapp').enabled;
 
 type Ctx = { template: string; order?: unknown; user?: unknown };
 
 export async function sendEmail(to: string, content: { subject: string; html: string; text: string }, ctx: Ctx) {
-  if (!emailConfigured()) {
-    await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'skipped', detail: 'SMTP not configured' });
+  const smtp = await activeSmtp();
+  if (!smtp) {
+    await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'skipped', detail: 'Email (SMTP) not configured or disabled' });
     return { status: 'skipped' as const };
   }
   try {
-    await getTransporter().sendMail({ from: env.EMAIL_FROM, to, subject: content.subject, html: content.html, text: content.text });
+    await smtpTransport(smtp).sendMail({ from: smtp.from, to, subject: content.subject, html: content.html, text: content.text });
     await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'sent' });
     return { status: 'sent' as const };
   } catch (err) {
@@ -59,21 +46,23 @@ export function normalizeSaudiPhone(phone: string) {
 /** WhatsApp Business Cloud API — sends an approved template message. */
 export async function sendWhatsAppTemplate(phone: string, lang: 'ar' | 'en', params: string[], ctx: Ctx) {
   const to = normalizeSaudiPhone(phone);
-  if (!whatsappConfigured()) {
-    await Notification.create({ channel: 'whatsapp', to, template: ctx.template, order: ctx.order, status: 'skipped', detail: 'WhatsApp provider not configured' });
+  const wa = await activeWhatsApp();
+  if (!wa) {
+    await Notification.create({ channel: 'whatsapp', to, template: ctx.template, order: ctx.order, status: 'skipped', detail: 'WhatsApp not configured or disabled' });
     return { status: 'skipped' as const };
   }
   try {
-    const res = await fetch(`https://graph.facebook.com/v20.0/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    const res = await fetch(whatsappMessagesUrl(wa), {
       method: 'POST',
-      headers: { Authorization: `Bearer ${env.WHATSAPP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${wa.accessToken}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(15_000),
       body: JSON.stringify({
         messaging_product: 'whatsapp',
         to,
         type: 'template',
         template: {
-          name: env.WHATSAPP_ORDER_TEMPLATE,
-          language: { code: lang === 'ar' ? env.WHATSAPP_TEMPLATE_LANG_AR : env.WHATSAPP_TEMPLATE_LANG_EN },
+          name: wa.orderTemplate,
+          language: { code: lang === 'ar' ? wa.langAr : wa.langEn },
           components: [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }],
         },
       }),

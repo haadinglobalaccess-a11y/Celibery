@@ -81,6 +81,30 @@ export async function submitReview(req: Request, res: Response) {
   }
 }
 
+/** User agents of AI assistants / AI search crawlers controlled by Admin → Settings → SEO. */
+export const AI_CRAWLERS = ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'Google-Extended', 'PerplexityBot', 'ClaudeBot', 'Claude-SearchBot', 'anthropic-ai', 'CCBot', 'Applebot-Extended'];
+
+/** robots.txt built from the saved SEO settings (Q37) — replaces the former static file. */
+export function robotsTxt(allowAiCrawlers: boolean, siteUrl: string): string {
+  const base = siteUrl.replace(/\/$/, '');
+  const privatePaths = ['/admin', '/api/', '/*/checkout', '/*/account'];
+  const lines = ['# CELIBERY International', 'User-agent: *', 'Allow: /', ...privatePaths.map((p) => `Disallow: ${p}`), ''];
+  for (const bot of AI_CRAWLERS) {
+    lines.push(`User-agent: ${bot}`);
+    if (allowAiCrawlers) lines.push('Allow: /', ...privatePaths.map((p) => `Disallow: ${p}`));
+    else lines.push('Disallow: /');
+    lines.push('');
+  }
+  lines.push(`Sitemap: ${base}/sitemap.xml`, '');
+  return lines.join('\n');
+}
+
+export async function robots(_req: Request, res: Response) {
+  const settings = await getSettings();
+  res.type('text/plain').setHeader('Cache-Control', 'public, max-age=300');
+  res.send(robotsTxt(settings?.seo?.allowAiCrawlers !== false, env.PUBLIC_SITE_URL));
+}
+
 export async function sitemap(_req: Request, res: Response) {
   const [cats, prods, pages] = await Promise.all([
     Category.find({ active: true }).select('slug updatedAt').lean(),

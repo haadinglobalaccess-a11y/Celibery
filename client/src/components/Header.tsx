@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
-import { L, placeholderFor } from '../lib/format';
+import { formatPrice, L, placeholderFor } from '../lib/format';
 import { useCached } from '../lib/hooks';
 import { useScrolled } from '../lib/motion';
 import type { HomeData } from '../lib/types';
@@ -88,7 +88,19 @@ export function Header() {
 
   return (
     <>
-      <Announcement fallback={`${t.service.delivery}${settings?.commerce?.warrantyEnabled && months ? ` · ${t.service.warranty(months)}` : ''}`} />
+      <Announcement
+        fallback={[
+          // Only claim free delivery when Admin → Settings → Shipping says so.
+          settings?.commerce?.freeDelivery !== false
+            ? t.service.delivery
+            : settings.commerce.freeDeliveryThreshold
+              ? t.checkout.freeFrom(formatPrice(settings.commerce.freeDeliveryThreshold, lang))
+              : '',
+          settings?.commerce?.warrantyEnabled && months ? t.service.warranty(months) : '',
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      />
       <header className={`header ${scrolled ? 'is-scrolled' : ''}`} onMouseLeave={() => setMega(false)}>
         <div className="container header__bar">
           <button className="icon-btn mobile-only" aria-label={t.nav.menu} aria-expanded={mobile} onClick={() => setMobile(true)}>
@@ -209,6 +221,7 @@ function Announcement({ fallback }: { fallback: string }) {
   const a = settings?.announcement;
   if (a && a.enabled === false) return null;
   const text = (a && L(a.text, lang)) || fallback;
+  if (!text) return null;
   const link = a?.link?.trim();
   if (!link) return <div className="announce">{text}</div>;
   if (link.startsWith('/')) {

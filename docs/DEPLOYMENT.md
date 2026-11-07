@@ -31,8 +31,8 @@ The repository deploys as **one Vercel project**: the React storefront/admin is 
 | `PAYMENT_GATEWAY` | ✔ | `moyasar` (production refuses `sandbox` unless `ALLOW_SANDBOX_PAYMENTS=true` for a private staging site) |
 | `MOYASAR_SECRET_KEY`, `MOYASAR_PUBLISHABLE_KEY`, `MOYASAR_WEBHOOK_SECRET` | for cards/Apple Pay/mada/STC Pay | from Moyasar dashboard |
 | `TABBY_SECRET_KEY`, `TABBY_PUBLIC_KEY`, `TABBY_MERCHANT_CODE`, `TABBY_WEBHOOK_SECRET` | for Tabby | from Tabby |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | for emails | any SMTP provider |
-| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ORDER_TEMPLATE` | for WhatsApp updates | Meta WhatsApp Business Cloud API |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | optional (legacy) | Prefer **Admin → Settings → Notifications & reviews → Email (SMTP)**: encrypted, testable, can be enabled/disabled. These variables are used only while nothing is saved there. |
+| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ORDER_TEMPLATE` | optional (legacy) | Prefer **Admin → Settings → Notifications & reviews → WhatsApp Business**. Same fallback rule as SMTP. |
 
 The server **refuses to start** in production if `MONGODB_URI` is missing, `JWT_SECRET` is shorter than 32 characters, or the sandbox gateway is selected.
 

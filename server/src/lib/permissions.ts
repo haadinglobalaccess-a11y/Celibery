@@ -10,6 +10,8 @@ export const PERMISSIONS = [
   'inventory:read',
   'inventory:write',
   'customers:read',
+  /** Suspend / reactivate customer accounts. */
+  'customers:write',
   'discounts:read',
   'discounts:write',
   'content:write',

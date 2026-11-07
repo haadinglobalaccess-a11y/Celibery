@@ -295,6 +295,9 @@ const en = {
     workflowNote: 'Return requests (Requested → Approved → Received → Refunded) are not recorded yet — this list shows completed returns from the order history.',
     empty: 'No returns pending.',
     emptyHint: 'All return requests have been processed.',
+    reconcile: 'Check pending refunds',
+    reconcileHint: 'Asks the payment gateway for the outcome of refunds that are still pending (also runs automatically every 30 minutes).',
+    reconcileDone: (checked: number, errors: number) => `${checked} payment(s) with pending refunds checked${errors ? ` · ${errors} could not be checked` : ''}`,
     head: ['Order ID', 'Customer', 'Items', 'Total', 'Payment', 'Order date', 'Actions'],
   },
 };
@@ -588,6 +591,9 @@ const ar: Dict = {
     workflowNote: 'طلبات الإرجاع (طلب ← موافقة ← استلام ← استرداد) لا تُسجَّل بعد — تعرض هذه القائمة المرتجعات المكتملة من سجل الطلبات.',
     empty: 'لا توجد مرتجعات معلّقة.',
     emptyHint: 'تمت معالجة جميع طلبات الإرجاع.',
+    reconcile: 'التحقق من المبالغ المستردة المعلّقة',
+    reconcileHint: 'يستعلم من بوابة الدفع عن نتيجة عمليات الاسترداد المعلّقة (يعمل تلقائياً كل 30 دقيقة أيضاً).',
+    reconcileDone: (checked: number, errors: number) => `تم التحقق من ${checked} دفعة بها استرداد معلّق${errors ? ` · تعذّر التحقق من ${errors}` : ''}`,
     head: ['رقم الطلب', 'العميل', 'القطع', 'الإجمالي', 'الدفع', 'تاريخ الطلب', 'إجراءات'],
   },
 };

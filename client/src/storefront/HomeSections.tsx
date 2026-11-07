@@ -5,10 +5,11 @@ import { ProductCard, ProductImage } from '../components/ProductCard';
 import { PayLogos, Price } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { post } from '../lib/api';
-import { L, placeholderFor } from '../lib/format';
+import { formatPrice, L, placeholderFor } from '../lib/format';
 import { BackgroundVideo, useMediaQuery } from '../lib/media';
 import { prefersReducedMotion } from '../lib/motion';
 import type { Category, HomeData, ProductCardData } from '../lib/types';
+import { useSettings } from '../state/settings';
 import { useToast } from '../state/toast';
 import { bannerVideo, useLinkFor } from '../three-d';
 import { CategoryGallery } from './CategoryGallery';
@@ -448,6 +449,15 @@ export function Ecosystem({ data }: { data: HomeData }) {
 export function WhyCelibery() {
   const { t, lang } = useI18n();
   const c = storeCopy(lang);
+  const commerce = useSettings()?.commerce;
+  // The first reason is the delivery promise: show it as configured in Admin → Settings → Shipping.
+  const why = t.home.why.map((w, i) => {
+    if (i !== 0 || !commerce || commerce.freeDelivery !== false) return w;
+    const d = commerce.freeDeliveryThreshold
+      ? t.checkout.freeFrom(formatPrice(commerce.freeDeliveryThreshold, lang))
+      : L(commerce.estimatedDelivery, lang) || (commerce.courierName ? t.product.deliveryBy(commerce.courierName) : '');
+    return { t: t.product.shipping, d };
+  });
   return (
     <section className="cx-section cx-why" aria-labelledby="cx-why-title">
       <div className="container cx-why__inner">
@@ -461,7 +471,7 @@ export function WhyCelibery() {
           </span>
         </div>
         <ol className="cx-why__list">
-          {t.home.why.map((w, i) => (
+          {why.map((w, i) => (
             <li key={i} className="cx-why__item" data-fx="line">
               <span className="cx-why__num ltr">{String(i + 1).padStart(2, '0')}</span>
               <div>

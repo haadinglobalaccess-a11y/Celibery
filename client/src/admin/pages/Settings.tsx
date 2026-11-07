@@ -374,8 +374,16 @@ export function SettingsPage() {
             <label className="check">
               <input type="checkbox" checked={s.notifications.whatsappOrderUpdates} onChange={(e) => set('notifications', 'whatsappOrderUpdates', e.target.checked)} /> WhatsApp updates {diag ? <Configured ok={diag.whatsappConfigured} /> : null}
             </label>
-            <p className="muted" style={{ fontSize: 13 }}>SMTP and WhatsApp Business credentials are set by the developer as server environment variables (docs/DEPLOYMENT.md).</p>
+            <p className="muted" style={{ fontSize: 13 }}>A channel sends only when it is ticked here and its provider below is enabled.</p>
           </Card>
+          {canPayments ? (
+            <Integrations only={['smtp', 'whatsapp']} />
+          ) : (
+            <Card title="Email & WhatsApp providers">
+              <p className="muted">Only Super Administrators (permission “payments:manage”) can view or change the email (SMTP) and WhatsApp credentials.</p>
+            </Card>
+          )}
+          {perms.has('orders:read') ? <NotificationLog /> : null}
           <Card title="Product reviews" actions={saveBtn(() => save({ reviews: s.reviews }))}>
             <label className="check">
               <input type="checkbox" checked={s.reviews.enabled} onChange={(e) => set('reviews', 'enabled', e.target.checked)} /> Show reviews and allow verified buyers to write them
@@ -418,7 +426,74 @@ export function SettingsPage() {
   );
 }
 
-const Configured = ({ ok }: { ok: boolean }) => (ok ? <span className="badge badge--success">configured</span> : <span className="badge badge--warning">not configured on server</span>);
+type NotificationEntry = { _id: string; channel: 'email' | 'whatsapp'; to: string; template: string; status: 'sent' | 'failed' | 'skipped'; detail?: string; createdAt: string };
+
+/** Last 200 email / WhatsApp attempts, so staff can see whether customers actually received updates. */
+function NotificationLog() {
+  const [rows, setRows] = useState<NotificationEntry[] | null>(null);
+  const [err, setErr] = useState<unknown>(null);
+  const [filter, setFilter] = useState<'all' | 'failed' | 'skipped'>('all');
+  const load = useCallback(() => {
+    setErr(null);
+    get<NotificationEntry[]>('/api/admin/notifications').then(setRows).catch(setErr);
+  }, []);
+  useEffect(load, [load]);
+  const shown = (rows ?? []).filter((r) => filter === 'all' || r.status === filter);
+  return (
+    <Card
+      title="Delivery log"
+      actions={
+        <>
+          <select className="select" value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} aria-label="Filter delivery log">
+            <option value="all">All</option>
+            <option value="failed">Failed</option>
+            <option value="skipped">Skipped</option>
+          </select>
+          <button className="btn btn--ghost btn--sm" onClick={load}>
+            Refresh
+          </button>
+        </>
+      }
+    >
+      <ErrorBox error={err} />
+      {!rows ? (
+        err ? null : <Spinner />
+      ) : shown.length ? (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Channel</th>
+                <th>To</th>
+                <th>Message</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((r) => (
+                <tr key={r._id}>
+                  <td>{dt(r.createdAt)}</td>
+                  <td>{r.channel === 'email' ? 'Email' : 'WhatsApp'}</td>
+                  <td className="ltr">{r.to}</td>
+                  <td>{r.template}</td>
+                  <td>
+                    <span className={`badge ${r.status === 'sent' ? 'badge--success' : r.status === 'failed' ? 'badge--danger' : 'badge--warning'}`}>{r.status}</span>
+                    {r.detail ? <div className="muted" style={{ fontSize: 12 }}>{r.detail}</div> : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="muted">No {filter === 'all' ? '' : `${filter} `}messages yet.</p>
+      )}
+    </Card>
+  );
+}
+
+const Configured = ({ ok }: { ok: boolean }) => (ok ? <span className="badge badge--success">configured</span> : <span className="badge badge--warning">provider not enabled</span>);
 
 // ---------------------------------------------------------------------------------------------
 // Gateway / integration credentials
@@ -431,6 +506,8 @@ type IntegrationView = {
   key: string;
   label: string;
   kind: string;
+  /** One credential set (no test/live tabs) — email and WhatsApp. */
+  singleMode?: boolean;
   inUse: boolean;
   verifiable: boolean;
   docsUrl: string;
@@ -528,10 +605,15 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
       onChanged(next);
       setConfirmLive(null);
       setTyped('');
-      toast(enabled ? `${i.label.split(' ')[0]} enabled in ${target} mode` : 'Disabled');
+      toast(enabled ? (i.singleMode ? `${i.label} enabled` : `${i.label.split(' ')[0]} enabled in ${target} mode`) : 'Disabled');
+    });
+  const sendTest = () =>
+    run('test', async () => {
+      const r = await post<{ sent: boolean; to: string }>('/api/admin/integrations/smtp/test-message');
+      toast(`Test email sent to ${r.to}`);
     });
   const requestActivate = (enabled: boolean, target: 'test' | 'live') => {
-    if (enabled && target === 'live' && !(i.enabled && i.activeMode === 'live')) setConfirmLive({ enabled, mode: target });
+    if (enabled && i.kind === 'payment' && target === 'live' && !(i.enabled && i.activeMode === 'live')) setConfirmLive({ enabled, mode: target });
     else void activate(enabled, target);
   };
 
@@ -544,7 +626,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
           {i.inUse ? (
             <>
               <span className={`badge ${i.effective.enabled ? 'badge--success' : ''}`}>{i.effective.enabled ? 'enabled' : 'disabled'}</span>
-              <span className={`badge ${i.effective.mode === 'live' ? 'badge--danger' : 'badge--warning'}`}>{i.effective.mode} mode</span>
+              {i.singleMode ? null : <span className={`badge ${i.effective.mode === 'live' ? 'badge--danger' : 'badge--warning'}`}>{i.effective.mode} mode</span>}
             </>
           ) : (
             <span className="badge">stored only — not connected yet</span>
@@ -556,11 +638,11 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
       {i.effective.error ? <p className="alert alert--error">{i.effective.error} — re-enter the credentials.</p> : null}
       {i.effective.source === 'env' && i.env ? (
         <p className="alert alert--warning" style={{ fontSize: 13 }}>
-          This gateway currently runs on credentials from the server environment ({Object.entries(i.env)
+          This {i.kind === 'payment' ? 'gateway' : 'integration'} currently runs on settings from the server environment ({Object.entries(i.env)
             .filter(([, v]) => v)
             .map(([k, v]) => `${k}: ${v}`)
             .join(' · ')}
-          ). Saving credentials here moves management to the dashboard; the environment values are then ignored.
+          ). Saving here moves management to the dashboard; the environment values are then ignored.
         </p>
       ) : null}
       {!i.inUse ? (
@@ -570,6 +652,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
       ) : null}
       {production && i.effective.enabled && i.effective.mode === 'test' ? <p className="alert alert--warning">Test mode on the production site: customers cannot pay for real orders.</p> : null}
 
+      {i.singleMode ? null : (
       <Tabs
         tabs={[
           ['test', `Test credentials${i.activeMode === 'test' && i.enabled ? ' (active)' : ''}`],
@@ -578,6 +661,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
         value={mode}
         onChange={(v) => (setMode(v), setDraft({}), setReplacing({}))}
       />
+      )}
       <div className="form-grid form-grid--2 settings-form-grid">
         {i.fieldDefs.map((f) => {
           const view = m.fields.find((x) => x.key === f.key);
@@ -615,18 +699,39 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
         {i.verifiable ? <VerificationBadge v={m.verification} /> : <span className="muted">Automatic connection test not available for this integration.</span>}
         <div className="actions">
           <button className="btn btn--primary btn--sm" disabled={!dirty || !canStore || Boolean(busy)} onClick={() => void saveCreds()}>
-            {busy === 'save' ? 'Saving…' : `Save ${mode} credentials`}
+            {busy === 'save' ? 'Saving…' : i.singleMode ? 'Save settings' : `Save ${mode} credentials`}
           </button>
           {i.verifiable ? (
             <button className="btn btn--outline btn--sm" disabled={dirty || Boolean(busy) || m.missing.length > 0} onClick={() => void verify()} title={dirty ? 'Save first' : undefined}>
               {busy === 'verify' ? 'Testing…' : 'Test connection'}
             </button>
           ) : null}
+          {i.key === 'smtp' ? (
+            <button className="btn btn--outline btn--sm" disabled={dirty || Boolean(busy) || m.missing.length > 0} onClick={() => void sendTest()} title="Sends a real email to your own address">
+              {busy === 'test' ? 'Sending…' : 'Send test email to me'}
+            </button>
+          ) : null}
         </div>
       </div>
-      {m.missing.length ? <p className="muted" style={{ fontSize: 13 }}>Missing for {mode} mode: {m.missing.join(', ')}</p> : null}
+      {m.missing.length ? <p className="muted" style={{ fontSize: 13 }}>Missing{i.singleMode ? '' : ` for ${mode} mode`}: {m.missing.join(', ')}</p> : null}
 
-      {i.inUse ? (
+      {i.inUse && i.singleMode ? (
+        <div className="gateway__activate">
+          <strong>Use for sending</strong>
+          <span className="muted" style={{ fontSize: 13 }}>Enabling requires saved settings that passed “Test connection”. While disabled, messages are not sent and are logged as skipped.</span>
+          <div className="actions">
+            {i.enabled ? (
+              <button className="btn btn--ghost btn--sm danger" disabled={Boolean(busy)} onClick={() => window.confirm(`Disable ${i.label}? Customers will stop receiving these messages.`) && requestActivate(false, 'live')}>
+                Disable
+              </button>
+            ) : (
+              <button className="btn btn--primary btn--sm" disabled={Boolean(busy)} onClick={() => requestActivate(true, 'live')}>
+                Enable
+              </button>
+            )}
+          </div>
+        </div>
+      ) : i.inUse ? (
         <div className="gateway__activate">
           <strong>Use for payments</strong>
           <span className="muted" style={{ fontSize: 13 }}>

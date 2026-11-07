@@ -6,12 +6,24 @@ const revenueMatch = {
   paymentStatus: { $in: ['paid', 'partially_refunded', 'cod_pending', 'cod_collected'] },
 };
 
-function range(from?: Date, to?: Date) {
-  const end = to ?? new Date();
-  const start = from ?? new Date(end.getTime() - 29 * 24 * 3600 * 1000);
-  start.setHours(0, 0, 0, 0);
-  end.setHours(23, 59, 59, 999);
-  return { start, end };
+/** Saudi Arabia is UTC+3 all year (no daylight saving). Reports use Riyadh calendar days. */
+const RIYADH_OFFSET_MS = 3 * 3600 * 1000;
+const DAY_MS = 24 * 3600 * 1000;
+
+/** Start (00:00 Riyadh time, as a UTC instant) of the Riyadh calendar day containing `d`. */
+export function riyadhDayStart(d: Date): Date {
+  const local = new Date(d.getTime() + RIYADH_OFFSET_MS);
+  return new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - RIYADH_OFFSET_MS);
+}
+
+/**
+ * Inclusive report range in Riyadh calendar days — independent of the server's time zone (the
+ * hosting runs in UTC). Date-only inputs ("2026-11-01") mean that calendar day in Riyadh.
+ */
+export function range(from?: Date, to?: Date) {
+  const endDay = riyadhDayStart(to ?? new Date());
+  const startDay = from ? riyadhDayStart(from) : new Date(endDay.getTime() - 29 * DAY_MS);
+  return { start: startDay, end: new Date(endDay.getTime() + DAY_MS - 1) };
 }
 
 export async function overview() {
