@@ -10,6 +10,7 @@ import { useAuth } from '../state/auth';
 import { useCart } from '../state/cart';
 import { useSettings } from '../state/settings';
 import { useQuote } from '../state/useQuote';
+import { storeCopy } from '../storefront/copy';
 import { Summary } from './CartPage';
 
 const SA_CITIES = ['Riyadh', 'Jeddah', 'Makkah', 'Madinah', 'Dammam', 'Khobar', 'Dhahran', 'Taif', 'Tabuk', 'Abha', 'Khamis Mushait', 'Buraidah', 'Hail', 'Jazan', 'Najran', 'Al Ahsa', 'Jubail', 'Yanbu', 'Al Kharj', 'Qatif'];
@@ -200,11 +201,12 @@ export default function Checkout() {
   });
 
   return (
-    <div className="container">
-      <div className="page-head">
-        <h1>{t.checkout.title}</h1>
+    <div className="container cx-checkout">
+      <div className="cx-pagehead">
+        <span className="cx-eyebrow">{storeCopy(lang).secureCheckout}</span>
+        <h1 className="cx-display cx-display--xl">{t.checkout.title}</h1>
         {!user ? (
-          <p className="muted">
+          <p className="cx-pagehead__meta">
             {t.checkout.guestNote} <Link to={p('/login?next=/checkout')} style={{ textDecoration: 'underline' }}>{t.checkout.loginLink}</Link>
           </p>
         ) : null}

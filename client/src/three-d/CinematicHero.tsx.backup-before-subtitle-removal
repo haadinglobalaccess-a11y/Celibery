@@ -1,0 +1,101 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useI18n } from '../i18n/I18n';
+import { L } from '../lib/format';
+import { classifyVideoUrl, useMediaQuery } from '../lib/media';
+import type { Banner, HomeData } from '../lib/types';
+import { PremiumButton } from './PremiumButton';
+import { CampaignPlayback } from './CampaignPlayback';
+import './campaignHero.css';
+
+export function Ambient() {
+  return (
+    <div className="ambient" aria-hidden="true">
+      <span className="ambient__orb ambient__orb--a" />
+      <span className="ambient__orb ambient__orb--b" />
+      <span className="ambient__grid" />
+      <span className="ambient__noise" />
+    </div>
+  );
+}
+
+/** Internal links stored without a language prefix get the current one. */
+export function useLinkFor() {
+  const { p } = useI18n();
+  return (link?: string) => (link ? (link.startsWith('/') && !/^\/(ar|en)(\/|$)/.test(link) ? p(link) : link) : p('/shop'));
+}
+
+/** Video for a banner on this screen size, when it has a playable one. */
+export const bannerVideo = (b: Banner, isPhone: boolean) => {
+  const v = (isPhone && b.mobileVideoUrl) || b.videoUrl || '';
+  return v && classifyVideoUrl(v) ? v : '';
+};
+
+
+export function CinematicHero({ data }: { data: HomeData }) {
+  const { t, lang, p } = useI18n();
+  const linkFor = useLinkFor();
+  const phone = useMediaQuery('(max-width: 639px)');
+  const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const hero = useRef<HTMLElement>(null);
+  const touch = useRef<{ x: number; y: number } | null>(null);
+  const [active, setActive] = useState(0);
+  const [visible, setVisible] = useState(!document.hidden);
+  const [inView, setInView] = useState(true);
+  const [visit, setVisit] = useState(0);
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; addEventListener?: Function; removeEventListener?: Function } }).connection;
+  const [saveData, setSaveData] = useState(Boolean(connection?.saveData));
+  const products = (data.featured.length ? data.featured : data.categoryProducts.flatMap(c => c.items)).slice(0, 6);
+  const slides: { id: string; image?: string; poster?: string; mobileImage?: string; video?: string; mobileVideo?: string; title: string; subtitle: string; cta?: string; link?: string; product: boolean; description?: string; sortOrder?: number; durationSec?: number; videoDurationSec?: number; videoFallbackSec?: number }[] = [
+    ...(data.hero.videoUrl || data.hero.mobileVideoUrl || data.hero.posterUrl || data.hero.mobilePosterUrl ? [{ id: 'hero', sortOrder: data.hero.sortOrder ?? -1, durationSec: data.hero.durationSec, videoDurationSec: data.hero.videoDurationSec, videoFallbackSec: data.hero.videoFallbackSec, description: L(data.hero.description, lang), image: data.hero.posterUrl, mobileImage: data.hero.mobilePosterUrl, video: data.hero.videoUrl, mobileVideo: data.hero.mobileVideoUrl, title: L(data.hero.title, lang), subtitle: L(data.hero.subtitle, lang), cta: L(data.hero.ctaLabel, lang), link: data.hero.ctaLink, product: false }] : []),
+    ...data.hero.banners.map(b => ({ id: b._id, sortOrder: b.sortOrder ?? 0, durationSec: b.durationSec, videoDurationSec: b.videoDurationSec, videoFallbackSec: b.videoFallbackSec, description: L(b.description, lang), image: L(b.imageUrl, lang) || b.posterUrl, poster: b.posterUrl, mobileImage: L(b.mobileImageUrl, lang), video: b.videoUrl, mobileVideo: b.mobileVideoUrl, title: L(b.title, lang), subtitle: L(b.subtitle, lang), cta: L(b.ctaLabel, lang), link: b.link, product: false })),
+  ];
+  if (!slides.length) products.forEach(pr => slides.push({ id: pr._id, image: pr.images?.[0]?.url, mobileImage: undefined, video: undefined, mobileVideo: undefined, title: L(data.hero.title, lang) || t.home.heroTitle, subtitle: L(data.hero.subtitle, lang) || t.home.heroSubtitle, cta: L(data.hero.ctaLabel, lang), link: data.hero.ctaLink, product: true }));
+  if (!slides.length) slides.push({ id: 'empty', image: undefined, mobileImage: undefined, video: undefined, mobileVideo: undefined, title: L(data.hero.title, lang) || t.home.heroTitle, subtitle: L(data.hero.subtitle, lang) || t.home.heroSubtitle, cta: L(data.hero.ctaLabel, lang), link: data.hero.ctaLink, product: false });
+  slides.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const index = active % slides.length;
+  const slide = slides[index];
+  const mediaPlaying = visible && inView;
+  const progress = useCallback((value: number) => hero.current?.style.setProperty('--progress', String(value)), []);
+  const go = useCallback((n: number) => {
+    setActive((n + slides.length) % slides.length);
+    setVisit(value => value + 1);
+    progress(0);
+  }, [slides.length, progress]);
+  useEffect(() => {
+    const change = () => setVisible(!document.hidden);
+    const dataChange = () => setSaveData(Boolean(connection?.saveData));
+    document.addEventListener('visibilitychange', change);
+    connection?.addEventListener?.('change', dataChange);
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
+    if (hero.current) observer.observe(hero.current);
+    return () => { document.removeEventListener('visibilitychange', change); connection?.removeEventListener?.('change', dataChange); observer.disconnect(); };
+  }, [connection]);
+  const label = (en: string, ar: string) => lang === 'ar' ? ar : en;
+  return <section ref={hero} className="cine dark campaign-hero-slider" aria-roledescription={label('carousel', 'عرض شرائح')} aria-label={label('Featured campaigns', 'الحملات المميزة')}
+    onKeyDown={e => { if ((e.target as HTMLElement).closest('input,textarea')) return; if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); go(index + ((e.key === 'ArrowRight') !== (lang === 'ar') ? 1 : -1)); } }}
+    onTouchStart={e => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }} onTouchEnd={e => { if (!touch.current) return; const dx = e.changedTouches[0].clientX - touch.current.x; const dy = e.changedTouches[0].clientY - touch.current.y; if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(index + ((dx < 0) !== (lang === 'ar') ? 1 : -1)); touch.current = null; }}>
+    <div className="campaign-media" aria-hidden="true">{slides.map((s, i) => {
+      const raw = (phone && s.mobileVideo) || s.video;
+      const video = classifyVideoUrl(raw);
+      const poster = (phone && s.mobileImage) || s.poster || s.image;
+      return <div key={s.id} className={`campaign-slide ${s.product ? 'campaign-slide--product' : ''}`} data-active={i === index}>
+        {(s.image || s.mobileImage) && (i === index || i === (index + 1) % slides.length || i === (index - 1 + slides.length) % slides.length) && <picture>{s.mobileImage && <source media="(max-width: 639px)" srcSet={s.mobileImage} />}<img key={poster} src={(video && s.poster) || s.image || s.mobileImage} alt="" loading={i === index ? 'eager' : 'lazy'} {...{ fetchpriority: i === 0 ? 'high' : 'low' }} onError={e => { e.currentTarget.onerror = null; e.currentTarget.style.visibility = 'hidden'; }} /></picture>}
+        {i === index && <CampaignPlayback key={`${s.id}:${visit}:${phone}:${raw || ''}:${reduced}:${saveData}`} source={!reduced && !saveData ? video : null} poster={poster} playing={mediaPlaying}
+          imageDurationMs={(s.durationSec ?? 5) * 1000} videoDurationMs={(s.videoDurationSec ?? 0) * 1000} fallbackMs={Math.max(2, s.videoFallbackSec ?? 20) * 1000}
+          onProgress={progress} onEnd={() => go(index + 1)} />}
+      </div>;
+    })}</div>
+    <div className="container campaign-content"><div key={`${slide.id}:${visit}`} className="campaign-copy">
+      <span className="eyebrow eyebrow--line">{t.premium.heroEyebrow}</span>
+      <h1 className="cine__title">{slide.title || L(data.hero.title, lang) || t.home.heroTitle}</h1>
+      <p className="cine__sub">{slide.subtitle || L(data.hero.subtitle, lang) || t.home.heroSubtitle}</p>
+      <div className="cine__ctas"><PremiumButton to={linkFor(slide.link)} variant="light" size="lg">{slide.cta || t.home.shopNow}<span className="arrow"> &rarr;</span></PremiumButton></div>
+    </div></div>
+    <div className="container campaign-controls">
+      {slides.length > 1 && <button aria-label={label('Previous slide', 'الشريحة السابقة')} onClick={() => go(index - 1)}>&larr;</button>}<div className="campaign-indicators">{slides.map((s, i) => <button key={s.id} data-completed={i < index} aria-label={`${label('Slide', 'الشريحة')} ${i + 1}`} aria-current={i === index ? 'true' : undefined} onClick={() => go(i)}><span /></button>)}</div>{slides.length > 1 && <button aria-label={label('Next slide', 'الشريحة التالية')} onClick={() => go(index + 1)}>&rarr;</button>}
+      <span className="campaign-count" aria-live="off">{String(index + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
+      <a className="cine__scroll" href="#after-hero">{t.premium.scroll}<i aria-hidden="true" /></a>
+    </div>
+  </section>;
+}

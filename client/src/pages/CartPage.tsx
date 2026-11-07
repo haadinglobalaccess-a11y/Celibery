@@ -9,6 +9,7 @@ import type { Quote } from '../lib/types';
 import { useCart } from '../state/cart';
 import { useSettings } from '../state/settings';
 import { useQuote } from '../state/useQuote';
+import { storeCopy } from '../storefront/copy';
 
 export function Summary({ quote, children, showCode = true }: { quote: Quote | null; children?: ReactNode; showCode?: boolean }) {
   const { t, lang } = useI18n();
@@ -97,7 +98,7 @@ export default function CartPage() {
 
   if (!cart.items.length) {
     return (
-      <div className="container">
+      <div className="container cx-bag cx-bag--empty">
         <EmptyState
           icon="bag"
           title={t.cart.empty}
@@ -115,13 +116,18 @@ export default function CartPage() {
   const lineFor = (id: string) => quote?.lines.find((l) => l.productId === id);
   const blocked = Boolean(quote?.issues.length);
 
+  const sc = storeCopy(lang);
+  const count = cart.items.reduce((n, i) => n + i.quantity, 0);
+
   return (
-    <div className="container">
-      <div className="page-head">
-        <h1>{t.cart.title}</h1>
-      </div>
-      <div className="cart-layout">
-        <section>
+    <div className="container cx-bag">
+      <header className="cx-pagehead">
+        <span className="cx-eyebrow">{sc.bag}</span>
+        <h1 className="cx-display cx-display--xl">{t.cart.title}</h1>
+        <p className="cx-pagehead__meta">{sc.items(count)}</p>
+      </header>
+      <div className="cart-layout cx-bag__layout">
+        <section className="cx-bag__lines">
           {blocked ? (
             <p className="alert alert--warning" role="alert">
               {t.cart.changed}
@@ -133,8 +139,8 @@ export default function CartPage() {
             const name = L(line?.name ?? i.snapshot.name, lang);
             const max = Math.max(1, Math.min(line?.maxQuantity ?? 99, settings?.commerce?.maxQuantityPerItem ?? 10));
             return (
-              <div className="line" key={i.productId} data-testid="cart-line">
-                <Link to={p(`/p/${i.snapshot.slug}`)}>
+              <div className="line cx-bagline" key={i.productId} data-testid="cart-line">
+                <Link to={p(`/p/${i.snapshot.slug}`)} className="cx-bagline__media" tabIndex={-1} aria-hidden="true">
                   <ProductImage src={line?.image || i.snapshot.image} alt={name} />
                 </Link>
                 <div>
@@ -143,7 +149,7 @@ export default function CartPage() {
                       <Link className="line__name" to={p(`/p/${i.snapshot.slug}`)}>
                         {name}
                       </Link>
-                      {i.snapshot.model ? <div className="muted ltr" style={{ fontSize: 12 }}>{i.snapshot.model}</div> : null}
+                      {i.snapshot.model ? <div className="cx-bagline__model ltr">{i.snapshot.model}</div> : null}
                     </div>
                     <strong>{formatPrice(line ? line.unitPrice * i.quantity : i.snapshot.price * i.quantity, lang)}</strong>
                   </div>
@@ -159,7 +165,7 @@ export default function CartPage() {
                       max={max}
                       onChange={(n) => cart.setQty(i.productId, n)}
                     />
-                    <button className="link-btn" onClick={() => cart.remove(i.productId)}>
+                    <button className="link-btn cx-bagline__remove" onClick={() => cart.remove(i.productId)}>
                       {t.cart.remove}
                     </button>
                   </div>
@@ -167,8 +173,11 @@ export default function CartPage() {
               </div>
             );
           })}
-          <Link to={p('/shop')} className="btn btn--ghost" style={{ marginTop: 16 }}>
-            ← {t.cart.continue}
+          <Link to={p('/shop')} className="cx-link cx-bag__continue">
+            <span className="cx-arrow cx-arrow--back" aria-hidden="true">
+              ←
+            </span>{' '}
+            {t.cart.continue}
           </Link>
         </section>
         <Summary quote={quote}>

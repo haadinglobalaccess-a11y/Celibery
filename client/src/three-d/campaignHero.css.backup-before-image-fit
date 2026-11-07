@@ -1,0 +1,326 @@
+.campaign-hero-slider { min-height: min(92svh, 900px); padding-top: var(--header-h); touch-action: pan-y; }
+.campaign-media, .campaign-slide, .campaign-slide picture, .campaign-slide img, .campaign-slide video { position: absolute; inset: 0; width: 100%; height: 100%; }
+.campaign-media { z-index: -2; background: var(--dark); }
+.campaign-slide { opacity: 0; transition: opacity 1000ms ease; }
+.campaign-slide[data-active='true'] { opacity: 1; }
+.campaign-slide img, .campaign-slide video { object-fit: cover; }
+.campaign-slide img { transform: scale(1.035); transition: transform 8s ease-out; }
+.campaign-slide[data-active='true'] img { transform: scale(1); }
+.campaign-slide--product img { object-fit: contain; width: 52%; inset-inline-start: 46%; padding: 5%; filter: drop-shadow(0 35px 45px #0008); }
+.campaign-hero-slider::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, #0009, transparent 25%, #0008), linear-gradient(to var(--fade-side, right), #000c, #0002 80%); }
+.campaign-content { display: flex; align-items: center; padding-block: clamp(48px, 8vw, 110px); width: 100%; }
+.campaign-copy { max-width: 650px; width: 55%; }
+.campaign-copy > * { animation: campaign-enter 800ms both; }
+.campaign-copy > :nth-child(2) { animation-delay: 100ms; }
+.campaign-copy > :nth-child(3) { animation-delay: 220ms; }
+.campaign-copy > :nth-child(4) { animation-delay: 340ms; }
+.campaign-copy > :nth-child(5) { animation-delay: 440ms; }
+@keyframes campaign-enter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+.campaign-controls { display: flex; align-items: center; gap: 12px; padding-bottom: 28px; width: 100%; }
+.campaign-controls > button { border: 1px solid #ffffff60; background: #0003; color: white; border-radius: 50%; width: 44px; height: 44px; cursor: pointer; }
+.campaign-controls button:focus-visible, .campaign-controls a:focus-visible { outline: 2px solid white; outline-offset: 4px; }
+.campaign-indicators { display: flex; gap: 6px; }
+.campaign-indicators button { position: relative; width: clamp(24px, 4vw, 56px); height: 44px; border: 0; background: transparent; cursor: pointer; padding: 0; }
+.campaign-indicators button::before, .campaign-indicators span { content: ''; position: absolute; height: 3px; top: 20px; inset-inline: 0; background: #ffffff50; }
+.campaign-indicators span { background: white; transform: scaleX(0); transform-origin: left; }
+[dir='rtl'] .campaign-indicators span { transform-origin: right; }
+.campaign-indicators [aria-current='true'] span { transform: scaleX(var(--progress, 0)); }
+.campaign-count { color: #fff; font-variant-numeric: tabular-nums; font-size: 12px; }
+.campaign-controls .cine__scroll { margin-inline-start: auto; }
+/* Only homes with a rendered hero receive the overlay. Sticky/scrolled styling stays intact. */
+body:has(.campaign-hero-slider) .header { margin-bottom: calc(-1 * var(--header-h) - 1px); }
+body:has(.campaign-hero-slider) .header:not(.is-scrolled) { background: transparent; backdrop-filter: none; border-color: #ffffff25; color: #fff; }
+body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__nav > *,
+body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__actions > *,
+body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__bar > .icon-btn,
+body:has(.campaign-hero-slider) .header:not(.is-scrolled) .logo { color: #fff; }
+@media (max-width: 959px) { .campaign-copy { width: 72%; } .campaign-slide--product img { width: 60%; inset-inline-start: 40%; opacity: .75; } }
+@media (max-width: 639px) {
+  .campaign-hero-slider { min-height: 800px; min-height: min(960px, max(780px, 94svh)); }
+  .campaign-content { align-items: flex-end; padding-block: 260px 30px; }
+  .campaign-copy { width: 100%; }
+  .campaign-copy .cine__title { font-size: clamp(2.4rem, 9vw, 3.5rem); }
+  .campaign-copy .cine__sub { font-size: 1rem; }
+  .campaign-slide--product img { width: 100%; height: 45%; inset-inline-start: 0; top: 6%; padding: 7%; opacity: 1; }
+  .campaign-hero-slider::after { background: linear-gradient(180deg, #0009, #0001 20%, #000b 48%, #000e); }
+  .campaign-controls { gap: 6px; flex-wrap: wrap; }
+  .campaign-controls .cine__scroll { display: none; }
+  .campaign-count { margin-inline-start: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .campaign-copy > * { animation: none; } .campaign-slide, .campaign-slide img { transition: none; transform: none; } .campaign-indicators [aria-current='true'] span { transform: scaleX(1); } }
+
+/* Size provider players to this hero, rather than the browser viewport. */
+.campaign-media { container-type: size; }
+.campaign-media .embed-cover iframe { width: max(100cqw, 177.78cqh); height: max(100cqh, 56.25cqw); }
+
+.campaign-video { opacity: 0; transition: opacity 600ms ease; }
+.campaign-video.is-ready { opacity: 1; }
+.campaign-indicators [data-completed='true'] span { transform: scaleX(1); opacity: .7; }
+.campaign-indicators span { transform-origin: left !important; }
+.campaign-indicators { flex: 1; min-width: 0; }
+.campaign-indicators button { flex: 1; max-width: 90px; min-width: 10px; }
+.campaign-description { margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .campaign-video { transition: none; } }
+
+.campaign-indicators span { transition: transform 160ms linear; }
+@media (prefers-reduced-motion: reduce) { .campaign-indicators span { transition: none; } }
+
+/* CELIBERY HERO � DESKTOP VIEWPORT FIT */
+@media (min-width: 640px) {
+  .campaign-hero-slider {
+    min-height: 100svh;
+  }
+
+  .campaign-content {
+    padding-block: clamp(24px, 4vh, 52px);
+  }
+
+  .campaign-controls {
+    padding-bottom: clamp(12px, 2vh, 24px);
+  }
+}
+
+/* CELIBERY — cinematic editorial hero typography */
+.campaign-copy {
+  width: min(62%, 760px);
+  max-width: 760px;
+}
+.campaign-copy .eyebrow {
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  margin-bottom: clamp(18px, 2.5vh, 28px);
+}
+.campaign-copy .cine__title {
+  max-width: 760px;
+  font-size: clamp(3.4rem, 6.4vw, 7rem);
+  line-height: .94;
+  letter-spacing: -.055em;
+  font-weight: 800;
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+.campaign-copy .cine__sub {
+  max-width: 460px;
+  font-size: clamp(15px, 1.2vw, 19px);
+  line-height: 1.65;
+  opacity: .82;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+.campaign-copy .cine__ctas {
+  margin-top: 26px;
+  gap: 0;
+}
+@media (max-width: 959px) {
+  .campaign-copy { width: 76%; }
+}
+@media (max-width: 639px) {
+  .campaign-copy { width: 100%; }
+  .campaign-copy .eyebrow { margin-bottom: 14px; }
+  .campaign-copy .cine__title {
+    font-size: clamp(2.8rem, 12vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -.04em;
+    margin-bottom: 14px;
+  }
+  .campaign-copy .cine__sub {
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+}
+html[lang='ar'] .campaign-copy .cine__title {
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+
+/* CELIBERY SIGNATURE — LUXURY CINEMATIC VISUAL LAYER */
+.campaign-hero-slider {
+  isolation: isolate;
+  overflow: hidden;
+  background: #08090c;
+}
+
+.campaign-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 72% 46%, #c6d5ff16 0%, transparent 38%),
+    radial-gradient(ellipse at 18% 82%, #8c9bbf12 0%, transparent 42%),
+    linear-gradient(110deg, #05060970 0%, transparent 48%, #05060920 100%);
+  z-index: 2;
+}
+
+.campaign-slide img,
+.campaign-slide video {
+  filter: saturate(.91) contrast(1.07) brightness(.91);
+}
+
+.campaign-slide[data-active='true'] img {
+  translate: 0 0;
+  animation: celibery-cinematic-drift 12s ease-in-out infinite alternate;
+}
+
+@keyframes celibery-cinematic-drift {
+  from { translate: 0 0; }
+  to { translate: 0 -8px; }
+}
+
+.campaign-hero-slider::after {
+  background:
+    linear-gradient(90deg, #050609d9 0%, #05060980 34%, transparent 76%),
+    linear-gradient(0deg, #050609b8 0%, transparent 24%, #05060925 100%);
+}
+
+.campaign-copy {
+  width: min(48%, 680px);
+  position: relative;
+  z-index: 3;
+}
+
+.campaign-copy .eyebrow {
+  color: #d7d9e0;
+  letter-spacing: .28em;
+  font-size: 10px;
+  opacity: .82;
+}
+
+.campaign-copy .cine__title {
+  text-shadow: 0 8px 38px #0008;
+  max-width: 680px;
+}
+
+.campaign-copy .cine__sub {
+  color: #e0e2e8;
+  text-shadow: 0 3px 18px #0009;
+}
+
+.campaign-controls {
+  position: relative;
+  z-index: 4;
+}
+
+.campaign-controls > button {
+  width: 42px;
+  height: 42px;
+  border-color: #ffffff35;
+  background: #ffffff0b;
+  backdrop-filter: blur(14px);
+  transition: background 250ms ease, border-color 250ms ease, transform 250ms ease;
+}
+
+.campaign-controls > button:hover {
+  background: #ffffff20;
+  border-color: #ffffff90;
+  transform: scale(1.06);
+}
+
+.campaign-indicators button::before {
+  height: 2px;
+  background: #ffffff40;
+}
+
+.campaign-indicators span {
+  height: 2px;
+  background: #fff;
+  box-shadow: 0 0 12px #ffffff80;
+}
+
+.campaign-count {
+  color: #ffffffc9;
+  letter-spacing: .12em;
+}
+
+@media (max-width: 959px) {
+  .campaign-copy {
+    width: 70%;
+  }
+}
+
+@media (max-width: 639px) {
+  .campaign-hero-slider::after {
+    background:
+      linear-gradient(180deg, #05060925 0%, transparent 24%, #05060965 48%, #050609ed 100%);
+  }
+
+  .campaign-media::after {
+    background:
+      radial-gradient(ellipse at 50% 28%, #c6d5ff16, transparent 55%),
+      linear-gradient(180deg, transparent 35%, #05060930 100%);
+  }
+
+  .campaign-copy {
+    width: 100%;
+  }
+
+  .campaign-controls > button {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campaign-slide[data-active='true'] img {
+    animation: none;
+    translate: none;
+  }
+
+  .campaign-controls > button {
+    transition: none;
+  }
+}
+
+/* Remove unwanted white gap directly below the homepage hero */
+.campaign-hero-slider + .section { padding-top: 0; }
+
+/* CELIBERY � TRUE FULLSCREEN DESKTOP HERO */
+@media (min-width: 640px) {
+  .campaign-hero-slider {
+    height: 100svh;
+    min-height: 100svh;
+    box-sizing: border-box;
+  }
+}
+
+/* Premium spacing between fullscreen hero and categories */
+.campaign-hero-slider + .section { margin-top: 32px; }
+
+/* Refined luxury spacing below fullscreen hero */
+.campaign-hero-slider + .section { margin-top: 64px; }
+
+/* Align CELIBERY logo and desktop navigation on one center line */
+@media (min-width: 960px) {
+  .header__bar { align-items: center; }
+  .header__bar > a:first-of-type { display: inline-flex; align-items: center; align-self: center; line-height: 1; }
+  .header__bar > a:first-of-type .logo { display: inline-flex; align-items: center; line-height: 1; }
+  .header__bar > a:first-of-type .logo img { display: block; }
+  .header__nav { align-self: center; }
+}
+
+/* Fine-tune CELIBERY logo vertical alignment */
+@media (min-width: 960px) { .header__bar > a:first-of-type .logo { transform: translateY(2px); } }
+
+/* Refined premium hero headline */
+.campaign-copy .cine__title { font-size: clamp(3.1rem, 5.2vw, 5.8rem); font-weight: 650; }
+@media (max-width: 639px) { .campaign-copy .cine__title { font-size: clamp(2.5rem, 9vw, 3.5rem); font-weight: 650; } }
+
+/* UGREEN-inspired refined editorial headline */
+.campaign-copy .cine__title { font-size: clamp(2.4rem, 3.8vw, 4.2rem); font-weight: 550; line-height: 1.08; letter-spacing: -.035em; text-transform: none; max-width: 620px; }
+@media (max-width: 639px) { .campaign-copy .cine__title { font-size: clamp(2.2rem, 8vw, 3rem); font-weight: 550; line-height: 1.12; } }
+
+/* UGREEN green hover for hero CTA */
+.campaign-copy .cine__ctas a:hover { background: #00a651 !important; color: #fff !important; border-color: #00a651 !important; }
+
+/* Final CELIBERY transparent CTA with cyan hover */
+.campaign-copy .cine__ctas a { background: transparent !important; color: #fff !important; border: 1px solid rgba(255,255,255,.85) !important; transition: all 250ms ease !important; }
+.campaign-copy .cine__ctas a:hover { background: #02B1C0 !important; color: #fff !important; border-color: #02B1C0 !important; }
+
+/* Exact sampled CELIBERY logo color */
+.campaign-copy .cine__ctas a:hover { background-color: rgb(2,177,192) !important; border-color: rgb(2,177,192) !important; color: #fff !important; }

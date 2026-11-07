@@ -88,13 +88,13 @@ export function Header() {
 
   return (
     <>
-      <Announcement fallback={`${t.service.delivery}${settings?.commerce?.warrantyEnabled && months ? ` Â· ${t.service.warranty(months)}` : ''}`} />
+      <Announcement fallback={`${t.service.delivery}${settings?.commerce?.warrantyEnabled && months ? ` · ${t.service.warranty(months)}` : ''}`} />
       <header className={`header ${scrolled ? 'is-scrolled' : ''}`} onMouseLeave={() => setMega(false)}>
         <div className="container header__bar">
           <button className="icon-btn mobile-only" aria-label={t.nav.menu} aria-expanded={mobile} onClick={() => setMobile(true)}>
             <Icon name="menu" />
           </button>
-          <Link to={p('/')} aria-label="CELIBERY â€” home">
+          <Link to={p('/')} aria-label="CELIBERY — home">
             <Logo onDark={heroOverlay && !scrolled} />
           </Link>
           <nav className="header__nav" aria-label="Main">
@@ -156,8 +156,8 @@ export function Header() {
               ))}
               <div className="mega__side">
                 <span className="muted">{t.home.bundlesText}</span>
-                <Link to={p('/bundles')}>{t.nav.bundles} â†’</Link>
-                <Link to={p('/shop')}>{t.nav.allProducts} â†’</Link>
+                <Link to={p('/bundles')}>{t.nav.bundles} →</Link>
+                <Link to={p('/shop')}>{t.nav.allProducts} →</Link>
               </div>
             </div>
           </div>
@@ -202,7 +202,7 @@ export function Header() {
   );
 }
 
-/** Announcement bar (Admin â†’ Settings â†’ Store): custom bilingual text and link, or the default delivery & warranty message. */
+/** Announcement bar (Admin → Settings → Store): custom bilingual text and link, or the default delivery & warranty message. */
 function Announcement({ fallback }: { fallback: string }) {
   const { lang, p } = useI18n();
   const settings = useSettings();
@@ -215,13 +215,13 @@ function Announcement({ fallback }: { fallback: string }) {
     const to = /^\/(ar|en)(\/|$)/.test(link) ? link : p(link);
     return (
       <Link className="announce announce--link" to={to}>
-        {text} <span aria-hidden="true">â†’</span>
+        {text} <span aria-hidden="true">→</span>
       </Link>
     );
   }
   return /^https:\/\//.test(link) ? (
     <a className="announce announce--link" href={link} rel="noopener noreferrer">
-      {text} <span aria-hidden="true">â†’</span>
+      {text} <span aria-hidden="true">→</span>
     </a>
   ) : (
     <div className="announce">{text}</div>

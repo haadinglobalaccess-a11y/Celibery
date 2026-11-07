@@ -39,6 +39,7 @@ export function RealityBreak({ product }: { product: ProductCardData }) {
   const photo = useRef<HTMLDivElement>(null);
   const pieces = useRef<(HTMLDivElement | null)[]>([]);
   const [ready, setReady] = useState(false);
+  const [replay, setReplay] = useState(0);
 
   useEffect(() => {
     const image = photo.current?.querySelector('img');
@@ -77,20 +78,20 @@ export function RealityBreak({ product }: { product: ProductCardData }) {
     const tick = (now: number) => {
       frame = 0;
       if (!last) last = now;
-      elapsed = (elapsed + Math.min((now - last) / 1000, .1)) % duration;
+      elapsed = Math.min(duration, elapsed + Math.min((now - last) / 1000, .1));
       last = now;
       if (now - rendered >= (mobile ? 1000 / 30 : 1000 / 60) || elapsed === duration) { draw(elapsed); rendered = now; }
-      frame = requestAnimationFrame(tick);
+      if (elapsed < duration) frame = requestAnimationFrame(tick);
     };
     const sync = () => {
       cancelAnimationFrame(frame); frame = 0; last = 0;
-      if (ready && inView && !document.hidden && !reduced) frame = requestAnimationFrame(tick);
+      if (ready && inView && !document.hidden && !reduced && elapsed < duration) frame = requestAnimationFrame(tick);
     };
     const observer = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }, { threshold: .25 });
     observer.observe(host);
     document.addEventListener('visibilitychange', sync);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); document.removeEventListener('visibilitychange', sync); };
-  }, [ready, reduced, mobile, glass]);
+  }, [ready, replay, reduced, mobile, glass]);
 
   return <section className="section reality-break" aria-labelledby={id}>
     <div className="container">
@@ -111,8 +112,9 @@ export function RealityBreak({ product }: { product: ProductCardData }) {
             </div>
           </div>
           {!ready ? <span className="reality-break__loading">{lang === 'ar' ? 'جارٍ تحميل المنتج' : 'Loading product'}</span> : null}
+          {!reduced ? <button type="button" className="reality-break__replay btn btn--outline btn--sm" onClick={() => setReplay(value => value + 1)} disabled={!ready}>{lang === 'ar' ? 'إعادة العرض' : 'Replay moment'} <span aria-hidden="true">↻</span></button> : null}
         </div>
-        <div className="reality-break__copy"><span className="eyebrow">CELIBERY</span><h3>{L(product.name, lang)}</h3>{L(product.shortDescription, lang) ? <p className="muted">{L(product.shortDescription, lang)}</p> : null}<Price price={product.price} compareAt={product.compareAtPrice} /><Link className="btn btn--primary" to={p(`/p/${product.slug}`)}>{lang === 'ar' ? 'عرض المنتج' : 'View Product'} <span aria-hidden="true">{lang === 'ar' ? '→' : '→’'}</span></Link></div>
+        <div className="reality-break__copy"><span className="eyebrow">CELIBERY</span><h3>{L(product.name, lang)}</h3>{L(product.shortDescription, lang) ? <p className="muted">{L(product.shortDescription, lang)}</p> : null}<Price price={product.price} compareAt={product.compareAtPrice} /><Link className="btn btn--primary" to={p(`/p/${product.slug}`)}>{lang === 'ar' ? 'عرض المنتج' : 'View Product'} <span aria-hidden="true">{lang === 'ar' ? '←' : '→'}</span></Link></div>
       </div>
     </div>
   </section>;

@@ -12,6 +12,7 @@ import type { Address, OrderView, ProductCardData } from '../lib/types';
 import { useAuth } from '../state/auth';
 import { useToast } from '../state/toast';
 import { useWishlist } from '../state/wishlist';
+import { storeCopy } from '../storefront/copy';
 
 export function AccountLayout() {
   const { t, p } = useI18n();
@@ -244,16 +245,19 @@ export function AccountProfile() {
 
 /** Works for guests (local list) and customers (account list). */
 export function WishlistPage() {
-  const { t, p } = useI18n();
+  const { t, p, lang } = useI18n();
   const wish = useWishlist();
   const ids = [...wish.ids];
   const { data, loading } = useApi<ProductCardData[]>(ids.length ? `/api/products?ids=${ids.join(',')}&limit=60` : null);
   useSeo(t.nav.wishlist);
+  const sc = storeCopy(lang);
   return (
-    <div className="container" style={{ paddingBottom: 64 }}>
-      <div className="page-head">
-        <h1>{t.nav.wishlist}</h1>
-      </div>
+    <div className="container cx-saved">
+      <header className="cx-pagehead">
+        <span className="cx-eyebrow">{sc.saved}</span>
+        <h1 className="cx-display cx-display--xl">{t.nav.wishlist}</h1>
+        {ids.length ? <p className="cx-pagehead__meta">{sc.savedCount(ids.length)}</p> : null}
+      </header>
       {!ids.length ? (
         <EmptyState
           icon="heart"
@@ -267,9 +271,9 @@ export function WishlistPage() {
       ) : loading || !data ? (
         <Spinner />
       ) : (
-        <div className="grid grid--4">
-          {data.map((pr) => (
-            <ProductCard key={pr._id} product={pr} />
+        <div className="cx-grid cx-grid--4">
+          {data.map((pr, i) => (
+            <ProductCard key={pr._id} product={pr} index={i} />
           ))}
         </div>
       )}

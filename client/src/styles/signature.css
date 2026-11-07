@@ -1,0 +1,244 @@
+/* =====================================================================
+   CELIBERY Signature layer — shared chrome refinements.
+   Presentation only. Loads after the legacy stylesheets and before
+   celibery.css (the cx-* design system used by the redesigned pages).
+
+   Scoping rule: every selector starts from a storefront-only root
+   (#main, .header, .footer, .announce, .drawer, .sticky-buy) so the
+   Admin Dashboard — which shares .btn/.input/.card — is untouched.
+   --accent is never redefined here: Admin → Settings → Brand stays in charge.
+   ===================================================================== */
+
+/* ---------- 1. Design tokens (scoped, inherited by storefront only) ---------- */
+#main,
+.header,
+.footer,
+.announce,
+.drawer,
+.sticky-buy {
+  --ink: #1d1d1f;
+  --ink-2: #3a3a3e;
+  --surface: #f5f5f7;
+  --surface-2: #ebebef;
+  --line: #e3e3e8;
+  --muted: #6e6e73;
+  --muted-2: #8e8e93;
+  --dark: #0a0a0b;
+  --dark-2: #151517;
+  --dark-line: #26262b;
+  --sg-hair: rgb(29 29 31 / 0.08);
+  --sg-hair-dark: rgb(255 255 255 / 0.1);
+  --sg-ease: cubic-bezier(0.22, 0.7, 0.25, 1);
+  --sg-radius: 22px;
+  --sg-radius-sm: 14px;
+  --sg-lift: 0 1px 2px rgb(0 0 0 / 0.04), 0 18px 40px -26px rgb(0 0 0 / 0.22);
+}
+
+/* ---------- 2. Page titles (account, policy, order pages) ---------- */
+#main .page-head h1 {
+  font-size: clamp(2rem, 1.3rem + 2.6vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+  text-shadow: none;
+}
+html[lang='ar'] #main .page-head h1 {
+  letter-spacing: 0;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+/* ---------- 3. Announcement & header ---------- */
+.announce {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  background: var(--dark);
+  color: rgb(255 255 255 / 0.86);
+}
+.announce--link:hover {
+  color: #fff;
+}
+.header {
+  border-bottom: 1px solid var(--sg-hair);
+}
+.header .header__nav > a,
+.header .header__nav > button {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+html[lang='ar'] .header .header__nav > a,
+html[lang='ar'] .header .header__nav > button {
+  letter-spacing: 0;
+}
+.header .header__nav > a::after,
+.header .header__nav > button::after {
+  height: 1.5px;
+  bottom: 10px;
+}
+/* Conventional action order: language · wishlist · account · cart (same in both languages). */
+.header .header__actions {
+  gap: 6px;
+}
+.header .header__actions > *,
+.header .header__actions > a[aria-label] {
+  order: 0;
+}
+.header .header__actions > .icon-btn {
+  width: 40px;
+  height: 40px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    background 220ms var(--sg-ease),
+    color 220ms var(--sg-ease);
+}
+.header .header__actions > .icon-btn:hover {
+  background: var(--surface);
+}
+.header.is-scrolled .header__actions > .icon-btn {
+  background: transparent;
+  border-color: transparent;
+}
+.header.is-scrolled .header__actions > .icon-btn:hover {
+  background: rgb(29 29 31 / 0.06);
+}
+body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__actions > .icon-btn {
+  background: transparent;
+  border-color: transparent;
+}
+body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__actions > .icon-btn:hover {
+  background: rgb(255 255 255 / 0.14);
+}
+.header .header__actions .lang-switch {
+  margin-inline-end: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-width: 1px;
+}
+.header .header__actions .badge-count {
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+  border: 2px solid #fff;
+}
+
+/* Mega menu: editorial panel */
+.header .mega {
+  border-top: 1px solid var(--sg-hair);
+  box-shadow: 0 40px 80px -48px rgb(0 0 0 / 0.35);
+}
+.header .mega__cat {
+  border-radius: var(--sg-radius-sm);
+}
+.header .mega__cat img {
+  border-radius: 12px;
+  background: var(--surface);
+}
+.header .mega__cat strong {
+  letter-spacing: -0.01em;
+}
+
+/* Mobile navigation drawer */
+.drawer .mnav > a {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-bottom: 1px solid var(--sg-hair);
+}
+html[lang='ar'] .drawer .mnav > a {
+  letter-spacing: 0;
+}
+
+/* ---------- 4. Legacy buttons still used on account/auth/order pages ---------- */
+#main .btn,
+.sticky-buy .btn,
+.drawer .btn {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  transition:
+    background 220ms var(--sg-ease),
+    color 220ms var(--sg-ease),
+    border-color 220ms var(--sg-ease),
+    box-shadow 320ms var(--sg-ease),
+    transform 320ms var(--sg-ease);
+}
+#main .btn--primary:not(:disabled),
+.sticky-buy .btn--primary:not(:disabled) {
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 10px 24px -14px rgb(0 0 0 / 0.5);
+}
+@media (hover: hover) and (pointer: fine) {
+  #main .btn--primary:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+}
+#main .btn--outline {
+  border-width: 1px;
+}
+
+/* ---------- 5. Form controls (checkout, account, auth) ---------- */
+#main .input,
+#main .select,
+#main .textarea {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  transition:
+    border-color 200ms var(--sg-ease),
+    box-shadow 200ms var(--sg-ease);
+}
+#main .input:hover,
+#main .select:hover,
+#main .textarea:hover {
+  border-color: #c9c9d0;
+}
+#main .input:focus,
+#main .select:focus,
+#main .textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 4px rgb(29 29 31 / 0.08);
+}
+#main .label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+#main .check input[type='checkbox'],
+#main .check input[type='radio'],
+#main .pay-option input[type='radio'] {
+  accent-color: var(--ink);
+}
+#main .crumbs {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+#main .crumbs a:hover {
+  color: var(--ink);
+}
+
+/* ---------- 6. Sticky buy bar (phones, product page) ---------- */
+.sticky-buy {
+  border-top: 1px solid var(--sg-hair);
+  box-shadow: 0 -16px 40px -28px rgb(0 0 0 / 0.35);
+}
+.sticky-buy .price__now {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- 7. Motion preferences ---------- */
+@media (prefers-reduced-motion: reduce) {
+  #main .btn,
+  .header .header__actions > .icon-btn {
+    transition: none;
+  }
+  #main .btn--primary:not(:disabled):hover {
+    transform: none;
+  }
+}

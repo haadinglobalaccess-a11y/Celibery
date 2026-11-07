@@ -99,10 +99,10 @@ export function Footer() {
   const social = Object.entries(b?.social ?? {}).filter(([, v]) => v);
 
   return (
-    <footer className="footer">
+    <footer className="footer cx-footer">
       <div className="container">
-        <div className="footer__grid">
-          <div>
+        <div className="footer__grid cx-footer__grid">
+          <div className="cx-footer__brand">
             <Logo onDark />
             <p>{L(b?.name, lang)}</p>
             {L(b?.address, lang) ? <p>{L(b?.address, lang)}</p> : null}
@@ -204,11 +204,14 @@ export function Footer() {
                 <Link to={p('/page/terms')}>{t.footer.terms}</Link>
               </li>
             </ul>
-            <h3 style={{ marginTop: 24 }}>{t.footer.payments}</h3>
+            <h3 className="cx-footer__sub">{t.footer.payments}</h3>
             <PayLogos />
           </div>
         </div>
-        <div className="footer__legal">
+        <div className="cx-footer__word ltr" aria-hidden="true">
+          CELIBERY
+        </div>
+        <div className="footer__legal cx-footer__legal">
           <span>
             © {new Date().getFullYear()} {L(b?.legalName, lang) || L(b?.name, lang)} — {t.footer.rights}
           </span>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
-import { ProductCard } from '../components/ProductCard';
+import { ProductCard, ProductImage } from '../components/ProductCard';
 import { Crumbs, ErrorState, NotFound, Price, Quantity, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { connectorLabel, formatInt, L } from '../lib/format';
@@ -11,7 +11,10 @@ import type { ProductDetail } from '../lib/types';
 import { useCart } from '../state/cart';
 import { useSettings } from '../state/settings';
 import { useWishlist } from '../state/wishlist';
-import { DimensionalIcon, flyToCart, InteractiveProductGallery, SpatialCarousel } from '../three-d';
+import { storeCopy } from '../storefront/copy';
+import { Kinetic, TheatreStage } from '../storefront/motion';
+import { ProductRail } from '../storefront/ProductRail';
+import { flyToCart, InteractiveProductGallery } from '../three-d';
 
 export default function ProductPage() {
   const { slug } = useParams();
@@ -54,10 +57,13 @@ export default function ProductPage() {
   if (data.attributes?.connectors?.length) attrs.push([t.shop.connector, data.attributes.connectors.map((c) => connectorLabel(c, lang)).join('، ')]);
   if (data.attributes?.color) attrs.push([t.shop.color, L(data.attributes.color.name, lang)]);
 
+  const c = storeCopy(lang);
+  const specRows: [string, string][] = [...attrs, ...data.specs.map((s) => [L(s.label, lang), L(s.value, lang)] as [string, string])];
+
   return (
-    <div className="has-sticky-buy">
-      <div className="container">
-        <div className="page-head" style={{ paddingBottom: 0 }}>
+    <div className="has-sticky-buy cx-pdp">
+      <section className="cx-pdp__hero">
+        <div className="container">
           <Crumbs
             items={[
               { label: t.common.home, to: p('/') },
@@ -65,165 +71,204 @@ export default function ProductPage() {
               { label: name },
             ]}
           />
-        </div>
-        <div className="pdp pdp--3d">
-          <InteractiveProductGallery key={slug} images={images} name={name} category={category?.slug} stageRef={stageRef} />
-
-          <div className="pdp__info">
-            {data.dataSource === 'demo' ? (
-              <div className="alert alert--warning" style={{ marginBottom: 16 }}>
-                {t.product.sampleNote}
-              </div>
-            ) : null}
-            <h1>{name}</h1>
-            <div className="pdp__meta">
-              {data.series ? (
-                <span>
-                  {t.product.series}: <Link to={p(`/search?q=${encodeURIComponent(data.series)}`)}>{data.series}</Link>
-                </span>
-              ) : null}
-              {data.model ? (
-                <span>
-                  {t.product.model}: <span className="ltr">{data.model}</span>
-                </span>
-              ) : null}
-              <span>
-                {t.product.sku}: <span className="ltr">{data.sku}</span>
-              </span>
-              {data.available ? (
-                <span className={`badge ${data.lowStock ? 'badge--warning' : 'badge--success'}`}>{data.lowStock ? t.product.lowStock : t.product.inStock}</span>
-              ) : (
-                <span className="badge badge--danger">{t.product.outOfStock}</span>
-              )}
-            </div>
-            <div className="pdp__price">
-              <Price price={data.price} compareAt={data.compareAtPrice} />
-              {data.discountPercent ? (
-                <span className="badge badge--accent" style={{ marginInlineStart: 8 }}>
-                  {t.product.save(data.discountPercent)}
-                </span>
-              ) : null}
-            </div>
-            <small className="muted">{t.product.vatIncluded}</small>
-            {L(data.shortDescription, lang) ? <p style={{ marginTop: 16 }}>{L(data.shortDescription, lang)}</p> : null}
-
-            <div className="pdp__buy">
-              <Quantity label={t.product.quantity} value={qty} onChange={setQty} max={maxQ} />
-              <button className={`btn btn--primary btn--lg ${justAdded ? 'is-added' : ''}`} disabled={!data.available} onClick={add} data-testid="add-to-cart">
-                {justAdded ? <Icon name="check" className="icon" /> : null}
-                {!data.available ? t.product.outOfStock : justAdded ? t.product.added : t.product.addToCart}
-              </button>
-              <button className="icon-btn" aria-pressed={inWish} aria-label={inWish ? t.product.removeWishlist : t.product.addWishlist} onClick={() => void wish.toggle(data._id)} style={{ border: '1.5px solid var(--line)', color: inWish ? '#e11d48' : undefined }}>
-                <Icon name="heart" />
-              </button>
+          <div className="pdp cx-pdp__grid">
+            <div className="cx-pdp__stage">
+              <span className="cx-pdp__halo" aria-hidden="true" />
+              <InteractiveProductGallery key={slug} images={images} name={name} category={category?.slug} stageRef={stageRef} />
             </div>
 
-            <div className="info-list">
-              <div className="info-row d-icon-host">
-                <DimensionalIcon name="truck" size="sm" />
-                <div>
-                  <strong>{data.delivery.free ? t.product.freeDelivery : t.product.shipping}</strong>
-                  <span className="muted">
-                    {data.delivery.courier ? t.product.deliveryBy(data.delivery.courier) : ''}
-                    {L(data.delivery.estimate, lang) ? ` · ${L(data.delivery.estimate, lang)}` : ''}
-                  </span>
-                </div>
-              </div>
-              {data.warrantyMonths ? (
-                <div className="info-row d-icon-host">
-                  <DimensionalIcon name="shield" size="sm" />
-                  <div>
-                    <strong>{t.service.warranty(data.warrantyMonths)}</strong>
-                    <Link to={p('/page/warranty')} className="muted">
-                      {t.product.readPolicy}
-                    </Link>
-                  </div>
-                </div>
-              ) : null}
-              <div className="info-row d-icon-host">
-                <DimensionalIcon name="return" size="sm" />
-                <div>
-                  <strong>{t.product.returns}</strong>
-                  <Link to={p('/page/returns')} className="muted">
-                    {t.product.returnsText}
+            <div className="pdp__info cx-pdp__info">
+              {data.dataSource === 'demo' ? <div className="cx-note">{t.product.sampleNote}</div> : null}
+              <div className="cx-pdp__kicker">
+                {category ? (
+                  <Link to={p(`/c/${category.slug}`)} className="cx-eyebrow">
+                    {L(category.name, lang)}
                   </Link>
+                ) : null}
+                {data.series ? (
+                  <Link className="cx-pdp__series" to={p(`/search?q=${encodeURIComponent(data.series)}`)}>
+                    {t.product.series}: {data.series}
+                  </Link>
+                ) : null}
+              </div>
+              <h1 className="cx-pdp__title">{name}</h1>
+              {L(data.shortDescription, lang) ? <p className="cx-pdp__lead">{L(data.shortDescription, lang)}</p> : null}
+
+              <div className="pdp__meta cx-pdp__meta">
+                {data.model ? (
+                  <span>
+                    {t.product.model} <span className="ltr">{data.model}</span>
+                  </span>
+                ) : null}
+                <span>
+                  {t.product.sku} <span className="ltr">{data.sku}</span>
+                </span>
+                {data.available ? (
+                  <span className={`cx-stock ${data.lowStock ? 'cx-stock--low' : ''}`}>{data.lowStock ? t.product.lowStock : t.product.inStock}</span>
+                ) : (
+                  <span className="cx-stock cx-stock--out">{t.product.outOfStock}</span>
+                )}
+              </div>
+
+              <div className="cx-pdp__purchase">
+                <div className="pdp__price cx-pdp__price">
+                  <Price price={data.price} compareAt={data.compareAtPrice} />
+                  {data.discountPercent ? <span className="cx-tag cx-tag--accent">{t.product.save(data.discountPercent)}</span> : null}
                 </div>
+                <small className="cx-pdp__vat">{t.product.vatIncluded}</small>
+
+                <div className="pdp__buy cx-buy">
+                  <Quantity label={t.product.quantity} value={qty} onChange={setQty} max={maxQ} />
+                  <button className={`cx-btn cx-btn--solid cx-buy__add ${justAdded ? 'is-added' : ''}`} disabled={!data.available} onClick={add} data-testid="add-to-cart">
+                    {justAdded ? <Icon name="check" className="icon" /> : <Icon name="bag" className="icon" />}
+                    {!data.available ? t.product.outOfStock : justAdded ? t.product.added : t.product.addToCart}
+                  </button>
+                  <button className="cx-buy__wish" aria-pressed={inWish} aria-label={inWish ? t.product.removeWishlist : t.product.addWishlist} onClick={() => void wish.toggle(data._id)}>
+                    <Icon name="heart" />
+                  </button>
+                </div>
+
+                <ul className="cx-services" aria-label={c.services}>
+                  <li>
+                    <Icon name="truck" />
+                    <div>
+                      <strong>{data.delivery.free ? t.product.freeDelivery : t.product.shipping}</strong>
+                      <span>
+                        {data.delivery.courier ? t.product.deliveryBy(data.delivery.courier) : ''}
+                        {L(data.delivery.estimate, lang) ? ` · ${L(data.delivery.estimate, lang)}` : ''}
+                      </span>
+                    </div>
+                  </li>
+                  {data.warrantyMonths ? (
+                    <li>
+                      <Icon name="shield" />
+                      <div>
+                        <strong>{t.service.warranty(data.warrantyMonths)}</strong>
+                        <Link to={p('/page/warranty')}>{t.product.readPolicy}</Link>
+                      </div>
+                    </li>
+                  ) : null}
+                  <li>
+                    <Icon name="return" />
+                    <div>
+                      <strong>{t.product.returns}</strong>
+                      <Link to={p('/page/returns')}>{t.product.returnsText}</Link>
+                    </div>
+                  </li>
+                </ul>
               </div>
             </div>
-
-            {L(data.description, lang) ? (
-              <details className="acc" open>
-                <summary>{t.product.description}</summary>
-                <div style={{ whiteSpace: 'pre-line' }}>{L(data.description, lang)}</div>
-              </details>
-            ) : null}
-            {data.specs.length || attrs.length ? (
-              <details className="acc" open>
-                <summary>{t.product.specs}</summary>
-                <div>
-                  <table className="specs">
-                    <tbody>
-                      {attrs.map(([k, v]) => (
-                        <tr key={k}>
-                          <th scope="row">{k}</th>
-                          <td>{v}</td>
-                        </tr>
-                      ))}
-                      {data.specs.map((s, i) => (
-                        <tr key={i}>
-                          <th scope="row">{L(s.label, lang)}</th>
-                          <td>{L(s.value, lang)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </details>
-            ) : null}
-            {data.isBundle && data.bundleContents.length ? (
-              <details className="acc" open>
-                <summary>{t.product.inTheBox}</summary>
-                <div>
-                  <ul>
-                    {data.bundleContents.map((b, i) =>
-                      b.product ? (
-                        <li key={i}>
-                          <span className="ltr">{b.quantity}×</span> <Link to={p(`/p/${b.product.slug}`)}>{L(b.product.name, lang)}</Link>
-                        </li>
-                      ) : null,
-                    )}
-                  </ul>
-                </div>
-              </details>
-            ) : null}
           </div>
         </div>
+      </section>
 
-        {data.bundles.length ? (
-          <section className="section section--tight">
-            <div className="section__head">
-              <h2>{t.product.bundlesWith}</h2>
+      {/* Below-the-fold product story: animated by the theatre; the purchase area above is never hidden. */}
+      <TheatreStage>
+      {attrs.length ? (
+        <section className="cx-facts is-dark" aria-label={c.keyFacts}>
+          <div className="container">
+            <span className="cx-eyebrow" data-fx="rise">{c.keyFacts}</span>
+            <dl className="cx-facts__grid" data-fx="stagger">
+              {attrs.map(([k, v]) => (
+                <div key={k} className="cx-facts__item">
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+      ) : null}
+
+      {L(data.description, lang) ? (
+        <section className="cx-pdp__section cx-overview">
+          <div className="container cx-split">
+            <div>
+              <span className="cx-eyebrow">{c.overview}</span>
+              <Kinetic text={t.product.description} className="cx-display" />
             </div>
-            <div className="scroller">
+            <div className="cx-overview__text" data-fx="rise">{L(data.description, lang)}</div>
+          </div>
+        </section>
+      ) : null}
+
+      {specRows.length ? (
+        <section className="cx-pdp__section cx-specs" aria-labelledby="cx-specs-title">
+          <div className="container cx-split">
+            <div>
+              <span className="cx-eyebrow">{c.techSpecs}</span>
+              <Kinetic id="cx-specs-title" text={t.product.specs} className="cx-display" />
+            </div>
+            <dl className="cx-specs__list" data-fx="stagger">
+              {specRows.map(([k, v], i) => (
+                <div key={`${k}-${i}`} className="cx-specs__row">
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+      ) : null}
+
+      {data.isBundle && data.bundleContents.length ? (
+        <section className="cx-pdp__section cx-inbox" aria-labelledby="cx-inbox-title">
+          <div className="container cx-split">
+            <div>
+              <span className="cx-eyebrow">{c.inTheBox}</span>
+              <h2 id="cx-inbox-title" className="cx-display">
+                {t.product.inTheBox}
+              </h2>
+            </div>
+            <ul className="cx-inbox__list" data-fx="stagger">
+              {data.bundleContents.map((b, i) =>
+                b.product ? (
+                  <li key={i}>
+                    <Link to={p(`/p/${b.product.slug}`)} className="cx-inbox__item">
+                      <span className="cx-inbox__thumb">
+                        <ProductImage src={b.product.images?.[0]?.url} image={b.product.images?.[0]} alt="" sizes="80px" />
+                      </span>
+                      <span className="cx-inbox__name">{L(b.product.name, lang)}</span>
+                      <span className="cx-inbox__qty ltr">{b.quantity}×</span>
+                    </Link>
+                  </li>
+                ) : null,
+              )}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+
+      {data.bundles.length ? (
+        <section className="cx-pdp__section cx-pdp__more">
+          <div className="container">
+            <div className="cx-head">
+              <h2 className="cx-display">{t.product.bundlesWith}</h2>
+            </div>
+            <ProductRail label={t.product.bundlesWith}>
               {data.bundles.map((b) => (
                 <ProductCard key={b._id} product={b} />
               ))}
+            </ProductRail>
+          </div>
+        </section>
+      ) : null}
+      {data.related.length ? (
+        <section className="cx-pdp__section cx-pdp__more">
+          <div className="container">
+            <div className="cx-head">
+              <h2 className="cx-display">{t.product.related}</h2>
             </div>
-          </section>
-        ) : null}
-        {data.related.length ? (
-          <section className="section section--tight">
-            <div className="section__head">
-              <h2>{t.product.related}</h2>
-            </div>
-            <SpatialCarousel label={t.product.related}>
+            <ProductRail label={t.product.related}>
               {data.related.map((r, i) => (
-                <ProductCard key={r._id} product={r} categorySlug={category?.slug} index={i} />
+                <ProductCard key={r._id} product={r} categorySlug={category?.slug} index={i} sizes="(max-width: 639px) 74vw, (max-width: 1023px) 42vw, 25vw" />
               ))}
-            </SpatialCarousel>
-          </section>
-        ) : null}
-      </div>
+            </ProductRail>
+          </div>
+        </section>
+      ) : null}
+
+      </TheatreStage>
 
       {/* Sticky add-to-cart on phones (Saudi mobile-first recommendation) */}
       <div className="sticky-buy">

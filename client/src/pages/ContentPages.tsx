@@ -50,9 +50,9 @@ export function CampaignPage() {
           </p>
         ) : null}
       </section>
-      <div className="grid grid--4">
-        {(data.products ?? []).map((pr) => (
-          <ProductCard key={pr._id} product={pr} />
+      <div className="cx-grid cx-grid--4">
+        {(data.products ?? []).map((pr, i) => (
+          <ProductCard key={pr._id} product={pr} index={i} />
         ))}
       </div>
     </div>

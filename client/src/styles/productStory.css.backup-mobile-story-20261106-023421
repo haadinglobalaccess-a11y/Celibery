@@ -137,27 +137,3 @@
     padding-inline: 12px;
   }
 }
-/* MOBILE DISCOVER COLLECTION - PRODUCT VISIBILITY */
-@media (max-width: 639px) {
-  .product-story__image {
-    height: clamp(190px, 30svh, 260px);
-  }
-
-  .product-story__image img {
-    inset: 8px;
-    width: calc(100% - 16px);
-    height: calc(100% - 16px);
-    object-fit: contain;
-    object-position: center;
-  }
-
-  .product-story--pinned .product-story__image {
-    height: clamp(165px, 29svh, 250px);
-  }
-}
-
-@media (max-width: 380px) {
-  .product-story--pinned .product-story__image {
-    height: clamp(150px, 27svh, 220px);
-  }
-}

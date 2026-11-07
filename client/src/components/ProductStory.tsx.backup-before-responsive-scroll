@@ -18,8 +18,9 @@ export function ProductStory({ products }: { products: ProductCardData[] }) {
   const panel = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const desktop = useMediaQuery('(min-width: 960px) and (min-height: 600px)');
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const pinned = !reduced && items.length > 1;
+  const pinned = desktop && !reduced && items.length > 1;
   const count = items.length;
 
   useEffect(() => {
@@ -57,16 +58,11 @@ export function ProductStory({ products }: { products: ProductCardData[] }) {
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
     resize.observe(scene);
-    resize.observe(section);
     if (pinned) window.addEventListener('scroll', schedule, { passive: true });
     else rail.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', schedule, { passive: true });
-    window.addEventListener('orientationchange', schedule);
     update();
     return () => {
       window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
-      window.removeEventListener('orientationchange', schedule);
       rail.removeEventListener('scroll', schedule);
       resize.disconnect();
       cancelAnimationFrame(frame);

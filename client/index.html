@@ -10,9 +10,12 @@
     <!-- Proposed font pair (Q8): IBM Plex Sans Arabic + Plus Jakarta Sans. Self-host for production if preferred. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- media="print" keeps this third-party stylesheet from blocking first paint; main.tsx switches it to "all". -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      media="print"
+      data-brand-fonts
     />
   <meta name="google-site-verification" content="alA3ryqZ3B8j7uHQgJxZFVrhdnjh3JFTlptIdtCW1vc" />
 </head>
