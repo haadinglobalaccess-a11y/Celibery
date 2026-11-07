@@ -14,7 +14,7 @@
   --cx-cloud-2: #ececf0;
   --cx-line: rgb(11 11 12 / 0.09);
   --cx-muted: #6e6e73;
-  --cx-night: #060607;
+  --cx-night: #111111; /* client-confirmed CELIBERY near-black for premium sections (Q1/Q2) */
   --cx-night-2: #121214;
   --cx-night-line: rgb(255 255 255 / 0.1);
   --cx-night-muted: #a1a1a6;
@@ -26,6 +26,16 @@
   --cx-pad: clamp(72px, 8.5vw, 136px);
   --cx-stage: radial-gradient(110% 85% at 50% 12%, #ffffff 0%, #f6f6f8 46%, #eaeaee 100%);
   --cx-stage-dark: radial-gradient(110% 85% at 50% 12%, #2a2a2f 0%, #18181b 50%, #0f0f11 100%);
+  /* Matte behind full-bleed product artwork — matches the deep navy of the CELIBERY campaign art. */
+  --cx-art-matte: #070a14;
+  --cx-r-art: 20px;
+  /* Visible area under the sticky header — used to keep one-screen compositions on screen. */
+  --cx-view: calc(100vh - var(--header-h, 68px));
+}
+@supports (height: 100svh) {
+  :root {
+    --cx-view: calc(100svh - var(--header-h, 68px));
+  }
 }
 
 /* ---------- Type ---------- */
@@ -303,53 +313,46 @@ html[dir='rtl'] .cx-chev--prev {
   height: 100%;
   min-width: 0;
 }
+/* The media frame shows the complete artwork edge to edge (see "Art frames"). Its proportion comes
+   from the group the card sits in (--art-ratio): square by default, 3:2 when every artwork in the
+   row is landscape — so equivalent cards always share one size and nothing is cropped. */
 .cx-card__media {
   position: relative;
   display: block;
-  aspect-ratio: 4 / 5;
-  border-radius: var(--cx-r-lg);
-  background: var(--cx-stage);
+  aspect-ratio: var(--art-ratio, 1);
+  border-radius: var(--cx-r-art);
+  background: var(--cx-art-matte);
   overflow: hidden;
   isolation: isolate;
-  box-shadow: inset 0 0 0 1px var(--cx-line);
-}
-.cx-card__media::after {
-  /* the lit floor the product stands on */
-  content: '';
-  position: absolute;
-  inset-inline: 18%;
-  bottom: 9%;
-  height: 7%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(0 0 0 / 0.16), transparent);
-  filter: blur(6px);
-  z-index: -1;
-  transition: transform 700ms var(--cx-ease), opacity 700ms var(--cx-ease);
-}
-.cx-card__img {
-  position: absolute;
-  inset: 6% 6% 9%;
+  box-shadow:
+    0 0 0 1px var(--cx-line),
+    0 22px 36px -30px rgb(0 0 0 / 0.55);
   transition:
-    opacity 600ms var(--cx-ease),
-    transform 900ms var(--cx-ease);
+    translate 600ms var(--cx-ease),
+    box-shadow 600ms var(--cx-ease);
+}
+.cx-card__media > .cx-card__img {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  transition: opacity 600ms var(--cx-ease);
 }
 .cx-card__img img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  mix-blend-mode: multiply;
 }
 .cx-card__img--alt {
+  background: var(--cx-art-matte);
   opacity: 0;
-  transform: scale(0.96);
 }
 @media (hover: hover) and (pointer: fine) {
-  .cx-card:hover .cx-card__img {
-    transform: translateY(-3%) scale(1.04);
-  }
-  .cx-card:hover .cx-card__media::after {
-    transform: scaleX(0.85);
-    opacity: 0.7;
+  /* The whole frame lifts — the artwork itself is never scaled, so its edges are never clipped. */
+  .cx-card:hover .cx-card__media {
+    translate: 0 -4px;
+    box-shadow:
+      0 0 0 1px var(--cx-line),
+      0 30px 44px -30px rgb(0 0 0 / 0.6);
   }
   .cx-card:hover .cx-card__media.has-alt .cx-card__img:not(.cx-card__img--alt) {
     opacity: 0;
@@ -417,6 +420,9 @@ html[dir='rtl'] .cx-chev--prev {
 }
 .cx-card__title {
   margin: 0;
+  /* Always two lines tall, so prices and add buttons share one baseline across a row. */
+  min-height: 2.7em;
+  min-height: 2lh;
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -494,14 +500,9 @@ html[lang='ar'] .cx-card__title {
   color: #f5f5f7;
 }
 .cx-card--dark .cx-card__media {
-  background: var(--cx-stage-dark);
-  box-shadow: inset 0 0 0 1px var(--cx-night-line);
-}
-.cx-card--dark .cx-card__media::after {
-  background: radial-gradient(closest-side, rgb(0 0 0 / 0.6), transparent);
-}
-.cx-card--dark .cx-card__img img {
-  mix-blend-mode: normal;
+  box-shadow:
+    0 0 0 1px var(--cx-night-line),
+    0 22px 36px -28px rgb(0 0 0 / 0.9);
 }
 .cx-card--dark .cx-card__meta,
 .cx-card--dark .price__was {
@@ -797,15 +798,15 @@ html[lang='ar'] .cx-uni__name {
     var(--cx-night);
   color: #f5f5f7;
 }
-.cx-flag--light {
-  background: var(--cx-cloud);
-  color: var(--cx-ink);
-}
-.cx-flag--accent {
+/* Same light, kept behind the product when the layout is mirrored. */
+.cx-flag--dark.cx-flag--flip {
   background:
-    radial-gradient(60% 80% at 30% 50%, #ffffff, transparent 70%),
-    color-mix(in srgb, var(--accent) 12%, #f4f4f6);
-  color: var(--cx-ink);
+    radial-gradient(60% 70% at 30% 50%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 70%),
+    var(--cx-night);
+}
+/* Consecutive dark flagships are separated by a hairline instead of a colour change. */
+.cx-flag + .cx-flag {
+  border-top: 1px solid var(--cx-night-line);
 }
 .cx-flag__inner {
   display: grid;
@@ -854,26 +855,20 @@ html[lang='ar'] .cx-flag__title {
   background: var(--accent);
   color: var(--accent-ink, #fff);
 }
+/* Square art frame: the artwork fills a structured square with subtle corners, set in a hairline
+   outer frame, lit from above with a soft floor glow beneath. */
 .cx-flag__stage {
   position: relative;
-  width: min(100%, 640px);
+  width: min(100%, 600px);
   aspect-ratio: 1;
   margin-inline: auto;
   display: grid;
   place-items: center;
 }
-.cx-flag__rings {
-  position: absolute;
-  inset: 4%;
-  border-radius: 50%;
-  background: repeating-radial-gradient(circle, transparent 0 46px, rgb(127 127 127 / 0.14) 46px 47px);
-  mask-image: radial-gradient(closest-side, #000 60%, transparent);
-  -webkit-mask-image: radial-gradient(closest-side, #000 60%, transparent);
-}
 .cx-flag__floor {
   position: absolute;
-  inset-inline: 20%;
-  bottom: 12%;
+  inset-inline: 16%;
+  bottom: -2%;
   height: 8%;
   border-radius: 50%;
   background: radial-gradient(closest-side, rgb(0 0 0 / 0.35), transparent);
@@ -884,16 +879,27 @@ html[lang='ar'] .cx-flag__title {
 }
 .cx-flag__media {
   position: relative;
-  width: 90%;
+  width: 88%;
   aspect-ratio: 1;
   display: block;
+  border-radius: var(--cx-r-art);
 }
-.cx-flag__media img {
+.cx-flag__media::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: calc(var(--cx-r-art) + 10px);
+  border: 1px solid currentColor;
+  opacity: 0.14;
+  pointer-events: none;
+}
+.cx-flag__art {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  border-radius: 28px;
-  filter: drop-shadow(0 40px 50px rgb(0 0 0 / 0.3));
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 50px 80px -42px rgb(0 0 0 / 0.6);
 }
 .cx-flag__model {
   position: absolute;
@@ -1115,39 +1121,31 @@ html[lang='ar'] .cx-campaign__body strong {
   gap: 18px;
   min-width: 0;
 }
+/* Showcase hero: the frame takes the artwork's own proportion (ArtFrame fit="natural"), so the
+   complete artwork fills it with no empty margin; its width is capped by shape so square and
+   portrait art stay in proportion with the copy beside it. */
 .cx-spot__hero {
   position: relative;
-  display: grid;
-  place-items: center;
-  aspect-ratio: 1;
-  border-radius: var(--cx-r-xl);
-  background: rgb(255 255 255 / 0.5);
-  box-shadow: inset 0 0 0 1px rgb(127 127 127 / 0.14);
+  display: block;
+  justify-self: center;
+  width: 100%;
+  max-width: 600px;
+  border-radius: var(--cx-r-art);
+  background: var(--cx-art-matte);
   overflow: hidden;
   isolation: isolate;
+  box-shadow:
+    0 0 0 1px rgb(127 127 127 / 0.16),
+    0 44px 70px -44px rgb(0 0 0 / 0.6);
 }
-.cx-spot.is-dark .cx-spot__hero {
-  background: rgb(255 255 255 / 0.04);
+.cx-spot__hero:has(.cx-art[data-shape='landscape']) {
+  max-width: none;
 }
-.cx-spot__glow {
-  position: absolute;
-  inset: 15%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent);
-  z-index: -1;
+.cx-spot__hero:has(.cx-art[data-shape='portrait']) {
+  max-width: 540px;
 }
-.cx-spot__hero a,
-.cx-spot__hero > img {
-  display: block;
-  width: 88%;
-  aspect-ratio: 1;
-}
-.cx-spot__hero img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 24px;
-  filter: drop-shadow(0 30px 36px rgb(0 0 0 / 0.25));
+.cx-spot__hero .cx-art {
+  border-radius: inherit;
 }
 .cx-spot__cards {
   display: grid;
@@ -1168,7 +1166,7 @@ html[lang='ar'] .cx-campaign__body strong {
 }
 .cx-spot__row {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
   padding: 14px 6px;
@@ -1183,19 +1181,10 @@ html[lang='ar'] .cx-campaign__body strong {
   background: rgb(255 255 255 / 0.05);
 }
 .cx-spot__thumb {
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
-  background: #fff;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-}
-.cx-spot__thumb img {
-  width: 82%;
-  height: 82%;
-  object-fit: contain;
-  mix-blend-mode: multiply;
+  width: 84px;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgb(127 127 127 / 0.22);
 }
 .cx-spot__rowtext {
   display: flex;
@@ -1205,9 +1194,10 @@ html[lang='ar'] .cx-campaign__body strong {
 .cx-spot__rowtext strong {
   font-weight: 600;
   line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .cx-spot__rowtext span {
   font-size: 0.75rem;
@@ -1247,13 +1237,6 @@ html[lang='ar'] .cx-campaign__body strong {
   .cx-spot--stage .cx-spot__body {
     display: contents;
   }
-  .cx-spot--stage .cx-spot__hero {
-    aspect-ratio: 16 / 10;
-  }
-  .cx-spot--stage .cx-spot__hero a {
-    width: auto;
-    height: 92%;
-  }
   .cx-spot--stage .cx-spot__cards {
     grid-column: 1 / -1;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1265,6 +1248,7 @@ html[lang='ar'] .cx-campaign__body strong {
   .cx-spot--list .cx-spot__body {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     align-items: center;
+    gap: clamp(24px, 3vw, 44px);
   }
   .cx-spot--grid .cx-spot__inner {
     grid-template-columns: 1fr;
@@ -2942,9 +2926,6 @@ html[lang='ar'] .cx-footer h3 {
   .cx-spot__grid > :nth-child(3) {
     display: flex;
   }
-  .cx-spot--stage .cx-spot__hero {
-    aspect-ratio: 4 / 3;
-  }
   .cx-flag__stage {
     width: min(100%, 420px);
   }
@@ -3024,6 +3005,376 @@ html[lang='ar'] .cx-footer h3 {
 .cx-listhead h1 {
   min-height: 1em;
   min-height: 1lh;
+}
+
+/* =====================================================================
+   Art frames — one presentation system for product imagery (components/ArtFrame.tsx)
+   ===================================================================== */
+.cx-art {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--cx-art-matte);
+  border-radius: var(--cx-r-art);
+}
+.cx-art > img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.cx-art--natural > img {
+  height: auto;
+}
+/* Margins left by a differently-shaped artwork are filled by a soft, dimmed copy of that artwork. */
+.cx-art > .cx-art__fill {
+  position: absolute;
+  z-index: 0;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: cover;
+  filter: blur(26px) saturate(1.15);
+  opacity: 0.5;
+  pointer-events: none;
+}
+/* Branded placeholder drawings (no product photo yet) sit on the light stage they were drawn for. */
+.cx-art[data-kind='cutout'] {
+  background: #f3f3f4;
+}
+/* Group proportion: when every artwork in a row is landscape (or every one portrait), the row's
+   frames take that proportion together; mixed rows stay square. Decided once images report their
+   real shape, so cards in one row are always the same size. */
+:is(.cx-rail__track, .cx-spot__cards, .cx-spot__grid, .cx-eco__board, .cx-grid):has(.cx-art.cx-card__img[data-shape]):not(:has(.cx-art.cx-card__img:not([data-shape='landscape']))) {
+  --art-ratio: 3 / 2;
+}
+:is(.cx-rail__track, .cx-spot__cards, .cx-spot__grid, .cx-eco__board, .cx-grid):has(.cx-art.cx-card__img[data-shape]):not(:has(.cx-art.cx-card__img:not([data-shape='portrait']))) {
+  --art-ratio: 11 / 12;
+}
+
+/* =====================================================================
+   Category gallery (Car Essentials · Tech Essentials) — stage + up to seven product thumbnails
+   ===================================================================== */
+.cx-gal {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.cx-gal__main {
+  display: grid;
+  gap: 22px;
+  align-items: end;
+}
+.cx-gal__stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--cx-r-art);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.cx-gal__stage:disabled {
+  cursor: not-allowed;
+}
+.cx-gal__stage:focus-visible,
+.cx-gal__thumb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+/* Fixed square stage: switching products never resizes the gallery. */
+.cx-gal__frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: inherit;
+  isolation: isolate;
+}
+.cx-gal__layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-origin: center;
+}
+.cx-gal__layer[data-layer='in'] {
+  z-index: 1;
+}
+.cx-gal__layer .cx-art {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 44px 70px -44px rgb(0 0 0 / 0.75);
+}
+.cx-gal__cta {
+  position: absolute;
+  z-index: 2;
+  inset-block-end: 16px;
+  inset-inline-start: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px 0 14px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.95);
+  color: var(--cx-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.6);
+  transition:
+    background 220ms var(--cx-ease),
+    color 220ms var(--cx-ease),
+    translate 400ms var(--cx-spring);
+}
+.cx-gal__cta .icon {
+  width: 18px;
+  height: 18px;
+}
+.cx-gal__stage:not(:disabled):hover .cx-gal__cta,
+.cx-gal__stage:not(:disabled):focus-visible .cx-gal__cta {
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+  translate: 0 -2px;
+}
+.cx-gal__stage.is-added .cx-gal__cta {
+  background: var(--success, #15803d);
+  color: #fff;
+}
+.cx-gal__stage:disabled .cx-gal__cta {
+  background: rgb(255 255 255 / 0.7);
+  color: var(--cx-muted);
+}
+.cx-gal__info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+  /* re-enters with each selected product (keyed in CategoryGallery) */
+  animation: cx-gal-info 520ms var(--cx-ease) both;
+}
+@keyframes cx-gal-info {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+.cx-gal__desc {
+  margin: 0;
+  max-width: 40ch;
+  line-height: 1.55;
+  opacity: 0.72;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cx-gal__name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cx-gal__name span {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+.cx-gal__name strong {
+  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+html[lang='ar'] .cx-gal__name strong {
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+.cx-gal__price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.cx-gal__price .price__now {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.cx-gal__price .price__was {
+  opacity: 0.55;
+}
+/* Large, recognisable thumbnails: one row for up to four products, two balanced rows beyond that
+   (--cols is set by CategoryGallery); each tile is capped so artwork never floats in an empty box. */
+.cx-gal__thumbs {
+  --gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  gap: var(--gap);
+  max-width: calc(var(--cols, 4) * 200px + (var(--cols, 4) - 1) * var(--gap));
+}
+.cx-gal__thumb {
+  display: block;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  cursor: pointer;
+  opacity: 0.78;
+  box-shadow: 0 0 0 1px rgb(127 127 127 / 0.28);
+  transition:
+    opacity 300ms var(--cx-ease),
+    translate 400ms var(--cx-ease),
+    box-shadow 300ms var(--cx-ease);
+}
+.cx-gal__thumb .cx-art {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+.cx-gal__thumb:hover {
+  opacity: 1;
+}
+.cx-gal__thumb[aria-pressed='true'] {
+  opacity: 1;
+  translate: 0 -3px;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 14px 24px -14px rgb(0 0 0 / 0.7);
+}
+@media (min-width: 960px) {
+  .cx-gal__main {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+    gap: 36px;
+  }
+}
+@media (max-width: 639px) {
+  /* Phones: thumbnails keep a usable size and scroll sideways instead of shrinking. */
+  .cx-gal__thumbs {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 112px;
+    max-width: none;
+    overflow-x: auto;
+    padding: 4px 2px 6px;
+    scrollbar-width: none;
+  }
+  .cx-gal__thumbs::-webkit-scrollbar {
+    display: none;
+  }
+  .cx-gal__cta {
+    inset-block-end: 12px;
+    inset-inline-start: 12px;
+  }
+}
+
+/* =====================================================================
+   Viewport fit — desktop & laptop
+   Root cause: artwork frames were sized in fixed pixels (flagship stage 600px, spotlight hero
+   600px square, gallery stage 560px + 200px thumbnails, campaign banner at full card width) with
+   no reference to the visible height. In a laptop browser window (≈1366×625, 1280×600 — 540–565px
+   under the header) and on 1366×768 / 1280×720 screens those compositions were taller than the
+   screen, so their top or bottom always sat off screen. Each is now sized from --cx-view: artwork
+   scales down in proportion and stays complete (never cropped). Phones/tablets keep their natural
+   stacked flow.
+   ===================================================================== */
+@media (min-width: 960px) {
+  /* Flagship: the square art frame never exceeds the visible height, and its column is exactly the
+     frame's size — the copy takes the rest of the row, so long product names wrap onto fewer lines
+     and the copy no longer outgrows the screen. */
+  .cx-flag {
+    --flag-art: min(600px, calc(var(--cx-view) - 72px));
+  }
+  .cx-flag__inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, var(--flag-art));
+  }
+  .cx-flag--flip .cx-flag__inner {
+    grid-template-columns: minmax(0, var(--flag-art)) minmax(0, 1fr);
+  }
+  .cx-flag__stage {
+    width: min(100%, var(--flag-art));
+  }
+  /* Spotlight showcase artwork (Headphones, Cables, …): the frame's width is derived from the
+     visible height and the artwork's shape (data-shape, measured by ArtFrame), so its height never
+     exceeds the screen. The image keeps width:100% — a lazy image must never collapse to 0×0. */
+  .cx-spot__hero {
+    --hero-h: calc(var(--cx-view) - 72px);
+    width: min(100%, var(--hero-h));
+  }
+  .cx-spot__hero:has(.cx-art[data-shape='landscape']) {
+    width: min(100%, calc(var(--hero-h) * 1.5));
+  }
+  .cx-spot__hero:has(.cx-art[data-shape='portrait']) {
+    width: min(100%, calc(var(--hero-h) * 0.91));
+  }
+  /* Campaign card = banner + copy (~200px): the banner gives way, shown whole (contain). */
+  .cx-campaign__media img,
+  .cx-campaign__video {
+    max-height: calc(var(--cx-view) - 240px);
+    object-fit: contain;
+  }
+  /* Gallery (Car / Tech Essentials) = stage + gap + thumbnail row. Stage and thumbnails scale
+     together (thumbnail ≈ 27% of the available height) so their proportion holds on every screen,
+     and the product information sits directly beside the stage. */
+  .cx-gal {
+    --gal-h: calc(var(--cx-view) - 72px);
+    --gal-thumb: min(200px, calc(var(--gal-h) * 0.27));
+    --gal-stage: min(560px, calc(var(--gal-h) - var(--gal-thumb) - 24px));
+  }
+  .cx-gal__main {
+    grid-template-columns: minmax(0, var(--gal-stage)) minmax(200px, 1fr);
+  }
+  .cx-gal__stage {
+    max-width: none;
+  }
+  .cx-gal__thumbs {
+    max-width: calc(var(--cols, 4) * var(--gal-thumb) + (var(--cols, 4) - 1) * var(--gap));
+  }
+  /* Brand-story artwork: height capped, width follows, so the whole image fits on screen. */
+  .cx-story__media {
+    justify-self: center;
+    width: min(100%, calc(var(--cx-view) - 96px));
+  }
+  .cx-story__media img {
+    max-height: calc(var(--cx-view) - 96px);
+    object-fit: contain;
+  }
+}
+
+/* Campaign landing banner (pages/ContentPages.tsx): the complete campaign artwork sits beside the
+   copy on the banner's own campaign colour, in its natural proportion, instead of a cropped strip. */
+.campaign-hero--art {
+  display: grid;
+  gap: var(--s-6);
+  align-items: center;
+}
+.campaign-hero__art {
+  display: block;
+  justify-self: center;
+}
+.campaign-hero__art img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(420px, calc(var(--cx-view) - 220px));
+  border-radius: var(--r-lg);
+}
+@media (min-width: 768px) {
+  .campaign-hero--art {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .campaign-hero__art {
+    justify-self: end;
+    max-width: 48vw;
+  }
 }
 
 /* =====================================================================
@@ -3176,20 +3527,9 @@ html[lang='ar'] .cx-footer h3 {
   }
 }
 
-/* ---- cinematic spotlight (flagships) ---- */
-.cx-flag__stage::before {
-  content: '';
-  position: absolute;
-  inset: -12% 6% 22%;
-  z-index: 0;
-  border-radius: 50%;
-  background: radial-gradient(48% 62% at 50% 0%, rgb(255 255 255 / 0.32), transparent 72%);
-  pointer-events: none;
-}
-.cx-flag--light .cx-flag__stage::before,
-.cx-flag--accent .cx-flag__stage::before {
-  background: radial-gradient(48% 62% at 50% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 72%);
-}
+/* ---- cinematic spotlight (flagships) ----
+   The section's own radial light and the floor glow set the stage. (The former elliptical light cone
+   above the frame read as a circle cut behind the artwork, so it is gone.) */
 .cx-flag__media {
   z-index: 1;
 }
@@ -3198,7 +3538,7 @@ html[lang='ar'] .cx-footer h3 {
   inset: 0;
   z-index: 2;
   overflow: hidden;
-  border-radius: 50%;
+  border-radius: inherit;
   pointer-events: none;
 }
 .cx-flag__sweep::before {
@@ -3209,18 +3549,14 @@ html[lang='ar'] .cx-footer h3 {
   translate: -100% 0;
   opacity: 0;
 }
-.cx-theatre .cx-flag__stage:not(.fx-in)::before,
-.cx-theatre .cx-flag__stage:not(.fx-in) .cx-flag__rings,
-.cx-theatre .cx-flag__stage:not(.fx-in) .cx-flag__media img {
+.cx-theatre .cx-flag__stage:not(.fx-in) .cx-flag__media::before,
+.cx-theatre .cx-flag__stage:not(.fx-in) .cx-flag__art {
   opacity: 0;
 }
-.cx-theatre .cx-flag__stage.fx-in::before {
-  animation: fx-light 1400ms ease-out both;
+.cx-theatre .cx-flag__stage.fx-in .cx-flag__media::before {
+  animation: fx-frame 1400ms var(--fx-ease) 150ms both;
 }
-.cx-theatre .cx-flag__stage.fx-in .cx-flag__rings {
-  animation: fx-rings 1600ms var(--fx-ease) 150ms both;
-}
-.cx-theatre .cx-flag__stage.fx-in .cx-flag__media img {
+.cx-theatre .cx-flag__stage.fx-in .cx-flag__art {
   animation: fx-emerge 1500ms var(--fx-ease) 260ms both;
 }
 .cx-theatre .cx-flag__stage.fx-in .cx-flag__floor {
@@ -3229,26 +3565,14 @@ html[lang='ar'] .cx-footer h3 {
 .cx-theatre .cx-flag__stage.fx-in .cx-flag__sweep::before {
   animation: fx-sweep 1500ms cubic-bezier(0.45, 0, 0.2, 1) 900ms both;
 }
-@keyframes fx-light {
+@keyframes fx-frame {
   from {
     opacity: 0;
-    scale: 0.6 1;
+    scale: 1.06;
   }
   to {
-    opacity: 1;
+    opacity: 0.14;
     scale: 1;
-  }
-}
-@keyframes fx-rings {
-  from {
-    opacity: 0;
-    scale: 0.82;
-    rotate: -18deg;
-  }
-  to {
-    opacity: 1;
-    scale: 1;
-    rotate: none;
   }
 }
 @keyframes fx-emerge {
@@ -3519,6 +3843,10 @@ html[dir='rtl'] .cx-pdp .gallery__frame[data-dir='prev'] {
     display: none;
   }
   .cx-card__img,
+  .cx-card__media,
+  .cx-gal__thumb,
+  .cx-gal__info,
+  .cx-gal__cta,
   .cx-uni__visual img,
   .cx-campaign__media img,
   .cx-btn,

@@ -39,15 +39,25 @@ export function CampaignPage() {
   return (
     <div className="container" style={{ paddingBottom: 64 }}>
       <Crumbs items={[{ label: t.common.home, to: p('/') }, { label: L(data.title, lang) }]} />
-      <section className="campaign-hero" style={{ ['--campaign-accent' as string]: data.accentColor || undefined, backgroundImage: data.heroImageUrl ? `linear-gradient(rgb(0 0 0 / .45), rgb(0 0 0 / .45)), url(${data.heroImageUrl})` : undefined, backgroundSize: 'cover' }}>
-        <h1 style={{ fontSize: 'var(--fs-3xl)' }}>{L(data.title, lang)}</h1>
-        {L(data.description, lang) ? <p style={{ maxWidth: 640 }}>{L(data.description, lang)}</p> : null}
-        {data.discountCode ? (
-          <p>
-            <span className="badge badge--light" style={{ background: '#fff', color: '#111', fontSize: 14 }}>
-              <span className="ltr">{data.discountCode}</span>
-            </span>
-          </p>
+      {/* The campaign artwork is shown complete beside the copy — as a cropped background (cover) only a
+          thin strip of it was visible in this wide banner. */}
+      <section className={`campaign-hero ${data.heroImageUrl ? 'campaign-hero--art' : ''}`} style={{ ['--campaign-accent' as string]: data.accentColor || undefined }}>
+        <div className="campaign-hero__copy">
+          <h1 style={{ fontSize: 'var(--fs-3xl)' }}>{L(data.title, lang)}</h1>
+          {L(data.description, lang) ? <p style={{ maxWidth: 640 }}>{L(data.description, lang)}</p> : null}
+          {data.discountCode ? (
+            <p>
+              <span className="badge badge--light" style={{ background: '#fff', color: '#111', fontSize: 14 }}>
+                <span className="ltr">{data.discountCode}</span>
+              </span>
+            </p>
+          ) : null}
+        </div>
+        {data.heroImageUrl ? (
+          <picture className="campaign-hero__art">
+            {data.heroMobileImageUrl ? <source media="(max-width: 639px)" srcSet={data.heroMobileImageUrl} /> : null}
+            <img src={data.heroImageUrl} alt="" decoding="async" />
+          </picture>
         ) : null}
       </section>
       <div className="cx-grid cx-grid--4">

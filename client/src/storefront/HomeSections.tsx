@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { ArtFrame } from '../components/ArtFrame';
 import { ProductCard, ProductImage } from '../components/ProductCard';
 import { PayLogos, Price } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
@@ -10,6 +11,7 @@ import { prefersReducedMotion } from '../lib/motion';
 import type { Category, HomeData, ProductCardData } from '../lib/types';
 import { useToast } from '../state/toast';
 import { bannerVideo, useLinkFor } from '../three-d';
+import { CategoryGallery } from './CategoryGallery';
 import { storeCopy } from './copy';
 import { Kinetic } from './motion';
 import { ProductRail } from './ProductRail';
@@ -111,7 +113,7 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
   );
 }
 
-/* ───────────────────────── 02 · Flagship campaigns — spotlight + showroom depth ───────────────────────── */
+/* ───────────────────────── 02 · Flagship campaigns — square art frame + showroom depth ───────────────────────── */
 export function FlagshipCampaigns({ data }: { data: HomeData }) {
   const { lang, p } = useI18n();
   const c = storeCopy(lang);
@@ -124,7 +126,8 @@ export function FlagshipCampaigns({ data }: { data: HomeData }) {
   return (
     <section className="cx-flagships" aria-label={c.flagshipEyebrow}>
       {items.map((pr, i) => {
-        const variant = ['dark', 'light', 'accent'][i % 3];
+        // Client-approved hybrid theme (Q1): flagships are premium sections, so every one is dark.
+        const variant = 'dark';
         const name = L(pr.name, lang);
         const desc = L(pr.shortDescription, lang);
         const cat = typeof pr.category === 'object' ? pr.category : undefined;
@@ -157,7 +160,6 @@ export function FlagshipCampaigns({ data }: { data: HomeData }) {
                 </div>
               </div>
               <div className="cx-flag__stage" data-fx="spotlight">
-                <span className="cx-flag__rings" aria-hidden="true" />
                 <span className="cx-flag__floor" aria-hidden="true" />
                 {pr.model ? (
                   <span className="cx-flag__model ltr" aria-hidden="true">
@@ -165,9 +167,9 @@ export function FlagshipCampaigns({ data }: { data: HomeData }) {
                   </span>
                 ) : null}
                 <Link to={p(`/p/${pr.slug}`)} className="cx-flag__media" tabIndex={-1} aria-hidden="true">
-                  <ProductImage src={pr.images[0].url} image={pr.images[0]} alt="" category={catSlug(pr)} sizes="(max-width: 959px) 92vw, 46vw" />
+                  <ArtFrame className="cx-flag__art" src={pr.images[0].url} image={pr.images[0]} category={catSlug(pr)} sizes="(max-width: 959px) 92vw, 46vw" />
+                  <span className="cx-flag__sweep" aria-hidden="true" />
                 </Link>
-                <span className="cx-flag__sweep" aria-hidden="true" />
               </div>
             </div>
           </article>
@@ -246,6 +248,8 @@ export function ExploreCollection({ data }: { data: HomeData }) {
     if (data.bestSellers.items.length) list.push({ key: 'best', label: t.home.bestSellers, items: data.bestSellers.items });
     for (const col of data.collections) {
       if (col.kind === 'bundles' || USE_CASES.includes(col.slug) || !col.products.length) continue;
+      // The "Best sellers" tab above already falls back to this curated collection — one tab, not two.
+      if (col.kind === 'best_sellers' && data.bestSellers.items.length) continue;
       list.push({ key: `col-${col.slug}`, label: L(col.title, lang), items: col.products, link: p(`/collection/${col.slug}`) });
     }
     for (const k of USE_CASES) list.push({ key: k, label: t.home.useCaseNames[k] ?? k, items: data.collections.find((x) => x.slug === k)?.products, link: p(`/collection/${k}`) });
@@ -302,6 +306,11 @@ export function ExploreCollection({ data }: { data: HomeData }) {
 }
 
 /* ───────────────────────── 04 · Category spotlight chapters — split reveal ───────────────────────── */
+/** Chapters presented as an interactive product gallery (see CategoryGallery). */
+const GALLERY_CATEGORIES = new Set(['car-essentials', 'tech-essentials']);
+/** Per-chapter thumbnail count (display only): Tech Essentials shows one row of four. */
+const GALLERY_LIMIT: Record<string, number> = { 'tech-essentials': 4 };
+
 function SpotlightList({ items, cat }: { items: ProductCardData[]; cat: Category }) {
   const { lang, p } = useI18n();
   return (
@@ -309,9 +318,7 @@ function SpotlightList({ items, cat }: { items: ProductCardData[]; cat: Category
       {items.map((pr) => (
         <li key={pr._id}>
           <Link to={p(`/p/${pr.slug}`)} className="cx-spot__row">
-            <span className="cx-spot__thumb">
-              <ProductImage src={pr.images?.[0]?.url} image={pr.images?.[0]} alt="" category={cat.slug} sizes="96px" />
-            </span>
+            <ArtFrame className="cx-spot__thumb" src={pr.images?.[0]?.url} image={pr.images?.[0]} category={cat.slug} sizes="120px" />
             <span className="cx-spot__rowtext">
               <strong>{L(pr.name, lang)}</strong>
               {pr.model ? <span className="ltr">{pr.model}</span> : null}
@@ -334,7 +341,7 @@ export function CategorySpotlights({ data }: { data: HomeData }) {
       {chapters.map(({ cat, i, items }) => {
         const tone = toneFor(i);
         const dark = DARK_TONES.has(tone);
-        const layout = ['stage', 'grid', 'list'][i % 3];
+        const layout = GALLERY_CATEGORIES.has(cat.slug) ? 'gallery' : ['stage', 'grid', 'list'][i % 3];
         const lead = items.find((pr) => pr.images?.[0]?.url) ?? items[0];
         const name = L(cat.name, lang);
         const desc = L(cat.description, lang);
@@ -362,17 +369,18 @@ export function CategorySpotlights({ data }: { data: HomeData }) {
 
               {layout === 'stage' ? (
                 <div className="cx-spot__body">
-                  <div className="cx-spot__hero" data-fx="split">
-                    <span className="cx-spot__glow" aria-hidden="true" />
-                    <Link to={p(`/p/${lead.slug}`)} tabIndex={-1} aria-hidden="true">
-                      <ProductImage src={lead.images?.[0]?.url} image={lead.images?.[0]} alt="" category={cat.slug} sizes="(max-width: 959px) 92vw, 54vw" />
-                    </Link>
-                  </div>
+                  <Link to={p(`/p/${lead.slug}`)} className="cx-spot__hero" data-fx="split" tabIndex={-1} aria-hidden="true">
+                    <ArtFrame fit="natural" src={lead.images?.[0]?.url} image={lead.images?.[0]} category={cat.slug} sizes="(max-width: 959px) 92vw, 58vw" />
+                  </Link>
                   <div className="cx-spot__cards" data-fx="stagger">
                     {items.slice(0, 4).map((pr, k) => (
                       <ProductCard key={pr._id} product={pr} categorySlug={cat.slug} index={k} tone={dark ? 'dark' : 'light'} sizes={SIZES_STRIP} />
                     ))}
                   </div>
+                </div>
+              ) : layout === 'gallery' ? (
+                <div className="cx-spot__body" data-fx="rise">
+                  <CategoryGallery cat={cat} initial={items} size={GALLERY_LIMIT[cat.slug]} />
                 </div>
               ) : layout === 'grid' ? (
                 <div className="cx-spot__body cx-spot__grid" data-fx="stagger">
@@ -383,8 +391,7 @@ export function CategorySpotlights({ data }: { data: HomeData }) {
               ) : (
                 <div className="cx-spot__body">
                   <div className="cx-spot__hero cx-spot__hero--tall" data-fx="split">
-                    <span className="cx-spot__glow" aria-hidden="true" />
-                    <ProductImage src={v.url} image={v.image} alt="" category={cat.slug} sizes="(max-width: 959px) 92vw, 30vw" />
+                    <ArtFrame fit="natural" src={v.url} image={v.image} category={cat.slug} sizes="(max-width: 959px) 92vw, 34vw" />
                   </div>
                   <SpotlightList items={items.slice(0, 4)} cat={cat} />
                 </div>

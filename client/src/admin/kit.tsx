@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ApiError, get, qs } from '../lib/api';
 import type { Localized } from '../lib/types';
 import { useAuth } from '../state/auth';
+import { useAT } from './i18n';
 
 export const sar = (halalas: number | undefined | null) =>
   halalas == null ? '—' : `SAR ${(halalas / 100).toLocaleString('en-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -138,29 +139,221 @@ export function Pager({ page, pages, onPage }: { page: number; pages: number; on
   );
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'badge--warning',
-  confirmed: 'badge--dark',
-  processing: 'badge--dark',
-  shipped: 'badge',
-  delivered: 'badge--success',
-  cancelled: 'badge--danger',
-  returned: 'badge--danger',
-  paid: 'badge--success',
-  failed: 'badge--danger',
-  expired: 'badge--danger',
-  refunded: 'badge--danger',
-  partially_refunded: 'badge--warning',
-  cod_pending: 'badge--warning',
-  cod_collected: 'badge--success',
-  active: 'badge--success',
-  draft: 'badge--warning',
-  archived: 'badge',
-  skipped: 'badge--warning',
-  sent: 'badge--success',
+/**
+ * Status badge (spec §5): every status is text + an icon or dot — colour is never the only signal.
+ * Order/payment statuses use the spec palette (`.st--<status>` in admin.css); other values
+ * (product, notification…) fall back to a neutral, positive, warning or negative tone.
+ */
+const TONE: Record<string, string> = {
+  active: 'positive',
+  sent: 'positive',
+  succeeded: 'positive',
+  draft: 'warning',
+  skipped: 'warning',
+  archived: 'neutral',
+  expired: 'negative',
+  partially_refunded: 'warning',
 };
-export function Status({ value }: { value: string }) {
-  return <span className={`badge ${STATUS_COLORS[value] ?? ''}`}>{value.replace(/_/g, ' ')}</span>;
+const ICON: Record<string, string> = { delivered: '✓', paid: '✓', cod_collected: '✓', succeeded: '✓', returned: '↩', failed: '!', expired: '!' };
+export function Status({ value, label }: { value: string; label?: string }) {
+  const { t } = useAT();
+  const text = label ?? t.status[value] ?? value.replace(/_/g, ' ');
+  const icon = ICON[value];
+  return (
+    <span className={`st st--${TONE[value] ?? value}`}>
+      {icon ? (
+        <span className="st__icon" aria-hidden="true">
+          {icon}
+        </span>
+      ) : (
+        <span className="st__dot" aria-hidden="true" />
+      )}
+      {text}
+    </span>
+  );
+}
+
+/** Static skeleton blocks (no shimmer — the dashboard has no motion). */
+export function Skeleton({ h = 14, w = '100%', r = 6 }: { h?: number; w?: number | string; r?: number }) {
+  return <span className="a-skel" style={{ height: h, width: w, borderRadius: r }} aria-hidden="true" />;
+}
+export function SkeletonKpis({ count = 5 }: { count?: number }) {
+  return (
+    <div className="a-kpis" aria-busy="true">
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="a-kpi">
+          <Skeleton w="55%" h={12} />
+          <Skeleton w="70%" h={28} />
+          <Skeleton w="45%" h={12} />
+        </div>
+      ))}
+    </div>
+  );
+}
+export function SkeletonTable({ rows = 6, cols = 6 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="a-skel-table" aria-busy="true">
+      {Array.from({ length: rows }, (_, r) => (
+        <div key={r} className="a-skel-row" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+          {Array.from({ length: cols }, (_, c) => (
+            <Skeleton key={c} w={c === 0 ? '70%' : '55%'} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function EmptyState({ title, text, action }: { title: string; text?: string; action?: ReactNode }) {
+  return (
+    <div className="a-empty">
+      <strong>{title}</strong>
+      {text ? <span>{text}</span> : null}
+      {action}
+    </div>
+  );
+}
+
+/** Error panel with retry (spec §21). */
+export function ErrorPanel({ onRetry, message }: { onRetry?: () => void; message?: string }) {
+  const { t } = useAT();
+  return (
+    <div className="a-error" role="alert">
+      <strong>{t.common.errorTitle}</strong>
+      <span>{message || t.common.errorText}</span>
+      {onRetry ? (
+        <button type="button" className="a-btn a-btn--secondary" onClick={onRetry}>
+          {t.common.retry}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** Small "i" with an accessible explanation (tooltip on hover/focus). */
+export function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="a-tip" tabIndex={0} role="img" aria-label={text}>
+      i<span className="a-tip__bubble" role="tooltip">{text}</span>
+    </span>
+  );
+}
+
+/** Static mini trend line for KPI cards. */
+export function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const w = 96;
+  const h = 28;
+  const max = Math.max(1, ...values);
+  const pts = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - (v / max) * (h - 2) - 1).toFixed(1)}`).join(' ');
+  return (
+    <svg className="a-spark" viewBox={`0 0 ${w} ${h}`} width={w} height={h} aria-hidden="true" preserveAspectRatio="none">
+      <polyline points={pts} fill="none" />
+    </svg>
+  );
+}
+
+export type KpiTrend = { pct: number | null; label: string } | null;
+
+export function KpiCard({ label, value, tip, trend, spark, note, tone }: { label: string; value: ReactNode; tip: string; trend?: KpiTrend; spark?: number[]; note?: string; tone?: 'attention' }) {
+  const up = trend?.pct != null && trend.pct > 0;
+  const down = trend?.pct != null && trend.pct < 0;
+  return (
+    <article className={`a-kpi ${tone === 'attention' ? 'a-kpi--attention' : ''}`}>
+      <div className="a-kpi__label">
+        <span>{label}</span>
+        <InfoTip text={tip} />
+      </div>
+      <strong className="a-kpi__value">{value}</strong>
+      <div className="a-kpi__foot">
+        {trend ? (
+          <span className="a-kpi__trend">
+            {trend.pct != null ? (
+              <span className={`a-trend ${up ? 'a-trend--up' : down ? 'a-trend--down' : ''}`}>
+                <span aria-hidden="true">{up ? '▲' : down ? '▼' : '•'}</span> {`${up ? '+' : ''}${trend.pct.toFixed(1)}%`}
+              </span>
+            ) : null}{' '}
+            <span className="a-muted">{trend.label}</span>
+          </span>
+        ) : note ? (
+          <span className="a-muted">{note}</span>
+        ) : null}
+        {spark ? <Sparkline values={spark} /> : null}
+      </div>
+    </article>
+  );
+}
+
+/** Area chart: dates on X, order count on Y, light gridlines, tooltip with date, orders and revenue. */
+export function OrdersAreaChart({ data, fmtDate, fmtMoney, labels }: { data: { date: string; orders: number; revenue: number }[]; fmtDate: (d: string) => string; fmtMoney: (h: number) => string; labels: { orders: string; revenue: string } }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const w = 720;
+  const h = 220;
+  const pad = { l: 36, r: 12, t: 12, b: 28 };
+  const iw = w - pad.l - pad.r;
+  const ih = h - pad.t - pad.b;
+  const max = Math.max(4, ...data.map((d) => d.orders));
+  const step = Math.ceil(max / 4);
+  const top = step * 4;
+  const x = (i: number) => pad.l + (data.length < 2 ? iw / 2 : (i / (data.length - 1)) * iw);
+  const y = (v: number) => pad.t + ih - (v / top) * ih;
+  const line = data.map((d, i) => `${x(i).toFixed(1)},${y(d.orders).toFixed(1)}`).join(' ');
+  const area = `${pad.l},${pad.t + ih} ${line} ${x(data.length - 1).toFixed(1)},${pad.t + ih}`;
+  const every = Math.max(1, Math.ceil(data.length / 7));
+  const hv = hover != null ? data[hover] : null;
+  return (
+    // Time runs left-to-right in both languages, as on financial charts.
+    <div className="a-chart" dir="ltr">
+      <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`${labels.orders}: ${data.map((d) => `${fmtDate(d.date)} ${d.orders}`).join(', ')}`} onMouseLeave={() => setHover(null)}>
+        {[0, 1, 2, 3, 4].map((k) => (
+          <g key={k}>
+            <line className="a-chart__grid" x1={pad.l} x2={w - pad.r} y1={y(step * k)} y2={y(step * k)} />
+            <text className="a-chart__axis" x={pad.l - 8} y={y(step * k) + 4} textAnchor="end">
+              {step * k}
+            </text>
+          </g>
+        ))}
+        <polygon className="a-chart__area" points={area} />
+        <polyline className="a-chart__line" points={line} />
+        {data.map((d, i) => (
+          <g key={d.date}>
+            {i % every === 0 || i === data.length - 1 ? (
+              <text className="a-chart__axis" x={x(i)} y={h - 8} textAnchor="middle">
+                {fmtDate(d.date)}
+              </text>
+            ) : null}
+            <rect
+              x={x(i) - iw / Math.max(1, data.length) / 2}
+              y={pad.t}
+              width={iw / Math.max(1, data.length)}
+              height={ih}
+              fill="transparent"
+              onMouseEnter={() => setHover(i)}
+              onFocus={() => setHover(i)}
+              tabIndex={-1}
+            />
+          </g>
+        ))}
+        {hv && hover != null ? (
+          <g>
+            <line className="a-chart__cursor" x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + ih} />
+            <circle className="a-chart__dot" cx={x(hover)} cy={y(hv.orders)} r={4} />
+          </g>
+        ) : null}
+      </svg>
+      {hv && hover != null ? (
+        <div className="a-chart__tip" style={{ left: `${(x(hover) / w) * 100}%` }}>
+          <strong>{fmtDate(hv.date)}</strong>
+          <span>
+            {labels.orders}: {hv.orders}
+          </span>
+          <span>
+            {labels.revenue}: {fmtMoney(hv.revenue)}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 type MiniProduct = { _id: string; sku: string; name: Localized; images?: { url: string }[]; status?: string };

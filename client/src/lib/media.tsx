@@ -45,9 +45,23 @@ export function classifyVideoUrl(raw: string | undefined | null): VideoSource | 
 }
 
 /** srcset for uploaded images with responsive variants; undefined for plain URL images. */
+/** Widths requested from Cloudinary for images stored as a single original (no recorded variants). */
+const CLOUDINARY_WIDTHS = [160, 480, 800, 1200];
+const CLOUDINARY_UPLOAD = /^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.+)$/;
+
+/**
+ * Cloudinary delivery variants: the same stored original, resized and re-encoded (WebP/AVIF where
+ * supported) on Cloudinary's side. Nothing is uploaded or changed — the URL only asks for a size.
+ */
+function cloudinarySrcSet(url: string): string | undefined {
+  const m = CLOUDINARY_UPLOAD.exec(url);
+  if (!m || /^[a-z]{1,3}_/.test(m[2])) return undefined; // URL already carries a transformation
+  return CLOUDINARY_WIDTHS.map((w) => `${m[1]}c_limit,w_${w},f_auto,q_auto/${m[2]} ${w}w`).join(', ');
+}
+
 export function srcSetFor(image?: Pick<Image, 'url' | 'variants' | 'width'> | null): string | undefined {
   const variants = image?.variants?.filter((v) => v.url && v.width) ?? [];
-  if (!variants.length) return undefined;
+  if (!variants.length) return image?.url ? cloudinarySrcSet(image.url) : undefined;
   const entries = variants.map((v) => `${v.url} ${v.width}w`);
   if (image?.width && !variants.some((v) => v.width >= image.width!)) entries.push(`${image.url} ${image.width}w`);
   return entries.join(', ');

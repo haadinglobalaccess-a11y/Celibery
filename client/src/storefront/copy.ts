@@ -40,6 +40,9 @@ const copy = {
     collectionPageEyebrow: 'Collection',
     browseCategories: 'Browse categories',
     all: 'All',
+    galleryShow: (name: string) => `Show ${name}`,
+    galleryTapToAdd: 'Tap the image to add to bag',
+    viewDetails: 'View details',
   },
   ar: {
     universeEyebrow: 'منتجات سيليبري',
@@ -75,6 +78,9 @@ const copy = {
     collectionPageEyebrow: 'مجموعة',
     browseCategories: 'تصفح الفئات',
     all: 'الكل',
+    galleryShow: (name: string) => `عرض ${name}`,
+    galleryTapToAdd: 'اضغط على الصورة للإضافة إلى السلة',
+    viewDetails: 'عرض التفاصيل',
   },
 };
 

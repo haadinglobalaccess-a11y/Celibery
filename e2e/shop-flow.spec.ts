@@ -124,7 +124,7 @@ test.describe.serial('complete shopping flow (required end-to-end test)', () => 
     await page.getByLabel('Email').fill(creds.email);
     await page.getByLabel('Password').fill(creds.password);
     await page.getByTestId('admin-login').click();
-    await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     await expect(page.getByTestId('kpi-orders')).not.toHaveText('0');
     await shot(page, '10-admin-overview');
 

@@ -1,44 +1,21 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
-import { L, placeholderFor } from '../lib/format';
-import { srcSetFor, useMediaQuery } from '../lib/media';
-import type { Image, ProductCardData } from '../lib/types';
+import { L } from '../lib/format';
+import { useMediaQuery } from '../lib/media';
+import type { ProductCardData } from '../lib/types';
 import { useCart } from '../state/cart';
 import { useWishlist } from '../state/wishlist';
 import { flyToCart } from '../three-d/flyToCart';
+import { ArtFrame, ProductImage } from './ArtFrame';
 import { Icon } from './Icon';
 import { Price } from './ui';
 
-/**
- * Product photo with a branded placeholder fallback. Uploaded images carry responsive WebP variants
- * (`image.variants`), served through srcset; plain URL images are used as they are.
- */
-export function ProductImage({ src, alt, category, eager = false, image, sizes }: { src?: string; alt: string; category?: string; eager?: boolean; image?: Image | null; sizes?: string }) {
-  const fallback = placeholderFor(category);
-  const srcSet = image && image.url === src ? srcSetFor(image) : undefined;
-  return (
-    <img
-      src={src || fallback}
-      srcSet={srcSet}
-      sizes={srcSet ? (sizes ?? '(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw') : undefined}
-      alt={alt}
-      loading={eager ? 'eager' : 'lazy'}
-      decoding="async"
-      // Real intrinsic size when the upload recorded it, so the browser reserves the right box.
-      width={image?.width || 500}
-      height={image?.height || 500}
-      onError={(e) => {
-        const img = e.currentTarget;
-        if (!img.src.endsWith(fallback)) img.src = fallback; // never show a broken image
-      }}
-    />
-  );
-}
+export { ProductImage } from './ArtFrame';
 
 /**
- * CELIBERY product card — the product sits on a lit stage, information below in a strict hierarchy
- * (series/model · name · price). `tone="dark"` is used inside dark campaign sections.
+ * CELIBERY product card — the artwork sits complete in an ArtFrame (proportion set by its group, see
+ * celibery.css "Art frames"), information below in a strict hierarchy (series/model · name · price). `tone="dark"` is used inside dark campaign sections.
  */
 export function ProductCard({ product, categorySlug, index, tone = 'light', sizes, eager = false }: { product: ProductCardData; categorySlug?: string; index?: number; tone?: 'light' | 'dark'; sizes?: string; eager?: boolean }) {
   const { lang, t, p } = useI18n();
@@ -63,9 +40,7 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
   return (
     <article className={`cx-card ${tone === 'dark' ? 'cx-card--dark' : ''}`} data-testid="product-card" style={index !== undefined ? ({ '--i': index } as CSSProperties) : undefined}>
       <Link ref={mediaRef} to={href} className={`cx-card__media ${alt ? 'has-alt' : ''}`} tabIndex={-1} aria-hidden="true">
-        <span className="cx-card__img">
-          <ProductImage src={product.images?.[0]?.url} image={product.images?.[0]} alt="" category={cat} sizes={sizes} eager={eager} />
-        </span>
+        <ArtFrame className="cx-card__img" src={product.images?.[0]?.url} image={product.images?.[0]} category={cat} sizes={sizes} eager={eager} />
         {alt ? (
           <span className="cx-card__img cx-card__img--alt">
             <ProductImage src={alt.url} image={alt} alt="" category={cat} sizes={sizes} />
