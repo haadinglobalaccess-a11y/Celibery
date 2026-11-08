@@ -1,20 +1,31 @@
+/*
+ * One 24×24 grid, round caps and joins, the stroke width set once in <Icon>. The header set (search,
+ * bag, heart, user, menu, close, chevronDown, globe) is drawn to the same optical footprint as before
+ * (about 16–17 units), so the rendered size, alignment and spacing do not change. The heart stays a
+ * single closed shape: wishlisted states fill it.
+ */
 const paths: Record<string, JSX.Element> = {
-  search: <path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm10 17-4.35-4.35" />,
+  search: (
+    <>
+      <circle cx="10.75" cy="10.75" r="6.25" />
+      <path d="m15.5 15.5 4.25 4.25" />
+    </>
+  ),
   bag: (
     <>
-      <path d="M6 7h12l1 13H5L6 7Z" />
-      <path d="M9 7a3 3 0 0 1 6 0" />
+      <path d="M5.4 8.25h13.2l-.86 10.4a1.9 1.9 0 0 1-1.9 1.75H8.16a1.9 1.9 0 0 1-1.9-1.75L5.4 8.25Z" />
+      <path d="M8.75 11V7.25a3.25 3.25 0 0 1 6.5 0V11" />
     </>
   ),
-  heart: <path d="M12 20s-7-4.35-9.33-8.5C1 8.5 3 5 6.5 5c2 0 3.5 1.2 5.5 3.2C14 6.2 15.5 5 17.5 5 21 5 23 8.5 21.33 11.5 19 15.65 12 20 12 20Z" />,
+  heart: <path d="M12 19.75s-7.75-4.6-7.75-10.05A4.2 4.2 0 0 1 8.45 5.5c1.5 0 2.8.78 3.55 2 .75-1.22 2.05-2 3.55-2a4.2 4.2 0 0 1 4.2 4.2c0 5.45-7.75 10.05-7.75 10.05Z" />,
   user: (
     <>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
+      <circle cx="12" cy="8.25" r="3.75" />
+      <path d="M4.75 19.75a7.25 7.25 0 0 1 14.5 0" />
     </>
   ),
-  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
-  close: <path d="M6 6l12 12M18 6 6 18" />,
+  menu: <path d="M4.25 7.25h15.5M4.25 12h15.5M4.25 16.75h15.5" />,
+  close: <path d="m6.5 6.5 11 11m0-11-11 11" />,
   truck: (
     <>
       <path d="M2 7h11v9H2zM13 10h4l3 3v3h-7" />
@@ -36,7 +47,7 @@ const paths: Record<string, JSX.Element> = {
   ),
   chat: <path d="M4 20l1.5-4A8 8 0 1 1 9 19.3L4 20Z" />,
   chevron: <path d="m9 6 6 6-6 6" />,
-  chevronDown: <path d="m6 9 6 6 6-6" />,
+  chevronDown: <path d="m6.75 9.5 5.25 5.25 5.25-5.25" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
   box: (
@@ -48,8 +59,8 @@ const paths: Record<string, JSX.Element> = {
   check: <path d="m5 12 5 5 9-10" />,
   globe: (
     <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18M12 3c2.5 2.7 3.5 5.7 3.5 9s-1 6.3-3.5 9c-2.5-2.7-3.5-5.7-3.5-9s1-6.3 3.5-9Z" />
+      <circle cx="12" cy="12" r="8.75" />
+      <path d="M3.5 12h17M12 3.25c2.25 2.4 3.4 5.3 3.4 8.75s-1.15 6.35-3.4 8.75c-2.25-2.4-3.4-5.3-3.4-8.75s1.15-6.35 3.4-8.75Z" />
     </>
   ),
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />,
