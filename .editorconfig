@@ -1,0 +1,13 @@
+# CELIBERY — editors save every text file as UTF-8 without a BOM.
+# Arabic and English text depends on it: a file saved in a Windows code page (ANSI / Windows-1252 /
+# Windows-1256) corrupts quotes, dashes, arrows and Arabic letters. server/tests/unit/encoding-guard.test.ts
+# fails the test run if that happens.
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+
+# Excel needs the BOM to open this Arabic CSV template correctly.
+[docs/product-import-template.csv]
+charset = utf-8-bom

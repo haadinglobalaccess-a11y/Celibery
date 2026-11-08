@@ -231,15 +231,25 @@ export async function collectionWithProducts(slug: string) {
   return { ...col, products: prods.map((p) => toPublicProduct(p as unknown as LeanProduct, low)) };
 }
 
+/** The Flagship section shows up to three products (its design has three campaign slots). */
+export const FLAGSHIP_SLOTS = 3;
+
 export async function homePayload() {
   const settings = await getSettings();
   const low = settings?.commerce?.lowStockThreshold ?? 5;
-  const [heroBanners, lifestyleBanners, promoBanners, categories, featured, best, collections, campaigns] = await Promise.all([
+  const [heroBanners, lifestyleBanners, promoBanners, categories, featured, flagship, best, collections, campaigns] = await Promise.all([
     Banner.find({ placement: 'hero', active: true, ...activeWindow() }).sort({ sortOrder: 1, _id: 1 }).lean(),
     Banner.find({ placement: 'lifestyle', active: true, ...activeWindow() }).sort({ sortOrder: 1 }).lean(),
     Banner.find({ placement: 'promo', active: true, ...activeWindow() }).sort({ sortOrder: 1 }).lean(),
     listCategories(),
     Product.find({ status: 'active', featured: true }).select(PUBLIC_PRODUCT_FIELDS).sort({ sortOrder: 1 }).limit(8).lean(),
+    // Flagship: ONLY products the Admin selected (never Featured or Best Sellers), active, with a photo, in Admin order.
+    // First image must have a real URL ($type + $ne; a $nin: ['', null] filter on this path matches the opposite set).
+    Product.find({ status: 'active', flagship: true, 'images.0.url': { $type: 'string', $ne: '' } })
+      .select(PUBLIC_PRODUCT_FIELDS)
+      .sort({ flagshipOrder: 1, createdAt: 1, _id: 1 })
+      .limit(FLAGSHIP_SLOTS)
+      .lean(),
     bestSellers(8),
     ProductCollection.find({ active: true, showOnHome: true }).sort({ sortOrder: 1 }).lean(),
     Campaign.find({ active: true, showOnHome: true, ...activeWindow() }).sort({ startsAt: 1 }).lean(),
@@ -282,6 +292,7 @@ export async function homePayload() {
     categories,
     categoryProducts: perCategory,
     featured: featured.map((p) => toPublicProduct(p as unknown as LeanProduct, low)),
+    flagship: flagship.map((p) => toPublicProduct(p as unknown as LeanProduct, low)),
     bestSellers: best,
     collections: collections.map((c) => ({ ...c, products: c.products.map((id) => byId.get(String(id))).filter(Boolean) })),
     campaigns,

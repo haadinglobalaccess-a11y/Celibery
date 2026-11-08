@@ -118,11 +118,9 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
 export function FlagshipCampaigns({ data }: { data: HomeData }) {
   const { lang, p } = useI18n();
   const c = storeCopy(lang);
-  // Real featured products first (Admin "featured" flag), then best sellers — never invented.
-  const items = useMemo(() => {
-    const seen = new Set<string>();
-    return [...data.featured, ...data.bestSellers.items].filter((pr) => pr.images?.[0]?.url && !seen.has(pr._id) && seen.add(pr._id)).slice(0, 3);
-  }, [data]);
+  // Only products the Admin selected with "Show in Flagship section", in the Admin's Flagship order.
+  // Featured products and best sellers are never pulled in; with none selected the section is hidden.
+  const items = useMemo(() => (data.flagship ?? []).filter((pr) => pr.images?.[0]?.url).slice(0, 3), [data]);
   if (!items.length) return null;
   return (
     <section className="cx-flagships" aria-label={c.flagshipEyebrow}>
@@ -483,7 +481,7 @@ export function WhyCelibery() {
         </div>
         <ol className="cx-why__list">
           {why.map((w, i) => (
-            <li key={w.key} className="cx-why__item" data-fx="line">
+            <li key={w.key} className="cx-why__item" data-fx="line" style={{ '--i': i } as CSSProperties}>
               <span className="cx-why__num ltr">{String(i + 1).padStart(2, '0')}</span>
               <div>
                 <h3>{w.t}</h3>

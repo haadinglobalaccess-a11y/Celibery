@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { csvCell, csvToObjects } from '../src/lib/csv';
+import { repairMojibake } from '../src/lib/text';
 import { Category, Order, Product, Review, Settings } from '../src/models';
 import { address, client, contact, createCustomer, createStaff, uid, useDatabase } from './helpers';
 
@@ -139,7 +140,7 @@ describe('product text: Admin → database → API → cart → order', () => {
       sku: 'CEL-TXT-2', slug: 'legacy-adapter', model: 'LG-2', category: adapters!._id, price: 9900, stock: 5, status: 'active', dataSource: 'client',
       images: [], tags: [], specs: [], attributes: { connectors: [] }, featured: false, isBundle: false, bundleItems: [], related: [], createdAt: new Date(), updatedAt: new Date(),
       name: { ar: mojibake('شاحن جداري'), en: 'Wall Charger&nbsp;30W' },
-      shortDescription: { ar: '', en: 'Itâ€™s compact' },
+      shortDescription: { ar: '', en: new TextDecoder('windows-1252').decode(Buffer.from('It’s compact', 'utf8')) },
       description: { ar: '', en: '<div>Charges phones.<br/>Foldable pins.</div>' },
     });
     const pub = (await client().get('/api/products/legacy-adapter')).body.data;
@@ -148,7 +149,8 @@ describe('product text: Admin → database → API → cart → order', () => {
     expect(pub.description.en).toBe('Charges phones.\nFoldable pins.');
     const listed = (await client().get('/api/products?q=LG-2')).body.data[0];
     expect(listed.name.en).toBe('Wall Charger 30W');
-    expect(JSON.stringify(listed)).not.toMatch(/<[a-z]|&nbsp;|â€/i);
+    expect(JSON.stringify(listed)).not.toMatch(/<[a-z]|&nbsp;/i);
+    expect(repairMojibake(JSON.stringify(listed))).toBe(JSON.stringify(listed)); // nothing left to repair
 
     // 3. Cart quote and order carry each product's own data (id, SKU, model, clean name, price, quantity).
     const { c: customer, email } = await createCustomer();
@@ -179,6 +181,119 @@ describe('product text: Admin → database → API → cart → order', () => {
     // Stock moved for exactly these products.
     expect((await Product.findById(stored!._id).lean())!.stock).toBe(8);
     expect((await Product.findOne({ sku: 'CEL-TXT-2' }).lean())!.stock).toBe(4);
+  });
+});
+
+describe('text encoding end to end', () => {
+  const asCp1252 = (s: string) => new TextDecoder('windows-1252').decode(Buffer.from(s, 'utf8'));
+  const LOST = String.fromCodePoint(0xfffd);
+
+  it('every text response declares UTF-8 and keeps Arabic intact', async () => {
+    const res = await client().get('/api/products?limit=50&lang=ar');
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
+    const arabic = res.body.data.map((p: { name: { ar: string } }) => p.name.ar).join(' ');
+    expect(arabic).toMatch(/[ء-ي]/);
+    expect(arabic).not.toContain(LOST);
+    for (const url of ['/robots.txt', '/sitemap.xml', '/llms.txt']) {
+      const r = await client().get(url);
+      expect(r.headers['content-type'], url).toMatch(/; charset=utf-8$/i);
+    }
+  });
+
+  it('CSV exports start with a BOM (Excel) and Arabic survives export → import', async () => {
+    const admin = await createStaff('admin');
+    for (const url of ['/api/admin/products/export.csv', '/api/admin/reports/orders.csv']) {
+      const r = await admin.get(url).buffer(true).parse((res, cb) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => cb(null, Buffer.concat(chunks)));
+      });
+      expect(r.headers['content-type'], url).toBe('text/csv; charset=utf-8');
+      const bytes = r.body as Buffer;
+      expect([...bytes.subarray(0, 3)], url).toEqual([0xef, 0xbb, 0xbf]);
+      if (url.includes('products')) {
+        const rows = csvToObjects(bytes.toString('utf8'));
+        const sample = await Product.findOne({ sku: 'DEMO-AD-30W' }).lean();
+        expect(rows.find((x) => x.sku === 'DEMO-AD-30W')!.name_ar).toBe(sample!.name.ar);
+      }
+    }
+  });
+
+  it('Admin saves repair reversible encoding damage and refuse text whose characters were lost', async () => {
+    const admin = await createStaff('admin');
+    // Settings (Store & contact): damaged Arabic address is stored repaired.
+    const saved = await admin.put('/api/admin/settings').send({ business: { address: { ar: asCp1252('الرياض، حي العليا'), en: asCp1252('Olaya – Riyadh') } } });
+    expect(saved.status).toBe(200);
+    const pub = (await client().get('/api/settings/public')).body.data;
+    expect(pub.business.address).toEqual({ ar: 'الرياض، حي العليا', en: 'Olaya – Riyadh' });
+    // Lost characters are refused with a clear message, never stored.
+    const refused = await admin.put('/api/admin/settings').send({ business: { address: { ar: `الرياض ${LOST}${LOST}`, en: 'Riyadh' } } });
+    expect(refused.status).toBe(400);
+    expect(JSON.stringify(refused.body.error.details)).toContain('unreadable characters');
+    expect((await client().get('/api/settings/public')).body.data.business.address.ar).toBe('الرياض، حي العليا');
+
+    // Message templates (email / WhatsApp wording).
+    const key = 'order.shipped';
+    const tpl = await admin.put(`/api/admin/templates/${key}`).send({ ar: { subject: asCp1252('تم شحن طلبك {{orderNumber}}') } });
+    expect(tpl.status).toBe(200);
+    expect(tpl.body.data.effective.ar.subject).toBe('تم شحن طلبك {{orderNumber}}');
+    expect((await admin.put(`/api/admin/templates/${key}`).send({ en: { subject: `Shipped ${LOST}` } })).status).toBe(400);
+
+    // Products: name and description.
+    const cat = await Category.findOne({ slug: 'cables' }).lean();
+    const p = await admin.post('/api/admin/products').send({
+      sku: 'CEL-ENC-1', slug: 'encoding-cable', category: String(cat!._id), price: 10, stock: 1,
+      name: { ar: asCp1252('كابل شحن'), en: asCp1252('Cable – 1 m “braided”') },
+      description: { ar: asCp1252(asCp1252('وصف المنتج')), en: 'Plain' }, // double-encoded
+    });
+    expect(p.status).toBe(201);
+    const stored = await Product.findOne({ sku: 'CEL-ENC-1' }).lean();
+    expect(stored!.name).toMatchObject({ ar: 'كابل شحن', en: 'Cable – 1 m “braided”' });
+    expect(stored!.description.ar).toBe('وصف المنتج');
+    expect((await admin.post('/api/admin/products').send({ sku: 'CEL-ENC-2', slug: 'encoding-2', category: String(cat!._id), price: 10, name: { ar: `كابل ${LOST}`, en: 'Cable' } })).status).toBe(400);
+  });
+
+  it('the stored-data repair tool: dry run, backup, apply, restore — orders only on request', async () => {
+    const { scanStoredText, applyTextRepairs, restoreTextRepairs } = await import('../src/lib/text-repair');
+    const fs = await import('node:fs');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const cat = await Category.findOne({ slug: 'cables' }).lean();
+    // Damage written straight to the database (as an old import or a bad copy-paste would have).
+    const { insertedId } = await Product.collection.insertOne({
+      sku: 'CEL-DB-1', slug: 'db-damaged', category: cat!._id, price: 100, stock: 1, status: 'draft', dataSource: 'client', images: [], specs: [{ label: { ar: asCp1252('الطول'), en: 'Length' }, value: { ar: '1 م', en: '1 m' } }],
+      name: { ar: asCp1252('كابل تالف'), en: asCp1252('It’s damaged') }, shortDescription: { ar: '', en: `Lost ${LOST}` }, description: { ar: '', en: '' },
+    });
+    await Category.collection.updateOne({ _id: cat!._id }, { $set: { 'description.ar': asCp1252('كابلات شحن') } });
+    const order = await Order.findOne().lean();
+    if (order) await Order.collection.updateOne({ _id: order._id }, { $set: { 'items.0.name.ar': asCp1252('منتج') } });
+
+    const findings = await scanStoredText();
+    const mine = findings.filter((f) => f.id === String(insertedId));
+    expect(mine.map((f) => [f.path, f.after])).toEqual(expect.arrayContaining([
+      ['name.ar', 'كابل تالف'], ['name.en', 'It’s damaged'], ['specs.0.label.ar', 'الطول'], ['shortDescription.en', null],
+    ]));
+    expect(findings.some((f) => f.collection === 'categories' && f.after === 'كابلات شحن')).toBe(true);
+    // Dry run changed nothing.
+    expect((await Product.collection.findOne({ _id: insertedId }))!.name.ar).toBe(asCp1252('كابل تالف'));
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cel-repair-'));
+    const result = await applyTextRepairs(findings, dir);
+    const backup = JSON.parse(fs.readFileSync(result.backup, 'utf8'));
+    expect(backup.repairs.some((r: { path: string; before: string }) => r.path === 'name.ar' && r.before === asCp1252('كابل تالف'))).toBe(true);
+    const after = (await Product.collection.findOne({ _id: insertedId }))!;
+    expect(after.name).toEqual({ ar: 'كابل تالف', en: 'It’s damaged' });
+    expect(after.specs[0].label.ar).toBe('الطول');
+    expect(after.shortDescription.en).toBe(`Lost ${LOST}`); // unrecoverable: reported, never guessed
+    if (order) expect((await Order.collection.findOne({ _id: order._id }))!.items[0].name.ar).toBe(asCp1252('منتج')); // orders untouched by default
+
+    const restored = await restoreTextRepairs(result.backup);
+    expect(restored.restored).toBe(result.applied);
+    expect((await Product.collection.findOne({ _id: insertedId }))!.name.ar).toBe(asCp1252('كابل تالف'));
+
+    await applyTextRepairs(await scanStoredText(), dir, { includeOrders: true });
+    if (order) expect((await Order.collection.findOne({ _id: order._id }))!.items[0].name.ar).toBe('منتج');
+    fs.rmSync(dir, { recursive: true, force: true });
   });
 });
 

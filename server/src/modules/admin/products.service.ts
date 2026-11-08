@@ -25,10 +25,12 @@ async function normalize(input: Input, selfId?: string) {
   return out;
 }
 
-export async function listProducts(q: { q?: string; status?: string; category?: string; lowStock?: string; page: number; limit: number }) {
+export async function listProducts(q: { q?: string; status?: string; category?: string; lowStock?: string; placement?: 'featured' | 'flagship'; page: number; limit: number }) {
   const settings = await getSettings();
   const filter: Record<string, unknown> = {};
   if (q.status) filter.status = q.status;
+  if (q.placement === 'featured') filter.featured = true;
+  if (q.placement === 'flagship') filter.flagship = true;
   if (q.category) filter.category = q.category;
   if (q.q) {
     const rx = new RegExp(escapeRegex(q.q), 'i');

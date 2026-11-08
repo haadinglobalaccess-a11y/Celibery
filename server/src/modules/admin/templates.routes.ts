@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { hasReplacementChar, repairMojibake } from '../../lib/text';
 import { audit } from '../../lib/audit';
 import { badRequest, notFound } from '../../lib/errors';
 import { ah, ok } from '../../lib/http';
@@ -25,7 +26,9 @@ import {
 export const adminTemplateRoutes = Router();
 adminTemplateRoutes.use(requirePermission('settings:write'));
 
-const content = z.object({ subject: z.string().max(200), body: z.string().max(5000), whatsapp: z.string().max(1024) }).partial();
+// Not trimmed (line breaks are part of the message); damaged text is refused, reversible damage repaired.
+const msg = (max: number) => z.string().max(max).refine((v) => !hasReplacementChar(v), 'Contains unreadable characters (\ufffd). Copy the text again from the original.').transform(repairMojibake);
+const content = z.object({ subject: msg(200), body: msg(5000), whatsapp: msg(1024) }).partial();
 const overrideInput = z.object({ ar: content.optional(), en: content.optional() });
 const keyParam = z.object({ key: z.string().refine((k) => Boolean(templateDef(k)), 'Unknown template') });
 

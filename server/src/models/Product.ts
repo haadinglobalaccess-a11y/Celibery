@@ -47,6 +47,10 @@ const ProductSchema = new Schema(
     lowStockThreshold: { type: Number, min: 0 },
     status: { type: String, enum: ['draft', 'active', 'archived'], default: 'draft', index: true },
     featured: { type: Boolean, default: false },
+    /** Homepage Flagship section — chosen in Admin independently of `featured`. Records without it read as false. */
+    flagship: { type: Boolean, default: false },
+    /** Position in the Flagship section (lowest first); separate from sortOrder, which orders Featured and category lists. */
+    flagshipOrder: { type: Number, default: 0, min: 0 },
     /** Filterable attributes (Q18). */
     attributes: {
       capacityMah: { type: Number, min: 0 },
@@ -77,6 +81,7 @@ const ProductSchema = new Schema(
 
 ProductSchema.index({ status: 1, category: 1, sortOrder: 1 });
 ProductSchema.index({ status: 1, price: 1 });
+ProductSchema.index({ status: 1, flagship: 1, flagshipOrder: 1 });
 ProductSchema.index({ status: 1, createdAt: -1 });
 ProductSchema.index({ 'attributes.capacityMah': 1 });
 ProductSchema.index({ 'attributes.powerW': 1 });

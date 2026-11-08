@@ -294,7 +294,7 @@ export function SettingsPage() {
             <F label="Maximum order for COD (SAR, empty = none)">
               <input className="input" inputMode="decimal" value={c.codMaxOrderTotal ?? ''} onChange={(e) => set('commerce', 'codMaxOrderTotal', e.target.value)} />
             </F>
-            <F label="Only in these cities (one per line, empty = all of Saudi Arabia)" span hint="Matched against the city typed at checkout, ignoring upper/lower case. Add Arabic and English spellings, e.g. Riyadh and Ø§Ù„Ø±ÙŠاض.">
+            <F label="Only in these cities (one per line, empty = all of Saudi Arabia)" span hint="Matched against the city typed at checkout, ignoring upper/lower case. Add Arabic and English spellings, e.g. Riyadh and الرياض.">
               <textarea className="textarea" rows={4} value={c.codCitiesText ?? ''} onChange={(e) => set('commerce', 'codCitiesText', e.target.value)} />
             </F>
           </div>

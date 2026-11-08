@@ -58,7 +58,42 @@ export function useCached<T>(path: string) {
   return { data, error, loading: !data && !error };
 }
 
-/** Adds .is-visible when an element scrolls into view (balanced animation, Q6). */
+/**
+ * Scroll-triggered animation that replays on every entry, scrolling down or up.
+ *
+ * `className` is added when the element enters (with the section's own `enter` options, so each
+ * animation starts exactly where it always did) and removed only once the element is completely
+ * outside the viewport. The gap between the two points means an element resting at the edge of the
+ * screen never toggles back and forth, and the reset happens out of sight, so the CSS transitions
+ * replay unchanged on the next entry.
+ */
+export function createReplayObserver(className: string, enter: IntersectionObserverInit) {
+  const enterIo = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) e.target.classList.add(className);
+  }, enter);
+  const exitIo = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) if (!e.isIntersecting) e.target.classList.remove(className);
+    },
+    { threshold: 0 },
+  );
+  return {
+    observe(el: Element) {
+      enterIo.observe(el);
+      exitIo.observe(el);
+    },
+    unobserve(el: Element) {
+      enterIo.unobserve(el);
+      exitIo.unobserve(el);
+    },
+    disconnect() {
+      enterIo.disconnect();
+      exitIo.disconnect();
+    },
+  };
+}
+
+/** Adds .is-visible when an element scrolls into view (balanced animation, Q6) — on every entry. */
 export function useReveal<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   useEffect(() => {
@@ -68,15 +103,7 @@ export function useReveal<T extends HTMLElement>() {
       el.classList.add('is-visible');
       return;
     }
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) if (e.isIntersecting) {
-          e.target.classList.add('is-visible');
-          io.unobserve(e.target);
-        }
-      },
-      { rootMargin: '0px 0px -10% 0px' },
-    );
+    const io = createReplayObserver('is-visible', { rootMargin: '0px 0px -10% 0px' });
     io.observe(el);
     return () => io.disconnect();
   }, []);

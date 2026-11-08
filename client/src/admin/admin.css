@@ -1209,7 +1209,7 @@ iframe.media-preview { border: 0; }
   overflow-wrap: anywhere;
 }
 
-/* Website Content — Banners */
+/* Website Content â€” Banners */
 .banners-table-card { padding:0; overflow:hidden; }
 .banners-table { min-width:900px; }
 .banners-table th:last-child,.banners-table td:last-child { width:150px; }
@@ -1225,7 +1225,7 @@ iframe.media-preview { border: 0; }
   .banners-form .span-2 { grid-column:auto; }
 }
 
-/* Website Content — Collections */
+/* Website Content â€” Collections */
 .collections-table-card { padding:0; overflow:hidden; }
 .collections-table { min-width:820px; }
 .collections-table th:first-child,.collections-table td:first-child { min-width:190px; }
@@ -1241,7 +1241,7 @@ iframe.media-preview { border: 0; }
   .collections-form .span-2 { grid-column:auto; }
 }
 
-/* Website Content — Campaigns */
+/* Website Content â€” Campaigns */
 .campaigns-table-card { padding:0; overflow:hidden; }
 .campaigns-table { min-width:850px; }
 .campaigns-table td:first-child { min-width:230px; font-weight:600; }
@@ -1258,7 +1258,7 @@ iframe.media-preview { border: 0; }
   .campaigns-form .span-2 { grid-column:auto; }
 }
 
-/* Website Content — Policy Pages */
+/* Website Content â€” Policy Pages */
 .pages-table-card { padding:0; overflow:hidden; }
 .pages-table { min-width:760px; }
 .pages-table td:first-child { min-width:230px; font-weight:650; }
@@ -1274,7 +1274,7 @@ iframe.media-preview { border: 0; }
   .pages-form .span-2 { grid-column:auto; }
 }
 
-/* Website Content — Page History */
+/* Website Content â€” Page History */
 .page-history-table-card { padding:0; overflow:hidden; }
 .page-history-table { min-width:760px; }
 .page-history-table td:first-child { min-width:155px; white-space:nowrap; }
@@ -1282,7 +1282,7 @@ iframe.media-preview { border: 0; }
 .page-history-table td:nth-child(4) { min-width:200px; white-space:normal; }
 .page-history-table td:last-child { width:100px; }
 
-/* Website Content — Customer Reviews */
+/* Website Content â€” Customer Reviews */
 .reviews-note {
   padding: 12px 14px;
   margin-bottom: 16px;
@@ -1310,7 +1310,7 @@ iframe.media-preview { border: 0; }
   .reviews-row .actions { justify-content: flex-start; }
 }
 
-/* Media Library — Gallery polish */
+/* Media Library â€” Gallery polish */
 .media-library-card { padding:20px; }
 .media-library-card > div > .toolbar {
   display:grid;
@@ -1372,4 +1372,10 @@ iframe.media-preview { border: 0; }
   .media-library-card { padding:14px; }
   .media-library-card > div > .toolbar { grid-template-columns:minmax(0,1fr); }
   .media-library-card .media-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+}
+
+/* Homepage placement labels in the product list: Featured (filled, the existing badge) and Flagship (outlined). */
+.admin .badge--flagship {
+  background: transparent;
+  border: 1px solid currentColor;
 }

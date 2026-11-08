@@ -123,7 +123,7 @@ function HomepageSettings() {
           <F label="Hero video fallback (seconds)" hint="Recovery window for failed playback, stalled streams or unavailable provider tracking. Separate from video duration."><input className="input" type="number" min="2" max="300" step="0.5" value={h.heroVideoFallbackSec} onChange={e => setH({ ...h, heroVideoFallbackSec: Number(e.target.value) })} /></F>
           <LocInput label="Hero description" value={h.heroDescription} onChange={v => setH({ ...h, heroDescription: v })} textarea />
           <LocInput label="Hero sub-headline" value={h.heroSubtitle} onChange={(v) => setH({ ...h, heroSubtitle: v })} />
-          <LocInput label="Button label (empty = “Shop now”)" value={h.heroCtaLabel} onChange={(v) => setH({ ...h, heroCtaLabel: v })} />
+          <LocInput label="Button label (empty = “Shop now”)" value={h.heroCtaLabel} onChange={(v) => setH({ ...h, heroCtaLabel: v })} />
           <F label="Button destination" hint="Site path like /shop or /c/power-banks (language added automatically), or https://…">
             <input className="input ltr" value={h.heroCtaLink} placeholder="/shop" onChange={(e) => setH({ ...h, heroCtaLink: e.target.value })} />
           </F>
@@ -131,11 +131,11 @@ function HomepageSettings() {
         <p className="muted" style={{ fontSize: 13 }}>
           Preview after saving:{' '}
           <a href="/ar" target="_blank" rel="noreferrer">
-            Arabic homepage â†—
+            Arabic homepage ↗
           </a>{' '}
           ·{' '}
           <a href="/en" target="_blank" rel="noreferrer">
-            English homepage â†—
+            English homepage ↗
           </a>
         </p>
       </Card>
@@ -201,7 +201,7 @@ function Banners() {
                 <td>{b.placement}</td>
                 <td>{en(b.title) || '—'}</td>
                 <td>
-                  {b.startsAt ? dt(b.startsAt) : 'Always'} {b.endsAt ? `â†’ ${dt(b.endsAt)}` : ''}
+                  {b.startsAt ? dt(b.startsAt) : 'Always'} {b.endsAt ? `→ ${dt(b.endsAt)}` : ''}
                 </td>
                 <td>{b.active ? 'Yes' : 'No'}</td>
                 <td className="actions">
@@ -315,7 +315,7 @@ function Collections() {
     <>
       <Card title="Collections" actions={<button className="btn btn--primary btn--sm" onClick={() => setEdit({ slug: '', kind: 'custom', title: emptyL, description: emptyL, products: [], active: true, showOnHome: false, sortOrder: 0 })}>+ New collection</button>}>
         <p className="muted" style={{ fontSize: 13 }}>
-          “bundles” is the Bundles &amp; Gift Kits menu item (Q17). “best-sellers” is only used until real sales data exists. “for-travel / work / fitness / home” feed the use-case section.
+          “bundles” is the Bundles &amp; Gift Kits menu item (Q17). “best-sellers” is only used until real sales data exists. “for-travel / work / fitness / home” feed the use-case section.
         </p>
         <div className="table-wrap collections-table-card"><table className="table collections-table">
           <thead>
@@ -427,7 +427,7 @@ function Campaigns() {
                   {en(c.title)} <span className="muted">/{c.slug}</span>
                 </td>
                 <td>
-                  {c.startsAt ? dt(c.startsAt) : '—'} â†’ {c.endsAt ? dt(c.endsAt) : '—'}
+                  {c.startsAt ? dt(c.startsAt) : '—'} → {c.endsAt ? dt(c.endsAt) : '—'}
                 </td>
                 <td>{c.discountCode || '—'}</td>
                 <td>{c.active ? <span className="badge badge--success">active</span> : <span className="badge">inactive</span>}</td>

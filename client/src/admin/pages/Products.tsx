@@ -4,12 +4,13 @@ import { ErrorState, Spinner } from '../../components/ui';
 import { api, apiUrl, del, get, post, put, qs } from '../../lib/api';
 import { connectorLabel } from '../../lib/format';
 import { useApi } from '../../lib/hooks';
+import { readTextFile, type DecodedText } from '../../lib/textFile';
 import type { Category, Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
 import { AHead, Card, en, ErrorBox, F, fromSarInput, LocInput, Modal, Pager, ProductPicker, sar, Status, toSarInput } from '../kit';
 import { ImageGallery, type GalleryImage } from '../media';
 
-type Row = { _id: string; sku: string; slug: string; model: string; name: Localized; price: number; stock: number; status: string; featured: boolean; dataSource: string; images: { url: string }[]; category?: { name: Localized } };
+type Row = { _id: string; sku: string; slug: string; model: string; name: Localized; price: number; stock: number; status: string; featured: boolean; flagship?: boolean; dataSource: string; images: { url: string }[]; category?: { name: Localized } };
 
 const CONNECTORS = ['usb-c', 'usb-a', 'lightning', 'micro-usb', 'magsafe', 'wireless', 'aux-3.5mm', 'bluetooth', 'car-12v', 'other'];
 
@@ -21,7 +22,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
   const [importing, setImporting] = useState(false);
   const [listError, setListError] = useState(false);
   const cats = useApi<Category[]>('/api/admin/categories');
-  const query = qs({ q: params.get('q') ?? undefined, status: params.get('status') ?? undefined, category: params.get('category') ?? undefined, page: params.get('page') ?? undefined, limit: 25 });
+  const query = qs({ q: params.get('q') ?? undefined, status: params.get('status') ?? undefined, placement: params.get('placement') ?? undefined, category: params.get('category') ?? undefined, page: params.get('page') ?? undefined, limit: 25 });
   const [nonce, setNonce] = useState(0);
   useEffect(() => {
     setRows(null);
@@ -71,11 +72,29 @@ export function Products({ canWrite }: { canWrite: boolean }) {
         >
           <input className="input products-search-input" placeholder="Search product name, SKU or model…" value={q} onChange={(e) => setQ(e.target.value)} />
         </form>
-        <select className="select products-status-select" value={params.get('status') ?? ''} onChange={(e) => set('status', e.target.value)}>
-          <option value="">All statuses</option>
+        {/* One dropdown: status (availability) and homepage placement are separate filters on the server. */}
+        <select
+          className="select products-status-select"
+          aria-label="Show products"
+          data-testid="products-status-filter"
+          value={params.get('placement') ?? params.get('status') ?? ''}
+          onChange={(e) => {
+            const v = e.target.value;
+            const n = new URLSearchParams(params);
+            n.delete('status');
+            n.delete('placement');
+            n.delete('page');
+            if (v === 'featured' || v === 'flagship') n.set('placement', v);
+            else if (v) n.set('status', v);
+            setParams(n);
+          }}
+        >
+          <option value="">All products</option>
           <option value="active">Active</option>
           <option value="draft">Draft</option>
-          <option value="archived">Archived</option>
+          <option value="archived">Archived (inactive)</option>
+          <option value="featured">Featured</option>
+          <option value="flagship">Flagship</option>
         </select>
         <select className="select products-category-select" value={params.get('category') ?? ''} onChange={(e) => set('category', e.target.value)}>
           <option value="">All categories</option>
@@ -112,7 +131,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
                   <td>
                     <Link to={`/admin/products/${p._id}`}>{en(p.name)}</Link>
                     <div className="muted">
-                      {p.sku} {p.model ? `· ${p.model}` : ''} {p.dataSource === 'demo' ? <span className="badge badge--sample">sample</span> : null} {p.featured ? <span className="badge">featured</span> : null}
+                      {p.sku} {p.model ? `· ${p.model}` : ''} {p.dataSource === 'demo' ? <span className="badge badge--sample">sample</span> : null} {p.featured ? <span className="badge badge--featured" data-testid="badge-featured">Featured</span> : null} {p.flagship ? <span className="badge badge--flagship" data-testid="badge-flagship">Flagship</span> : null}
                     </div>
                   </td>
                   <td>{en(p.category?.name)}</td>
@@ -136,6 +155,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
 
 function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [csv, setCsv] = useState('');
+  const [encoding, setEncoding] = useState<DecodedText['encoding'] | null>(null);
   const [report, setReport] = useState<{ rows: number; created: number; updated: number; skipped: number; errors: { row: number; sku: string; errors: unknown }[] } | null>(null);
   const [err, setErr] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -161,9 +181,18 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
         accept=".csv,text/csv"
         onChange={async (e) => {
           const f = e.target.files?.[0];
-          if (f) setCsv(await f.text());
+          if (!f) return;
+          const decoded = await readTextFile(f);
+          setCsv(decoded.text);
+          setEncoding(decoded.encoding);
+          setReport(null);
         }}
       />
+      {encoding && encoding !== 'utf-8' ? (
+        <p className="alert alert--warning" style={{ marginTop: 12 }}>
+          This file was saved as {encoding === 'windows-1256' ? 'Arabic Windows (Windows-1256)' : 'Western Windows (Windows-1252)'}, not UTF-8. It was converted so Arabic and special characters are kept. Run “Validate” and check the names before importing. Next time, save from Excel with “CSV UTF-8 (Comma delimited)”.
+        </p>
+      ) : null}
       <ErrorBox error={err} />
       {report ? (
         <div className="alert" style={{ marginTop: 12 }}>
@@ -207,6 +236,8 @@ type ProductForm = {
   lowStockThreshold: string;
   status: string;
   featured: boolean;
+  flagship: boolean;
+  flagshipOrder: string;
   capacityMah: string;
   powerW: string;
   connectors: string[];
@@ -240,6 +271,8 @@ const blank: ProductForm = {
   lowStockThreshold: '',
   status: 'draft',
   featured: false,
+  flagship: false,
+  flagshipOrder: '0',
   capacityMah: '',
   powerW: '',
   connectors: [],
@@ -277,6 +310,8 @@ function fromApi(p: any): ProductForm {
     lowStockThreshold: p.lowStockThreshold == null ? '' : String(p.lowStockThreshold),
     status: p.status,
     featured: Boolean(p.featured),
+    flagship: Boolean(p.flagship), // older products without the field: not in Flagship
+    flagshipOrder: String(p.flagshipOrder ?? 0),
     capacityMah: p.attributes?.capacityMah ? String(p.attributes.capacityMah) : '',
     powerW: p.attributes?.powerW ? String(p.attributes.powerW) : '',
     connectors: p.attributes?.connectors ?? [],
@@ -313,6 +348,8 @@ function toApi(f: ProductForm, isNew: boolean) {
     lowStockThreshold: num(f.lowStockThreshold),
     status: f.status,
     featured: f.featured,
+    flagship: f.flagship,
+    flagshipOrder: Math.max(0, Math.trunc(Number(f.flagshipOrder || 0))),
     attributes: {
       capacityMah: num(f.capacityMah),
       powerW: num(f.powerW),
@@ -390,12 +427,12 @@ export function ProductEdit() {
     <form onSubmit={save}>
       <AHead title={isNew ? 'New product' : en(f.name) || 'Edit product'}>
         <Link to="/admin/products" className="btn btn--ghost btn--sm">
-          â† Products
+          ← Products
         </Link>
         {!isNew ? (
           <>
             <a className="btn btn--ghost btn--sm" href={`/ar/p/${f.slug}`} target="_blank" rel="noreferrer">
-              View â†—
+              View ↗
             </a>
             <button type="button" className="btn btn--outline btn--sm" onClick={remove}>
               Delete / archive
@@ -483,8 +520,16 @@ export function ProductEdit() {
                 </select>
               </F>
               <label className="check">
-                <input type="checkbox" checked={f.featured} onChange={(e) => up({ featured: e.target.checked })} /> Featured on homepage
+                <input type="checkbox" data-testid="featured-toggle" checked={f.featured} onChange={(e) => up({ featured: e.target.checked })} /> Featured on homepage
               </label>
+              <label className="check">
+                <input type="checkbox" data-testid="flagship-toggle" checked={f.flagship} onChange={(e) => up({ flagship: e.target.checked })} /> Show in Flagship section
+              </label>
+              {f.flagship ? (
+                <F label="Flagship order" hint="Lowest number appears first. The Flagship section shows the first three active products with a photo.">
+                  <input className="input" type="number" min={0} step={1} data-testid="flagship-order" value={f.flagshipOrder} onChange={(e) => up({ flagshipOrder: e.target.value })} />
+                </F>
+              ) : null}
               <F label="Sort order">
                 <input className="input" type="number" value={f.sortOrder} onChange={(e) => up({ sortOrder: e.target.value })} />
               </F>
@@ -568,7 +613,7 @@ export function ProductEdit() {
             </div>
           </Card>
           <Card title="Warranty">
-            <F label="Warranty (months)" hint="Empty = store default (Settings â†’ Warranty)">
+            <F label="Warranty (months)" hint="Empty = store default (Settings → Warranty)">
               <input className="input" type="number" min={0} value={f.warrantyMonths} onChange={(e) => up({ warrantyMonths: e.target.value })} />
             </F>
           </Card>

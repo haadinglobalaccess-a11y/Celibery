@@ -65,7 +65,7 @@ body:has(.campaign-hero-slider) .header:not(.is-scrolled) .logo { color: #fff; }
 .campaign-indicators span { transition: transform 160ms linear; }
 @media (prefers-reduced-motion: reduce) { .campaign-indicators span { transition: none; } }
 
-/* CELIBERY HERO � DESKTOP VIEWPORT FIT */
+/* CELIBERY HERO — DESKTOP VIEWPORT FIT */
 @media (min-width: 640px) {
   .campaign-hero-slider {
     min-height: 100svh;
@@ -280,7 +280,7 @@ html[lang='ar'] .campaign-copy .cine__title {
 /* Remove unwanted white gap directly below the homepage hero */
 .campaign-hero-slider + .section { padding-top: 0; }
 
-/* CELIBERY � TRUE FULLSCREEN DESKTOP HERO */
+/* CELIBERY — TRUE FULLSCREEN DESKTOP HERO */
 @media (min-width: 640px) {
   .campaign-hero-slider {
     height: 100svh;

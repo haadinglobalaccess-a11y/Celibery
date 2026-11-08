@@ -1717,7 +1717,7 @@ a.order-card:hover {
   }
 }
 
-/* CELIBERY OUR STORY � SHOW THE COMPLETE ADMIN-UPLOADED IMAGE */
+/* CELIBERY OUR STORY — SHOW THE COMPLETE ADMIN-UPLOADED IMAGE */
 .story__media--3d {
   background: #050609;
 }
@@ -1729,13 +1729,13 @@ a.order-card:hover {
   transform: none !important;
 }
 
-/* CELIBERY OUR STORY � ALIGN DECORATIVE FRAME WITH IMAGE */
+/* CELIBERY OUR STORY — ALIGN DECORATIVE FRAME WITH IMAGE */
 .story__media--3d .story__frame {
   inset: 0;
   transform: none !important;
 }
 
-/* CELIBERY OUR STORY � PREMIUM INSET IMAGE FRAME */
+/* CELIBERY OUR STORY — PREMIUM INSET IMAGE FRAME */
 .story__media--3d {
   background: #050609;
   overflow: hidden;
@@ -1760,7 +1760,7 @@ a.order-card:hover {
   border-radius: var(--r-xl);
 }
 
-/* CELIBERY � PREMIUM BRAND WATERMARK */
+/* CELIBERY — PREMIUM BRAND WATERMARK */
 .story-scene__word {
   color: transparent !important;
   -webkit-text-fill-color: transparent;
@@ -1773,7 +1773,7 @@ a.order-card:hover {
   user-select: none;
 }
 
-/* CELIBERY � PREMIUM SILVER WHITE WATERMARK */
+/* CELIBERY — PREMIUM SILVER WHITE WATERMARK */
 .story-scene__word {
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
@@ -1782,7 +1782,7 @@ a.order-card:hover {
   opacity: 1 !important;
 }
 
-/* CELIBERY � WATERMARK MATCHING STORY IMAGE FRAME */
+/* CELIBERY — WATERMARK MATCHING STORY IMAGE FRAME */
 .story-scene__word {
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;

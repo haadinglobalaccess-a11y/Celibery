@@ -15,7 +15,8 @@
     "create-staff": "tsx src/scripts/create-staff.ts",
     "import:products": "tsx src/scripts/import-products.ts",
     "migrate": "tsx src/scripts/migrate.ts",
-    "test:unit": "vitest run tests/unit"
+    "test:unit": "vitest run tests/unit",
+    "repair:text": "tsx src/scripts/repair-text.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

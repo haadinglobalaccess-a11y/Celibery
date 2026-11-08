@@ -25,7 +25,8 @@
     "create-staff": "npm run create-staff -w server --",
     "import:products": "npm run import:products -w server --",
     "migrate": "npm run migrate -w server --",
-    "test:unit": "npm run test:unit -w server"
+    "test:unit": "npm run test:unit -w server",
+    "repair:text": "npm run repair:text -w server --"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

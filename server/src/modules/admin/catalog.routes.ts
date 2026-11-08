@@ -48,7 +48,7 @@ adminProductRoutes.get(
     await audit(req, 'export', 'product', '', `${count} products exported`);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="celibery-products-${new Date().toISOString().slice(0, 10)}.csv"`);
-    res.send('﻿' + csv); // BOM so Excel opens Arabic text correctly
+    res.send('\ufeff' + csv); // BOM so Excel opens Arabic text correctly
   }),
 );
 

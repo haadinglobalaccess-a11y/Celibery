@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { text } from './admin.schemas';
 import { audit } from '../../lib/audit';
 import { ah, ok } from '../../lib/http';
 import { toHalalas } from '../../lib/money';
@@ -17,8 +18,8 @@ import { canonicalCity } from '../orders/delivery-rules';
 import { reportQuery } from './admin.schemas';
 import * as reports from './reports.service';
 
-const loc = z.object({ ar: z.string().trim().max(5000).default(''), en: z.string().trim().max(5000).default('') });
-const str = (max = 300) => z.string().trim().max(max);
+const loc = z.object({ ar: text(5000).default(''), en: text(5000).default('') });
+const str = (max = 300) => text(max);
 const urlish = z.string().trim().max(1000).refine((v) => v === '' || /^https?:\/\//.test(v) || v.startsWith('/'), 'Must be a URL');
 const hex = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, 'Use a hex colour like #1A2B3C');
 
@@ -175,7 +176,7 @@ adminSystemRoutes.get(
     const csv = await reports.ordersCsv(query.from, query.to);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="celibery-orders-${new Date().toISOString().slice(0, 10)}.csv"`);
-    res.send('﻿' + csv); // BOM so Excel opens Arabic text correctly
+    res.send('\ufeff' + csv); // BOM so Excel opens Arabic text correctly
   }),
 );
 

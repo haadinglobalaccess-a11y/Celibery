@@ -117,6 +117,8 @@ export type HomeData = {
   categories: Category[];
   categoryProducts: { categoryId: string; items: ProductCardData[] }[];
   featured: ProductCardData[];
+  /** Products the Admin selected for the Flagship section (in Admin order). Never Featured/Best Sellers by default. */
+  flagship?: ProductCardData[];
   bestSellers: { source: 'orders' | 'curated' | 'none'; items: ProductCardData[] };
   collections: Collection[];
   campaigns: Campaign[];

@@ -1,4 +1,4 @@
-﻿/* Admin-backed duration acceptance check; run only against the isolated e2e server. */
+/* Admin-backed duration acceptance check; run only against the isolated e2e server. */
 const fs=require('node:fs');const assert=require('node:assert/strict');const {chromium}=require('playwright');
 const base=process.env.HERO_TEST_BASE_URL||'http://localhost:4174';
 (async()=>{const browser=await chromium.launch({channel:process.platform==='win32'?'msedge':undefined,headless:true});const context=await browser.newContext({viewport:{width:1440,height:900}});const ids=[];let original;const api=async(method,path,data)=>{const r=await context.request.fetch(base+path,{method,headers:{'X-Requested-With':'celibery'},data});assert.ok(r.ok(),await r.text());return(await r.json()).data};

@@ -10,6 +10,9 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
  * or dummy text reaches customers and that each product keeps its own data.
  */
 const H = { 'X-Requested-With': 'celibery' };
+// What an apostrophe and Arabic letters look like when UTF-8 is shown as Windows-1252 (generated, never typed).
+const asCp1252 = (s: string) => new TextDecoder('windows-1252').decode(Buffer.from(s, 'utf8'));
+const DAMAGED = [asCp1252('’'), asCp1252('ا'), asCp1252('ل')];
 const creds = () => JSON.parse(fs.readFileSync(path.resolve(__dirname, '.artifacts/admin.json'), 'utf8')) as { email: string; password: string };
 
 const PRODUCTS = [
@@ -70,7 +73,8 @@ test.describe.serial('product information from product page to stored order', ()
         await expect(desc.locator('li')).toHaveText(p.bullets[lang]);
         // No markup, entities, sample text or other products' text anywhere on the page.
         const text = await page.locator('main, body').first().innerText();
-        expect(text).not.toMatch(/<\/?(p|ul|li|div|b)>|&nbsp;|&amp;|â€|Ø§/);
+        expect(text).not.toMatch(/<\/?(p|ul|li|div|b)>|&nbsp;|&amp;|\ufffd/);
+        for (const bad of DAMAGED) expect(text).not.toContain(bad);
         expect(text).not.toContain('Sample product used only to preview');
         const other = PRODUCTS.find((x) => x !== p)!;
         expect(text).not.toContain(other.lead[lang]);

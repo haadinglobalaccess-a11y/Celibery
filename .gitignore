@@ -18,3 +18,4 @@ server/uploads/
 mobile-audit-report/
 *.backup*
 *-backup
+server/text-repair-backups/

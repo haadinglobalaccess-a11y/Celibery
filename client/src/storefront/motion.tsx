@@ -1,12 +1,14 @@
 import { useEffect, useRef, type CSSProperties, type ElementType, type ReactNode } from 'react';
+import { createReplayObserver } from '../lib/hooks';
 
 /**
  * CELIBERY motion theatre — one IntersectionObserver per page scope.
  *
  * Elements opt in with `data-fx="<effect>"` (iris · split · spotlight · kinetic · rise · stagger ·
- * draw · line · chrome). When an element first enters the viewport it receives `.fx-in` once and is
- * no longer observed, so nothing runs while scrolling except compositor-friendly CSS transitions
- * (transform · opacity · clip-path). Hidden start states only apply inside an armed scope
+ * draw · line · chrome). Each time an element enters the viewport — scrolling down or back up — it
+ * receives `.fx-in`; once it is completely off screen the class is removed so the same transition
+ * plays again on the next entry (lib/hooks.ts createReplayObserver). Only compositor-friendly CSS
+ * transitions run (transform · opacity · clip-path). Hidden start states only apply inside an armed scope
  * (`.cx-theatre`), so content is never hidden if JavaScript is unavailable. With
  * prefers-reduced-motion every element is shown immediately.
  */
@@ -17,19 +19,8 @@ export function useTheatre<T extends HTMLElement>() {
     if (!root) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window);
     const seen = new WeakSet<Element>();
-    const io = reduce
-      ? null
-      : new IntersectionObserver(
-          (entries) => {
-            for (const e of entries) {
-              if (!e.isIntersecting) continue;
-              e.target.classList.add('fx-in');
-              io?.unobserve(e.target);
-            }
-          },
-          // Start slightly before the element is fully in view so it is already moving on arrival.
-          { rootMargin: '0px 0px -6% 0px', threshold: 0.12 },
-        );
+    // Start slightly before the element is fully in view so it is already moving on arrival.
+    const io = reduce ? null : createReplayObserver('fx-in', { rootMargin: '0px 0px -6% 0px', threshold: 0.12 });
     const scan = () => {
       root.querySelectorAll('[data-fx]').forEach((el) => {
         if (seen.has(el)) return;

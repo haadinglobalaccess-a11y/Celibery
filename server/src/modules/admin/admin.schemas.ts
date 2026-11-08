@@ -2,14 +2,28 @@ import { z } from 'zod';
 import { FILTER_KEYS } from '../../models/Category';
 import { CONNECTORS } from '../../models/Product';
 import { PERMISSIONS } from '../../lib/permissions';
-import { cleanLocLine, cleanLocRich } from '../../lib/text';
+import { cleanLocLine, cleanLocRich, hasReplacementChar, repairMojibake } from '../../lib/text';
 
 export const objectId = z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id');
 export const idParam = z.object({ id: objectId });
 
-export const localized = z.object({ ar: z.string().trim().max(20000).default(''), en: z.string().trim().max(20000).default('') });
-const localizedShort = z.object({ ar: z.string().trim().max(300).default(''), en: z.string().trim().max(300).default('') });
-const requiredLocalized = z.object({ ar: z.string().trim().min(1, 'Arabic is required').max(300), en: z.string().trim().min(1, 'English is required').max(300) });
+/**
+ * Customer-visible text typed or pasted in the Admin. Encoding damage that can be reversed exactly
+ * (UTF-8 read as Windows-1252, e.g. the Arabic word for Riyadh shown as Latin "Ø/Ù" letter pairs) is repaired; text containing "\ufffd" — characters
+ * already lost before they reached the store — is refused so it never goes live. Legitimate Unicode
+ * (Arabic, accents, symbols, emoji) is never rejected.
+ */
+export const text = (max: number, min = 0, minMessage?: string) =>
+  z
+    .string()
+    .trim()
+    .min(min, minMessage)
+    .max(max)
+    .refine((v) => !hasReplacementChar(v), 'Contains unreadable characters (\ufffd). The text was damaged before it was pasted: copy it again from the original document.')
+    .transform(repairMojibake);
+export const localized = z.object({ ar: text(20000).default(''), en: text(20000).default('') });
+const localizedShort = z.object({ ar: text(300).default(''), en: text(300).default('') });
+const requiredLocalized = z.object({ ar: text(300, 1, 'Arabic is required'), en: text(300, 1, 'English is required') });
 const url = z.string().trim().max(1000).refine((v) => v === '' || /^https?:\/\//.test(v) || v.startsWith('/'), 'Must be a URL (https://…) or a site path (/…)');
 const slug = z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,100}$/, 'Use lowercase letters, numbers and dashes');
 /** Product / category / collection image: a URL (external or uploaded) plus optional media-library metadata. */
@@ -40,6 +54,8 @@ export const productInput = z.object({
   lowStockThreshold: z.number().int().min(0).nullable().optional(),
   status: z.enum(['draft', 'active', 'archived']).default('draft'),
   featured: z.boolean().default(false),
+  flagship: z.boolean().default(false),
+  flagshipOrder: z.number().int().min(0).max(9999).default(0),
   attributes: z
     .object({
       capacityMah: z.number().int().min(0).max(100000).nullable().optional(),
@@ -68,6 +84,8 @@ export const productListAdmin = z.object({
   status: z.enum(['draft', 'active', 'archived']).optional(),
   category: objectId.optional(),
   lowStock: z.enum(['1', 'true']).optional(),
+  /** Homepage placement — independent of status (a product can be both draft and flagship). */
+  placement: z.enum(['featured', 'flagship']).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(200).default(25),
 });

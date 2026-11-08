@@ -24,8 +24,9 @@ async function login(page: Page) {
 
 test.describe.serial('production readiness', () => {
   test('reviews section follows the admin setting; product SEO tags are present', async ({ page }) => {
-    const list = await (await page.request.get('/api/products?limit=1&lang=en')).json();
-    const slug = list.data[0].slug as string;
+    // A sample (demo) product: they must never publish a structured offer (other specs add real ones).
+    const list = await (await page.request.get('/api/products?limit=60&lang=en')).json();
+    const slug = (list.data as { slug: string; dataSource: string }[]).find((p) => p.dataSource === 'demo')!.slug;
 
     await page.goto(`/en/p/${slug}`);
     await expect(page.getByTestId('add-to-cart')).toBeVisible();

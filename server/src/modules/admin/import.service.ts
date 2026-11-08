@@ -36,6 +36,8 @@ export function rowToProduct(r: Record<string, string>, categoryId: string | und
     stock: num(r.stock ?? '') ?? 0,
     status: (r.status || 'draft') as 'draft' | 'active' | 'archived',
     featured: ['1', 'true', 'yes'].includes((r.featured ?? '').toLowerCase()),
+    flagship: ['1', 'true', 'yes'].includes((r.flagship ?? '').toLowerCase()),
+    flagshipOrder: num(r.flagship_order ?? '') ?? 0,
     attributes: {
       capacityMah: num(r.capacity_mah ?? '') ?? null,
       powerW: num(r.power_w ?? '') ?? null,
@@ -75,7 +77,11 @@ export async function importProductsCsv(text: string, userId: string | undefined
       report.created++;
     } else {
       const { stock, ...rest } = parsed.data;
-      await updateProduct(String(existing._id), rest);
+      // Files without the flagship columns (older template) never reset the Admin's Flagship selection.
+      const update: Partial<typeof rest> = { ...rest };
+      if (!('flagship' in r)) delete update.flagship;
+      if (!('flagship_order' in r)) delete update.flagshipOrder;
+      await updateProduct(String(existing._id), update);
       if (r.stock !== '' && stock !== existing.stock) {
         // Only when stock has not moved since it was read (an order may have reserved units meanwhile).
         const set = await Product.updateOne({ _id: existing._id, stock: existing.stock }, { $set: { stock } });
@@ -94,14 +100,14 @@ export async function importProductsCsv(text: string, userId: string | undefined
 /** Column order of docs/product-import-template.csv (spec columns are added after these). */
 export const PRODUCT_CSV_COLUMNS = [
   'sku', 'slug', 'model', 'category_slug', 'name_ar', 'name_en', 'short_description_ar', 'short_description_en', 'description_ar', 'description_en',
-  'price_sar', 'compare_at_price_sar', 'stock', 'status', 'featured', 'capacity_mah', 'power_w', 'connectors', 'color_key', 'color_name_ar', 'color_name_en',
+  'price_sar', 'compare_at_price_sar', 'stock', 'status', 'featured', 'flagship', 'flagship_order', 'capacity_mah', 'power_w', 'connectors', 'color_key', 'color_name_ar', 'color_name_en',
   'color_hex', 'warranty_months', 'series', 'tags', 'image_urls',
 ];
 
 type ExportProduct = {
   sku: string; slug: string; model?: string | null; category?: unknown; name?: { ar?: string | null; en?: string | null } | null;
   shortDescription?: { ar?: string | null; en?: string | null } | null; description?: { ar?: string | null; en?: string | null } | null;
-  price: number; compareAtPrice?: number | null; stock: number; status: string; featured?: boolean | null; series?: string | null;
+  price: number; compareAtPrice?: number | null; stock: number; status: string; featured?: boolean | null; flagship?: boolean | null; flagshipOrder?: number | null; series?: string | null;
   tags?: string[] | null; images?: { url: string }[] | null; warrantyMonths?: number | null; dataSource?: string | null;
   attributes?: { capacityMah?: number | null; powerW?: number | null; connectors?: string[] | null; color?: { key?: string | null; name?: { ar?: string | null; en?: string | null } | null; hex?: string | null } | null } | null;
   specs?: { label?: { ar?: string | null; en?: string | null } | null; value?: { ar?: string | null; en?: string | null } | null }[] | null;
@@ -117,7 +123,7 @@ export function productToRow(p: ExportProduct, categorySlug: string, specColumns
   const a = p.attributes ?? {};
   const row = [
     p.sku, p.slug, p.model ?? '', categorySlug, p.name?.ar ?? '', p.name?.en ?? '', p.shortDescription?.ar ?? '', p.shortDescription?.en ?? '',
-    p.description?.ar ?? '', p.description?.en ?? '', sar(p.price), sar(p.compareAtPrice), String(p.stock ?? 0), p.status, p.featured ? 'yes' : 'no',
+    p.description?.ar ?? '', p.description?.en ?? '', sar(p.price), sar(p.compareAtPrice), String(p.stock ?? 0), p.status, p.featured ? 'yes' : 'no', p.flagship ? 'yes' : 'no', String(p.flagshipOrder ?? 0),
     a.capacityMah == null ? '' : String(a.capacityMah), a.powerW == null ? '' : String(a.powerW), (a.connectors ?? []).join('|'),
     a.color?.key ?? '', a.color?.name?.ar ?? '', a.color?.name?.en ?? '', a.color?.hex ?? '',
     p.warrantyMonths == null ? '' : String(p.warrantyMonths), p.series ?? '', (p.tags ?? []).join('|'), (p.images ?? []).map((i) => i.url).join('|'),

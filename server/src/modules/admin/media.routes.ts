@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 import { z } from 'zod';
+import { text } from './admin.schemas';
 import { env } from '../../config/env';
 import { audit } from '../../lib/audit';
 import { notFound } from '../../lib/errors';
@@ -19,7 +20,7 @@ import * as svc from './media.service';
  */
 export const adminMediaRoutes = Router();
 
-const loc = z.object({ ar: z.string().trim().max(300).default(''), en: z.string().trim().max(300).default('') });
+const loc = z.object({ ar: text(300).default(''), en: text(300).default('') });
 const listQuery = z.object({
   kind: z.enum(['image', 'video']).optional(),
   source: z.enum(['upload', 'external']).optional(),

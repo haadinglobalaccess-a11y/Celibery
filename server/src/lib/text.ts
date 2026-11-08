@@ -3,7 +3,7 @@
  *
  * Descriptions reach the database from the Admin form, CSV imports (Shopify exports carry HTML) and
  * copy-paste from Word / web pages. Shown verbatim, that produced raw markup ("<p>…</p>", "&amp;"),
- * encoding damage ("â€™", "Ø§Ù„") and inconsistent bullets on the product page. Everything is
+ * encoding damage (UTF-8 shown as Windows-1252 — an apostrophe as three Latin characters, Arabic as Ø/Ù pairs) and inconsistent bullets on the product page. Everything is
  * reduced to one small, safe plain-text format that the storefront renders:
  *
  *   paragraphs separated by a blank line · "- " list items · "### " sub-headings · **bold**
@@ -19,21 +19,63 @@ const CP1252: Record<number, number> = {
   0x2013: 0x96, 0x2014: 0x97, 0x02dc: 0x98, 0x2122: 0x99, 0x0161: 0x9a, 0x203a: 0x9b, 0x0153: 0x9c, 0x017e: 0x9e, 0x0178: 0x9f,
 };
 
-/** Typical signatures of UTF-8 read as Windows-1252/Latin-1: "â€™", "Ã©", "Ø§", "Ù„". */
-const MOJIBAKE = /(?:â€|Ã[\u0080-ÿ]|[ØÙ][\u0080-ÿŒ-™])/;
+/** Byte value of a character as Windows-1252 would have displayed it (undefined if it cannot be one). */
+const cpByte = (ch: string): number | undefined => {
+  const c = ch.codePointAt(0)!;
+  return c <= 0xff ? c : CP1252[c];
+};
 
-/** Repairs UTF-8 that was decoded as Windows-1252 — only when the whole text converts cleanly. */
+/** Quick test: a UTF-8 lead byte (as cp1252) followed by a continuation byte (as cp1252). */
+const SUSPECT = /[\u00c2-\u00f4][\u0080-\u00bf\u0152\u0153\u0160\u0161\u0178\u017d\u017e\u0192\u02c6\u02dc\u2013\u2014\u2018-\u201e\u2020-\u2022\u2026\u2030\u2039\u203a\u20ac\u2122]/;
+const C1 = /[\u0080-\u009f]/g;
+const HAS_C1 = /[\u0080-\u009f]/; // non-global: .test() keeps no state
+const strictUtf8 = new TextDecoder('utf-8', { fatal: true });
+
+/**
+ * Repairs UTF-8 text that was decoded as Windows-1252 / Latin-1 ("mojibake"), one character at a time:
+ * a lead byte followed by exactly the continuation bytes UTF-8 requires is replaced only when those
+ * bytes strictly decode. Correct text around a damaged run (Arabic, English, accents) is never touched,
+ * so mixed strings are repaired too. Leftover C1 control characters (never legitimate text) are removed.
+ */
 export function repairMojibake(s: string): string {
-  if (!MOJIBAKE.test(s)) return s;
-  const bytes: number[] = [];
-  for (const ch of s) {
-    const cp = ch.codePointAt(0)!;
-    if (cp <= 0xff) bytes.push(cp);
-    else if (CP1252[cp] !== undefined) bytes.push(CP1252[cp]);
-    else return s; // a genuine non-Latin character: this is not mojibake, leave it alone
+  // Text damaged twice (double-encoded) needs one pass per layer; each pass is strictly validated.
+  let cur = s;
+  for (let pass = 0; pass < 3; pass++) {
+    const next = repairOnce(cur);
+    if (next === cur) break;
+    cur = next;
   }
-  const fixed = Buffer.from(bytes).toString('utf8');
-  return fixed.includes('�') ? s : fixed;
+  // Only after every layer: in double-encoded text a C1 character can be a byte the next pass needs.
+  return HAS_C1.test(cur) ? cur.replace(C1, '') : cur;
+}
+
+function repairOnce(s: string): string {
+  if (!SUSPECT.test(s)) return s;
+  const chars = [...s];
+  let out = '';
+  for (let i = 0; i < chars.length; i++) {
+    const lead = cpByte(chars[i]);
+    const need = lead === undefined ? 0 : lead >= 0xc2 && lead <= 0xdf ? 1 : lead >= 0xe0 && lead <= 0xef ? 2 : lead >= 0xf0 && lead <= 0xf4 ? 3 : 0;
+    if (need) {
+      const bytes = [lead!];
+      for (let k = 1; k <= need; k++) {
+        const b = i + k < chars.length ? cpByte(chars[i + k]) : undefined;
+        if (b === undefined || b < 0x80 || b > 0xbf) break;
+        bytes.push(b);
+      }
+      if (bytes.length === need + 1) {
+        try {
+          out += strictUtf8.decode(Uint8Array.from(bytes));
+          i += need;
+          continue;
+        } catch {
+          /* not a valid sequence: keep the original character */
+        }
+      }
+    }
+    out += chars[i];
+  }
+  return out;
 }
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', hellip: '…', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', bull: '•', middot: '·', laquo: '«', raquo: '»', copy: '©', reg: '®', trade: '™', deg: '°', times: '×' };
@@ -71,7 +113,7 @@ export function cleanRichText(input: string | null | undefined): string {
   if (!input) return '';
   // Repair encoding first: in damaged Arabic, U+00AD is half of a letter (ح = D8 AD), not a soft hyphen.
   let s = repairMojibake(String(input).replace(/\r\n?/g, '\n'));
-  s = s.replace(/[﻿​­]/g, '');
+  s = s.replace(/[\ufeff\u200b\u00ad]/g, '');
   if (HAS_TAG.test(s)) s = htmlToText(s);
   s = decodeEntities(s).replace(/ /g, ' ');
   const lines = s.split('\n').map((line) =>
@@ -102,3 +144,25 @@ export function cleanLineText(input: string | null | undefined): string {
 type Loc = { ar?: string | null; en?: string | null } | null | undefined;
 export const cleanLocRich = (v: Loc) => ({ ar: cleanRichText(v?.ar), en: cleanRichText(v?.en) });
 export const cleanLocLine = (v: Loc) => ({ ar: cleanLineText(v?.ar), en: cleanLineText(v?.en) });
+
+/** True when text contains U+FFFD: characters already lost before they reached the store (not repairable). */
+export const hasReplacementChar = (s: string) => s.includes('\ufffd');
+
+const ARABIC_LETTER = /[\u0621-\u064a]/;
+
+/**
+ * Decodes a text file (product CSV) in the encoding it was saved in: strict UTF-8 (BOM removed), else
+ * Windows-1256 when that gives Arabic letters (Excel "CSV" on Arabic Windows), else Windows-1252.
+ * Same logic as client/src/lib/textFile.ts (Admin upload); tests run the same fixtures against both.
+ */
+export function decodeTextBytes(bytes: Uint8Array): { text: string; encoding: 'utf-8' | 'windows-1256' | 'windows-1252' } {
+  const body = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? bytes.subarray(3) : bytes;
+  try {
+    return { text: new TextDecoder('utf-8', { fatal: true }).decode(body), encoding: 'utf-8' };
+  } catch {
+    /* not UTF-8 */
+  }
+  const arabic = new TextDecoder('windows-1256').decode(body);
+  if (ARABIC_LETTER.test(arabic)) return { text: arabic, encoding: 'windows-1256' };
+  return { text: new TextDecoder('windows-1252').decode(body), encoding: 'windows-1252' };
+}
