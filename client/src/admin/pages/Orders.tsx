@@ -1,6 +1,6 @@
-﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ApiError, api, patch, post, qs, uuid } from '../../lib/api';
+import { ApiError, api, apiUrl, patch, post, qs, uuid } from '../../lib/api';
 import { useApi } from '../../lib/hooks';
 import type { Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
@@ -325,7 +325,7 @@ export function Orders() {
           <div className="a-stack">
             <p>{t.ordersPage.exportText}</p>
             {!filters.from && !filters.to ? <p className="a-muted">{t.ordersPage.exportNeedsDates}</p> : null}
-            <a className="a-btn a-btn--primary" href={`/api/admin/reports/orders.csv${qs({ from: filters.from || undefined, to: filters.to || undefined })}`} download onClick={() => setExportOpen(false)}>
+            <a className="a-btn a-btn--primary" href={apiUrl(`/api/admin/reports/orders.csv${qs({ from: filters.from || undefined, to: filters.to || undefined })}`)} download onClick={() => setExportOpen(false)}>
               <AIcon name="download" size={16} /> {t.ordersPage.download}
             </a>
           </div>

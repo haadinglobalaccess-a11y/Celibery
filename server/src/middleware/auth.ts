@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { env, isProd, jwtSecret } from '../config/env';
+import { cookieSameSite, env, isProd, jwtSecret } from '../config/env';
 import { forbidden, unauthorized } from '../lib/errors';
 import type { Permission } from '../lib/permissions';
 import { Role, User } from '../models';
@@ -33,15 +33,15 @@ export function issueSession(res: Response, user: { _id: unknown; tokenVersion?:
   const token = jwt.sign(payload, jwtSecret(), { expiresIn: `${ttlHours}h`, algorithm: 'HS256' });
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: isProd || env.COOKIE_SECURE,
-    sameSite: isProd ? 'none' : 'lax',
+    secure: isProd || env.COOKIE_SECURE || cookieSameSite() === 'none',
+    sameSite: cookieSameSite(),
     path: '/',
     maxAge: ttlHours * 3600 * 1000,
   });
 }
 
 export function clearSession(res: Response) {
-  res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: isProd ? 'none' : 'lax', secure: isProd || env.COOKIE_SECURE });
+  res.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, sameSite: cookieSameSite(), secure: isProd || env.COOKIE_SECURE || cookieSameSite() === 'none' });
 }
 
 /** Resolves the session cookie (if any) into req.user. Never throws for anonymous visitors. */

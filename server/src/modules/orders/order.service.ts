@@ -5,6 +5,7 @@ import { badRequest, conflict, notFound, unprocessable } from '../../lib/errors'
 import { logger } from '../../lib/logger';
 import { vatIncluded } from '../../lib/money';
 import { randomToken, sha256 } from '../../lib/tokens';
+import { cleanLocLine } from '../../lib/text';
 import { notifyOrder } from '../../integrations/notifications';
 import type { OrderEvent } from '../../integrations/notifications/templates';
 import { manualCourier } from '../../integrations/shipping';
@@ -158,7 +159,7 @@ export async function quote(
       slug: p.slug,
       sku: p.sku,
       model: p.model ?? '',
-      name: { ar: p.name?.ar ?? '', en: p.name?.en ?? '' },
+      name: cleanLocLine(p.name), // the order keeps this snapshot: clean text only
       image: p.images?.[0]?.url ?? '',
       unitPrice: p.price,
       quantity: qty,

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, type CSSProperties, type ElementType, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, type CSSProperties, type ElementType, type ReactNode, type RefObject } from 'react';
 import { reducedMotion } from './env';
 
 /**

@@ -3925,3 +3925,115 @@ html[dir='rtl'] .drawer.drawer--3d {
   min-height: calc(100vh - 100px);
   min-height: calc(100svh - 100px);
 }
+
+/* Verified-purchase reviews (components/ProductReviews.tsx) */
+.cx-stars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--cx-line);
+  font-size: 1rem;
+  line-height: 1;
+}
+.cx-stars .is-on {
+  color: var(--cx-ink);
+}
+.cx-reviews__summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.cx-reviews__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--cx-line);
+}
+.cx-reviews__item {
+  display: grid;
+  gap: 8px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--cx-line);
+}
+.cx-reviews__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cx-reviews__body {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.cx-reviews__write {
+  margin-top: 28px;
+  max-width: 560px;
+}
+.cx-reviews__note {
+  margin-top: 10px;
+  font-size: 0.875rem;
+}
+.cx-reviews__rating {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 4px;
+}
+.cx-reviews__rating legend {
+  margin-bottom: 6px;
+}
+.cx-reviews__rating label {
+  position: relative;
+  cursor: pointer;
+  font-size: 1.75rem;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--cx-line);
+}
+.cx-reviews__rating label.is-on {
+  color: var(--cx-ink);
+}
+.cx-reviews__rating input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.cx-reviews__rating label:has(input:focus-visible) {
+  outline: 2px solid var(--cx-ink);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Product description text (components/RichText.tsx): paragraphs, lists and sub-headings. */
+.cx-richtext {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.cx-richtext > * {
+  margin: 0;
+}
+.cx-richtext > * + * {
+  margin-top: 0.85em;
+}
+.cx-richtext ul {
+  padding-inline-start: 1.25em;
+  display: grid;
+  gap: 0.35em;
+}
+.cx-richtext h3 {
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--cx-ink);
+}
+.cx-richtext > h3 + * {
+  margin-top: 0.4em;
+}

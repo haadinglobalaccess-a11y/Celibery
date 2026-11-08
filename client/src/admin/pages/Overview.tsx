@@ -1,6 +1,6 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { qs } from '../../lib/api';
+import { apiUrl, qs } from '../../lib/api';
 import type { Localized } from '../../lib/types';
 import { cachedApi, codPending, countLowStock, countOrders, countsAsRevenue, dayKey, ordersBetween, type PeriodOrder } from '../data';
 import { useAT } from '../i18n';
@@ -167,7 +167,7 @@ export function Overview() {
             </>
           ) : null}
           {perms.has('reports:read') ? (
-            <a className="a-btn a-btn--secondary" href={`/api/admin/reports/orders.csv${qs(range)}`} download title={t.dash.exportHint}>
+            <a className="a-btn a-btn--secondary" href={apiUrl(`/api/admin/reports/orders.csv${qs(range)}`)} download title={t.dash.exportHint}>
               <AIcon name="download" size={16} /> {t.common.export}
             </a>
           ) : null}

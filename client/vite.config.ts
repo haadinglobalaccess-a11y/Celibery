@@ -1,12 +1,12 @@
-﻿import path from 'node:path';
+import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { buildCsp } from '../server/src/lib/csp';
 
 /**
  * Writes the production Content-Security-Policy into index.html (Vercel serves the storefront as
- * static files). The policy comes from server/src/lib/csp.ts â€” the same source the Express server
- * uses â€” so both deployments enforce one policy. Header-only directives (frame-ancestors) are sent
+ * static files). The policy comes from server/src/lib/csp.ts — the same source the Express server
+ * uses — so both deployments enforce one policy. Header-only directives (frame-ancestors) are sent
  * by vercel.json. Only applied to builds: the Vite dev server needs inline scripts for hot reload.
  */
 function cspPlugin(mode: string): Plugin {

@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
 import { L } from '../lib/format';
 import { useCached } from '../lib/hooks';
@@ -222,10 +222,17 @@ export function Footer() {
             {t.footer.vat}: <span className="ltr">{b?.vatNumber || t.footer.pending}</span>
           </span>
           {b?.sbcVerified ? (
-            <a href={b.sbcVerificationUrl || undefined} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              {b.sbcBadgeImageUrl ? <img src={b.sbcBadgeImageUrl} alt="" height={32} style={{ height: 32, width: 'auto' }} /> : null}
-              {t.footer.sbc}
-            </a>
+            b.sbcVerificationUrl ? (
+              <a href={b.sbcVerificationUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {b.sbcBadgeImageUrl ? <img src={b.sbcBadgeImageUrl} alt="" height={32} style={{ height: 32, width: 'auto' }} /> : null}
+                {t.footer.sbc}
+              </a>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {b.sbcBadgeImageUrl ? <img src={b.sbcBadgeImageUrl} alt="" height={32} style={{ height: 32, width: 'auto' }} /> : null}
+                {t.footer.sbc}
+              </span>
+            )
           ) : null}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { csvToObjects } from '../../lib/csv';
+import { csvToObjects, toCsv } from '../../lib/csv';
 import { Category, InventoryMovement, Product } from '../../models';
 import { productCreate } from './admin.schemas';
 import { createProduct, updateProduct } from './products.service';
@@ -77,11 +77,71 @@ export async function importProductsCsv(text: string, userId: string | undefined
       const { stock, ...rest } = parsed.data;
       await updateProduct(String(existing._id), rest);
       if (r.stock !== '' && stock !== existing.stock) {
-        await Product.updateOne({ _id: existing._id }, { $set: { stock } });
-        await InventoryMovement.create({ product: existing._id, type: 'import', delta: stock - existing.stock, stockAfter: stock, reason: 'CSV import', user: userId });
+        // Only when stock has not moved since it was read (an order may have reserved units meanwhile).
+        const set = await Product.updateOne({ _id: existing._id, stock: existing.stock }, { $set: { stock } });
+        if (set.modifiedCount === 1) {
+          await InventoryMovement.create({ product: existing._id, type: 'import', delta: stock - existing.stock, stockAfter: stock, reason: 'CSV import', user: userId });
+        } else {
+          report.errors.push({ row: rowNo, sku: r.sku, errors: 'Stock changed during the import (new order or adjustment); product details were updated but stock was left unchanged — import again or adjust stock in Inventory' });
+        }
       }
       report.updated++;
     }
   }
   return report;
+}
+
+/** Column order of docs/product-import-template.csv (spec columns are added after these). */
+export const PRODUCT_CSV_COLUMNS = [
+  'sku', 'slug', 'model', 'category_slug', 'name_ar', 'name_en', 'short_description_ar', 'short_description_en', 'description_ar', 'description_en',
+  'price_sar', 'compare_at_price_sar', 'stock', 'status', 'featured', 'capacity_mah', 'power_w', 'connectors', 'color_key', 'color_name_ar', 'color_name_en',
+  'color_hex', 'warranty_months', 'series', 'tags', 'image_urls',
+];
+
+type ExportProduct = {
+  sku: string; slug: string; model?: string | null; category?: unknown; name?: { ar?: string | null; en?: string | null } | null;
+  shortDescription?: { ar?: string | null; en?: string | null } | null; description?: { ar?: string | null; en?: string | null } | null;
+  price: number; compareAtPrice?: number | null; stock: number; status: string; featured?: boolean | null; series?: string | null;
+  tags?: string[] | null; images?: { url: string }[] | null; warrantyMonths?: number | null; dataSource?: string | null;
+  attributes?: { capacityMah?: number | null; powerW?: number | null; connectors?: string[] | null; color?: { key?: string | null; name?: { ar?: string | null; en?: string | null } | null; hex?: string | null } | null } | null;
+  specs?: { label?: { ar?: string | null; en?: string | null } | null; value?: { ar?: string | null; en?: string | null } | null }[] | null;
+};
+
+const sar = (halalas: number | null | undefined) => (halalas == null ? '' : (halalas / 100).toFixed(2));
+
+/**
+ * Inverse of rowToProduct: the exported file can be edited and imported again unchanged.
+ * `data_source` is informational (sample products are marked "demo") and ignored on import.
+ */
+export function productToRow(p: ExportProduct, categorySlug: string, specColumns: number): string[] {
+  const a = p.attributes ?? {};
+  const row = [
+    p.sku, p.slug, p.model ?? '', categorySlug, p.name?.ar ?? '', p.name?.en ?? '', p.shortDescription?.ar ?? '', p.shortDescription?.en ?? '',
+    p.description?.ar ?? '', p.description?.en ?? '', sar(p.price), sar(p.compareAtPrice), String(p.stock ?? 0), p.status, p.featured ? 'yes' : 'no',
+    a.capacityMah == null ? '' : String(a.capacityMah), a.powerW == null ? '' : String(a.powerW), (a.connectors ?? []).join('|'),
+    a.color?.key ?? '', a.color?.name?.ar ?? '', a.color?.name?.en ?? '', a.color?.hex ?? '',
+    p.warrantyMonths == null ? '' : String(p.warrantyMonths), p.series ?? '', (p.tags ?? []).join('|'), (p.images ?? []).map((i) => i.url).join('|'),
+  ];
+  for (let i = 0; i < specColumns; i++) {
+    const s = p.specs?.[i];
+    row.push(s?.label?.ar ?? '', s?.label?.en ?? '', s?.value?.ar ?? '', s?.value?.en ?? '');
+  }
+  row.push(p.dataSource ?? 'client');
+  return row;
+}
+
+/** All products (any status) as CSV in the import template format. */
+export async function exportProductsCsv(filter: { status?: string; category?: string } = {}) {
+  const where: Record<string, unknown> = {};
+  if (filter.status) where.status = filter.status;
+  if (filter.category) where.category = filter.category;
+  const [products, cats] = await Promise.all([Product.find(where).sort({ sku: 1 }).lean(), Category.find().select('slug').lean()]);
+  const slugOf = new Map(cats.map((c) => [String(c._id), c.slug]));
+  // The importer reads up to 8 spec rows; always export at least the 4 the template shows.
+  const specColumns = Math.min(8, Math.max(4, ...products.map((p) => p.specs?.length ?? 0)));
+  const header = [...PRODUCT_CSV_COLUMNS];
+  for (let i = 1; i <= specColumns; i++) header.push(`spec${i}_label_ar`, `spec${i}_label_en`, `spec${i}_value_ar`, `spec${i}_value_en`);
+  header.push('data_source');
+  const rows = products.map((p) => productToRow(p as unknown as ExportProduct, slugOf.get(String(p.category)) ?? '', specColumns));
+  return { csv: toCsv([header, ...rows]), count: products.length };
 }

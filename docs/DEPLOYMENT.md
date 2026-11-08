@@ -100,6 +100,45 @@ Record the real regions in `APP_REGION`, `DATABASE_REGION` and `MEDIA_REGION`; t
 - Upload logo, accent colour, hero video/banners, product photos.
 - Remove demo data if a staging database was copied: `npm run seed:demo -- --remove`.
 
-## Alternative: single Node server
+## Alternative: Railway / single Node server
 
-`npm run build && SERVE_CLIENT=1 npm start` serves the API and the built storefront from one process on `PORT` (useful for a VPS or container).
+The repository also runs as a long-running Node server (Railway, a VPS, a container).
+
+**Recommended — one service, one origin:**
+
+| Setting | Value |
+|---|---|
+| Build command | `npm ci && npm run build` |
+| Start command | `npm start` |
+| Environment | everything from `.env.example` for production, plus `SERVE_CLIENT=1`, `COOKIE_SAMESITE=lax` |
+| Health check path | `/api/health` (returns 503 while the database is unreachable) |
+| `PUBLIC_SITE_URL` / `CORS_ORIGINS` | the service's HTTPS domain (custom domain once DNS is ready) |
+| `VITE_API_BASE_URL` | empty (the API is on the same origin) |
+
+`SERVE_CLIENT=1` serves the built storefront and admin from the API process: same-origin cookies
+(`SameSite=Lax`), one CSP, `sitemap.xml` / `robots.txt` / `llms.txt` from live data.
+
+**Scheduled jobs:** there is no Vercel Cron outside Vercel. `npm start` runs the jobs in-process
+(`server/src/jobs.ts`: expired stock reservations every 5 minutes; refund reconciliation and abandoned
+uploads every 30 minutes). Every job is safe to run concurrently, so several instances are fine. Set
+`DISABLE_INTERNAL_SCHEDULER=true` only if an external cron calls `/api/cron/*` with `Authorization: Bearer $CRON_SECRET`.
+
+**Graceful shutdown:** on SIGTERM (sent before every redeploy) the server stops accepting connections,
+finishes in-flight requests (up to 10 s) and closes the database connection.
+
+**Two separate services (current Railway setup: storefront + API on different `*.up.railway.app` hosts)** still works:
+the API needs `CORS_ORIGINS=<storefront origin>` and leaves `COOKIE_SAMESITE` empty (`none`), and the
+storefront is built with `VITE_API_BASE_URL=<API origin>`. Two cautions:
+
+- `vite preview` (what `client`'s `allowedHosts` entry was added for) is a local preview tool, not a production
+  web server — serve `client/dist` from a static host, or use the single-service setup above.
+- `up.railway.app` is a public suffix, so the two services are *different sites*; the session cookie must be
+  `SameSite=None`, which browsers that block third-party cookies (Safari, and Chrome with tracking protection)
+  can refuse — customer and admin sign-in then fails. Use one service or a custom domain with
+  `shop.` and `api.` subdomains of the same registrable domain.
+
+**Media:** a Railway service disk is not persistent unless a volume is attached. Use `MEDIA_STORAGE=s3`, or attach a
+volume, set `MEDIA_LOCAL_DIR` to its mount path and `ALLOW_LOCAL_MEDIA_STORAGE=true`.
+
+**Backups:** enable MongoDB Atlas continuous backup (or scheduled snapshots) on the production cluster and test a
+restore into a separate cluster before launch; media in S3 should use bucket versioning or a replication rule.

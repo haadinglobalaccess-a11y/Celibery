@@ -43,7 +43,7 @@ export function F({ label, children, hint, span }: { label: string; children: Re
 }
 
 /** Arabic and English side by side — both are independent content (never auto-translated). */
-export function LocInput({ label, value, onChange, textarea = false, required = false }: { label: string; value: Localized | undefined; onChange: (v: Localized) => void; textarea?: boolean; required?: boolean }) {
+export function LocInput({ label, value, onChange, textarea = false, required = false, hint }: { label: string; value: Localized | undefined; onChange: (v: Localized) => void; textarea?: boolean; required?: boolean; hint?: string }) {
   const v = value ?? { ar: '', en: '' };
   const Tag = textarea ? 'textarea' : 'input';
   return (
@@ -62,6 +62,7 @@ export function LocInput({ label, value, onChange, textarea = false, required = 
           <Tag className={textarea ? 'textarea' : 'input'} dir="ltr" lang="en" value={v.en} required={required} onChange={(e) => onChange({ ...v, en: e.target.value })} rows={textarea ? 5 : undefined} />
         </label>
       </div>
+      {hint ? <span className="hint">{hint}</span> : null}
     </div>
   );
 }

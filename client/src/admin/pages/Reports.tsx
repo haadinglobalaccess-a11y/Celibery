@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ErrorState, Spinner } from '../../components/ui';
-import { qs } from '../../lib/api';
+import { apiUrl, qs } from '../../lib/api';
 import { useApi } from '../../lib/hooks';
 import type { Localized } from '../../lib/types';
 import { AHead, BarChart, Card, en, F, sar } from '../kit';
@@ -24,7 +24,7 @@ export function Reports() {
   return (
     <>
       <AHead title="Reports">
-        <a className="btn btn--outline btn--sm" href={`${(import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''}/api/admin/reports/orders.csv${query}`}>
+        <a className="btn btn--outline btn--sm" href={apiUrl(`/api/admin/reports/orders.csv${query}`)}>
           Export orders CSV
         </a>
       </AHead>

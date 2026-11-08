@@ -112,7 +112,7 @@ export default function CartPage() {
   const cart = useCart();
   const settings = useSettings();
   const { quote } = useQuote();
-  useSeo(t.cart.title);
+  useSeo(t.cart.title, undefined, { noindex: true });
 
   if (!cart.items.length) {
     return (
@@ -155,19 +155,22 @@ export default function CartPage() {
             const line = lineFor(i.productId);
             const issue = quote?.issues.find((x) => x.productId === i.productId);
             const name = L(line?.name ?? i.snapshot.name, lang);
+            // Current product data from the server quote; the saved snapshot only fills in until it arrives.
+            const slug = line?.slug || i.snapshot.slug;
+            const model = line ? line.model : i.snapshot.model;
             const max = Math.max(1, Math.min(line?.maxQuantity ?? 99, settings?.commerce?.maxQuantityPerItem ?? 10));
             return (
               <div className="line cx-bagline" key={i.productId} data-testid="cart-line">
-                <Link to={p(`/p/${i.snapshot.slug}`)} className="cx-bagline__media" tabIndex={-1} aria-hidden="true">
+                <Link to={p(`/p/${slug}`)} className="cx-bagline__media" tabIndex={-1} aria-hidden="true">
                   <ProductImage src={line?.image || i.snapshot.image} alt={name} />
                 </Link>
                 <div>
                   <div className="line__top">
                     <div>
-                      <Link className="line__name" to={p(`/p/${i.snapshot.slug}`)}>
+                      <Link className="line__name" to={p(`/p/${slug}`)}>
                         {name}
                       </Link>
-                      {i.snapshot.model ? <div className="cx-bagline__model ltr">{i.snapshot.model}</div> : null}
+                      {model ? <div className="cx-bagline__model ltr">{model}</div> : null}
                     </div>
                     <strong>{formatPrice(line ? line.unitPrice * i.quantity : i.snapshot.price * i.quantity, lang)}</strong>
                   </div>

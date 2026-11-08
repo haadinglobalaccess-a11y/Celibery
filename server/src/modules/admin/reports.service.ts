@@ -1,4 +1,5 @@
 import { Order, Product, User, getSettings } from '../../models';
+import { toCsv } from '../../lib/csv';
 
 /** Orders that count as revenue: paid online, or COD orders that are not cancelled/returned. */
 const revenueMatch = {
@@ -134,13 +135,6 @@ export async function salesReport(from?: Date, to?: Date) {
   };
 }
 
-const csvCell = (v: unknown) => {
-  const s = v == null ? '' : String(v);
-  // Neutralise spreadsheet formula injection.
-  const safe = /^[=+\-@]/.test(s) ? `'${s}` : s;
-  return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-};
-
 export async function ordersCsv(from?: Date, to?: Date) {
   const { start, end } = range(from, to);
   const orders = await Order.find({ createdAt: { $gte: start, $lte: end } }).sort({ createdAt: 1 }).lean();
@@ -166,5 +160,5 @@ export async function ordersCsv(from?: Date, to?: Date) {
     o.discount?.code ?? '',
     o.delivery?.trackingNumber ?? '',
   ]);
-  return [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n');
+  return toCsv([header, ...rows]);
 }

@@ -1,7 +1,7 @@
-﻿import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ErrorState, Spinner } from '../../components/ui';
-import { api, del, get, post, put, qs } from '../../lib/api';
+import { api, apiUrl, del, get, post, put, qs } from '../../lib/api';
 import { connectorLabel } from '../../lib/format';
 import { useApi } from '../../lib/hooks';
 import type { Category, Localized } from '../../lib/types';
@@ -19,15 +19,19 @@ export function Products({ canWrite }: { canWrite: boolean }) {
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 });
   const [q, setQ] = useState(params.get('q') ?? '');
   const [importing, setImporting] = useState(false);
+  const [listError, setListError] = useState(false);
   const cats = useApi<Category[]>('/api/admin/categories');
   const query = qs({ q: params.get('q') ?? undefined, status: params.get('status') ?? undefined, category: params.get('category') ?? undefined, page: params.get('page') ?? undefined, limit: 25 });
   const [nonce, setNonce] = useState(0);
   useEffect(() => {
     setRows(null);
-    api<Row[]>(`/api/admin/products${query}`).then((r) => {
-      setRows(r.data);
-      setMeta({ page: Number(r.meta?.page ?? 1), pages: Number(r.meta?.pages ?? 1), total: Number(r.meta?.total ?? 0) });
-    });
+    setListError(false);
+    api<Row[]>(`/api/admin/products${query}`)
+      .then((r) => {
+        setRows(r.data);
+        setMeta({ page: Number(r.meta?.page ?? 1), pages: Number(r.meta?.pages ?? 1), total: Number(r.meta?.total ?? 0) });
+      })
+      .catch(() => setListError(true));
   }, [query, nonce]);
   const set = (k: string, v: string) => {
     const n = new URLSearchParams(params);
@@ -39,6 +43,14 @@ export function Products({ canWrite }: { canWrite: boolean }) {
   return (
     <>
       <AHead title={`Products (${meta.total})`}>
+        <a
+          className="btn btn--outline btn--sm"
+          href={apiUrl(`/api/admin/products/export.csv${qs({ status: params.get('status') ?? undefined, category: params.get('category') ?? undefined })}`)}
+          download
+          title="Download the products (current status/category filter) in the import template format"
+        >
+          Export CSV
+        </a>
         {canWrite ? (
           <>
             <button className="btn btn--outline btn--sm" onClick={() => setImporting(true)}>
@@ -75,7 +87,9 @@ export function Products({ canWrite }: { canWrite: boolean }) {
         </select>
       </div>
       <div className="a-card table-wrap products-table-card">
-        {!rows ? (
+        {listError ? (
+          <ErrorState onRetry={() => setNonce((n) => n + 1)} />
+        ) : !rows ? (
           <Spinner />
         ) : (
           <table className="table products-table">
@@ -410,8 +424,14 @@ export function ProductEdit() {
               <F label="Series (optional)">
                 <input className="input" value={f.series} onChange={(e) => up({ series: e.target.value })} />
               </F>
-              <LocInput label="Short description" value={f.shortDescription} onChange={(v) => up({ shortDescription: v })} />
-              <LocInput label="Full description" textarea value={f.description} onChange={(v) => up({ description: v })} />
+              <LocInput label="Short description" hint="One line (up to 300 characters) shown on product cards and the homepage gallery." value={f.shortDescription} onChange={(v) => up({ shortDescription: v })} />
+              <LocInput
+                label="Full description"
+                textarea
+                hint="Leave an empty line between paragraphs. Start a line with “- ” for a bullet point, “### ” for a sub-heading, and wrap words in **double asterisks** for bold. Text pasted from Shopify or a web page is cleaned automatically when you save (formatting tags are removed)."
+                value={f.description}
+                onChange={(v) => up({ description: v })}
+              />
             </div>
           </Card>
           <Card title="Images">

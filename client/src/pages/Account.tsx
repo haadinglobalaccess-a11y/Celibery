@@ -19,7 +19,7 @@ export function AccountLayout() {
   const { t, p } = useI18n();
   const { user, ready, logout } = useAuth();
   const loc = useLocation();
-  useSeo(t.account.title);
+  useSeo(t.account.title, undefined, { noindex: true });
   if (!ready) return <Spinner />;
   if (user?.type !== 'customer') return <Navigate to={p(`/login?next=${encodeURIComponent(loc.pathname.replace(/^\/(ar|en)/, ''))}`)} replace />;
   return (
@@ -255,7 +255,7 @@ export function WishlistPage() {
   const wish = useWishlist();
   const ids = [...wish.ids];
   const { data, loading } = useApi<ProductCardData[]>(ids.length ? `/api/products?ids=${ids.join(',')}&limit=60` : null);
-  useSeo(t.nav.wishlist);
+  useSeo(t.nav.wishlist, undefined, { noindex: true });
   const sc = storeCopy(lang);
   return (
     <div className="container cx-saved">

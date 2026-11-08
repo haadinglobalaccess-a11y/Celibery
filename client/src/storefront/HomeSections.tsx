@@ -449,15 +449,26 @@ export function Ecosystem({ data }: { data: HomeData }) {
 export function WhyCelibery() {
   const { t, lang } = useI18n();
   const c = storeCopy(lang);
-  const commerce = useSettings()?.commerce;
-  // The first reason is the delivery promise: show it as configured in Admin → Settings → Shipping.
-  const why = t.home.why.map((w, i) => {
-    if (i !== 0 || !commerce || commerce.freeDelivery !== false) return w;
-    const d = commerce.freeDeliveryThreshold
-      ? t.checkout.freeFrom(formatPrice(commerce.freeDeliveryThreshold, lang))
-      : L(commerce.estimatedDelivery, lang) || (commerce.courierName ? t.product.deliveryBy(commerce.courierName) : '');
-    return { t: t.product.shipping, d };
-  });
+  const settings = useSettings();
+  const commerce = settings?.commerce;
+  // Every promise follows Admin → Settings: nothing is claimed that the store cannot deliver.
+  const [delivery, warranty, payment, support] = t.home.why;
+  const deliveryItem = !commerce || commerce.freeDelivery !== false
+    ? delivery
+    : {
+        t: t.product.shipping,
+        d: commerce.freeDeliveryThreshold
+          ? t.checkout.freeFrom(formatPrice(commerce.freeDeliveryThreshold, lang))
+          : L(commerce.estimatedDelivery, lang) || (commerce.courierName ? t.product.deliveryBy(commerce.courierName) : ''),
+      };
+  const pay = settings?.payments;
+  const methods = pay ? (['card', 'applepay', 'stcpay', 'tabby', 'cod'] as const).filter((m) => pay[m]).map((m) => t.home.payNames[m]) : [];
+  const why: { key: string; t: string; d: string }[] = [
+    { key: 'delivery', ...deliveryItem },
+    ...(commerce?.warrantyEnabled && commerce.warrantyMonths ? [{ key: 'warranty', t: t.service.warranty(commerce.warrantyMonths), d: warranty.d }] : []),
+    ...(methods.length ? [{ key: 'payment', t: payment.t, d: `${methods.join(t.home.listJoin)}.` }] : []),
+    ...(settings?.business?.whatsappNumber ? [{ key: 'support', ...support }] : []),
+  ];
   return (
     <section className="cx-section cx-why" aria-labelledby="cx-why-title">
       <div className="container cx-why__inner">
@@ -472,12 +483,12 @@ export function WhyCelibery() {
         </div>
         <ol className="cx-why__list">
           {why.map((w, i) => (
-            <li key={i} className="cx-why__item" data-fx="line">
+            <li key={w.key} className="cx-why__item" data-fx="line">
               <span className="cx-why__num ltr">{String(i + 1).padStart(2, '0')}</span>
               <div>
                 <h3>{w.t}</h3>
                 <p>{w.d}</p>
-                {i === 2 ? <PayLogos /> : null}
+                {w.key === 'payment' ? <PayLogos /> : null}
               </div>
             </li>
           ))}

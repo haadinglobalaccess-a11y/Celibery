@@ -37,5 +37,16 @@ export function csvToObjects(text: string): Record<string, string>[] {
   const [header, ...rows] = parseCsv(text);
   if (!header) return [];
   const keys = header.map((h) => h.trim().toLowerCase());
-  return rows.map((r) => Object.fromEntries(keys.map((k, i) => [k, (r[i] ?? '').trim()])));
+  // A leading ' before = + - @ is the formula guard added by csvCell (our own exports): remove it.
+  const unguard = (v: string) => (/^'[=+\-@]/.test(v) ? v.slice(1) : v);
+  return rows.map((r) => Object.fromEntries(keys.map((k, i) => [k, unguard((r[i] ?? '').trim())])));
 }
+
+/** One CSV cell. Values starting with = + - @ are prefixed with ' so spreadsheets never run them as formulas. */
+export const csvCell = (v: unknown) => {
+  const s = v == null ? '' : String(v);
+  const safe = /^[=+\-@]/.test(s) ? `'${s}` : s;
+  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+};
+
+export const toCsv = (rows: unknown[][]) => rows.map((r) => r.map(csvCell).join(',')).join('\n');

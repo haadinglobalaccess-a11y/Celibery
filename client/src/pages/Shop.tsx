@@ -215,7 +215,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
         : mode === 'search'
           ? t.shop.searchFor(q)
           : t.shop.title;
-  useSeo(title || t.shop.title, mode === 'category' ? L(cat.data?.category.description, lang) : undefined);
+  useSeo(title || t.shop.title, mode === 'category' ? L(cat.data?.category.description, lang) : undefined, { noindex: mode === 'search' });
 
   if ((mode === 'category' && cat.error?.status === 404) || (colSlug && col.error?.status === 404)) return <NotFound />;
 

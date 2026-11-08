@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { FILTER_KEYS } from '../../models/Category';
 import { CONNECTORS } from '../../models/Product';
 import { PERMISSIONS } from '../../lib/permissions';
+import { cleanLocLine, cleanLocRich } from '../../lib/text';
 
 export const objectId = z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id');
 export const idParam = z.object({ id: objectId });
@@ -27,9 +28,10 @@ export const productInput = z.object({
   slug,
   sku: z.string().trim().toUpperCase().min(2).max(60),
   model: z.string().trim().max(80).default(''),
-  name: requiredLocalized,
-  shortDescription: localizedShort.default({ ar: '', en: '' }),
-  description: localized.default({ ar: '', en: '' }),
+  // Product text is normalised on save (lib/text.ts): no HTML, entities, encoding damage or stray markup.
+  name: requiredLocalized.transform(cleanLocLine),
+  shortDescription: localizedShort.transform(cleanLocLine).default({ ar: '', en: '' }),
+  description: localized.transform(cleanLocRich).default({ ar: '', en: '' }),
   category: objectId,
   series: z.string().trim().max(80).default(''),
   images: z.array(image).max(12).default([]),
@@ -46,7 +48,7 @@ export const productInput = z.object({
       color: z.object({ key: z.string().trim().toLowerCase().max(40), name: localizedShort, hex }).nullable().optional(),
     })
     .default({ connectors: [] }),
-  specs: z.array(z.object({ label: localizedShort, value: localizedShort })).max(40).default([]),
+  specs: z.array(z.object({ label: localizedShort.transform(cleanLocLine), value: localizedShort.transform(cleanLocLine) })).max(40).default([]),
   tags: z.array(z.string().trim().max(40)).max(30).default([]),
   warrantyMonths: z.number().int().min(0).max(120).nullable().optional(),
   isBundle: z.boolean().default(false),

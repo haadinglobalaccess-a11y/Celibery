@@ -21,7 +21,7 @@ export function CheckoutReturn() {
   const [order, setOrder] = useState<OrderView | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [retrying, setRetrying] = useState(false);
-  useSeo(t.ret.verifying);
+  useSeo(t.ret.verifying, undefined, { noindex: true });
 
   useEffect(() => {
     if (!orderNumber) return;
@@ -148,7 +148,7 @@ export function TrackOrder() {
   const [order, setOrder] = useState<OrderView | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
-  useSeo(t.track.title);
+  useSeo(t.track.title, undefined, { noindex: true });
 
   useEffect(() => {
     if (!orderParam || !tokenParam) return;

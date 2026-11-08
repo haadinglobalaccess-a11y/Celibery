@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { ProductCard, ProductImage } from '../components/ProductCard';
+import { ProductReviews } from '../components/ProductReviews';
+import { RichText } from '../components/RichText';
 import { Crumbs, ErrorState, NotFound, Price, Quantity, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { connectorLabel, formatInt, L } from '../lib/format';
 import { useApi } from '../lib/hooks';
-import { useSeo } from '../lib/useSeo';
+import { absoluteUrl, useSeo } from '../lib/useSeo';
 import type { ProductDetail } from '../lib/types';
 import { useCart } from '../state/cart';
 import { useSettings } from '../state/settings';
@@ -36,7 +38,35 @@ export default function ProductPage() {
   }, [justAdded]);
 
   const name = data ? L(data.name, lang) : '';
-  useSeo(L(data?.seo?.title, lang) || name, L(data?.seo?.description, lang) || L(data?.shortDescription, lang));
+  const seoDescription = L(data?.seo?.description, lang) || L(data?.shortDescription, lang);
+  // schema.org Product built only from stored product data. Sample (demo) products are not real
+  // offers, so they get none; ratings only appear once genuine approved reviews exist.
+  const jsonLd =
+    data && data.dataSource !== 'demo'
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name,
+          sku: data.sku,
+          ...(data.model ? { mpn: data.model } : {}),
+          brand: { '@type': 'Brand', name: 'CELIBERY' },
+          ...(seoDescription ? { description: seoDescription } : {}),
+          ...(typeof data.category === 'object' && data.category ? { category: L(data.category.name, lang) } : {}),
+          image: (data.images ?? []).map((i) => absoluteUrl(i.url)).filter(Boolean),
+          offers: {
+            '@type': 'Offer',
+            url: window.location.href.split('?')[0],
+            priceCurrency: settings?.commerce?.currency || 'SAR',
+            price: (data.price / 100).toFixed(2),
+            availability: data.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            itemCondition: 'https://schema.org/NewCondition',
+          },
+          ...(settings?.reviewsEnabled && data.reviews?.count
+            ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: data.reviews.average, reviewCount: data.reviews.count, bestRating: 5, worstRating: 1 } }
+            : {}),
+        }
+      : null;
+  useSeo(L(data?.seo?.title, lang) || name, seoDescription, { type: 'product', image: data?.images?.[0]?.url, jsonLd });
 
   if (error?.status === 404) return <NotFound />;
   if (error) return <ErrorState onRetry={reload} />;
@@ -187,7 +217,9 @@ export default function ProductPage() {
               <span className="cx-eyebrow">{c.overview}</span>
               <Kinetic text={t.product.description} className="cx-display" />
             </div>
-            <div className="cx-overview__text" data-fx="rise">{L(data.description, lang)}</div>
+            <div className="cx-overview__text" data-fx="rise">
+              <RichText text={L(data.description, lang)} />
+            </div>
           </div>
         </section>
       ) : null}
@@ -238,6 +270,8 @@ export default function ProductPage() {
           </div>
         </section>
       ) : null}
+
+      {settings?.reviewsEnabled && data.reviews && slug ? <ProductReviews slug={slug} summary={data.reviews} /> : null}
 
       {data.bundles.length ? (
         <section className="cx-pdp__section cx-pdp__more">

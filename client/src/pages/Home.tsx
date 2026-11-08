@@ -1,7 +1,9 @@
 import { ErrorState } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { useCached } from '../lib/hooks';
-import { useSeo } from '../lib/useSeo';
+import { L } from '../lib/format';
+import { absoluteUrl, useSeo } from '../lib/useSeo';
+import { useSettings } from '../state/settings';
 import type { HomeData } from '../lib/types';
 import { BrandStory, CampaignGallery, CategorySpotlights, CategoryUniverse, ClosingCampaign, Ecosystem, ExploreCollection, FlagshipCampaigns, WhyCelibery } from '../storefront/HomeSections';
 import { TheatreStage } from '../storefront/motion';
@@ -39,9 +41,29 @@ function HomeSkeleton() {
  * editorial campaign architecture. Every section reads /api/home; nothing is hard-coded.
  */
 export default function Home() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { data, error } = useCached<HomeData>('/api/home');
-  useSeo(t.home.heroTitle, t.home.heroSubtitle);
+  const settings = useSettings();
+  const b = settings?.business;
+  const logo = absoluteUrl(settings?.brand?.logoUrl);
+  const sameAs = Object.values(b?.social ?? {}).filter((v) => typeof v === 'string' && /^https?:\/\//.test(v));
+  // Organization data comes only from Admin → Settings; empty fields are left out, never invented.
+  const orgLd = settings
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: L(b?.name, lang) || 'CELIBERY International',
+        ...(L(b?.legalName, lang) ? { legalName: L(b?.legalName, lang) } : {}),
+        url: `${window.location.origin}/${lang}`,
+        ...(logo ? { logo } : {}),
+        ...(sameAs.length ? { sameAs } : {}),
+        ...(b?.email || b?.phone
+          ? { contactPoint: { '@type': 'ContactPoint', contactType: 'customer service', areaServed: 'SA', ...(b.email ? { email: b.email } : {}), ...(b.phone ? { telephone: b.phone } : {}) } }
+          : {}),
+      }
+    : null;
+  // Admin → Settings → SEO overrides the default homepage title / description.
+  useSeo(L(settings?.seo?.title, lang) || t.home.heroTitle, L(settings?.seo?.description, lang) || t.home.heroSubtitle, { image: settings?.brand?.logoUrl, jsonLd: orgLd });
 
   if (error) return <ErrorState onRetry={() => window.location.reload()} />;
   if (!data) return <HomeSkeleton />;

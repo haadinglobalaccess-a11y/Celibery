@@ -9,7 +9,7 @@ import { q, validate } from '../../middleware/validate';
 import { Category, Discount, Order, Product } from '../../models';
 import { categoryInput, discountInput, idParam, objectId, productCreate, productListAdmin, productUpdate, stockAdjust } from './admin.schemas';
 import { crudRouter } from './crud';
-import { importProductsCsv } from './import.service';
+import { exportProductsCsv, importProductsCsv } from './import.service';
 import * as svc from './products.service';
 
 // ---- Products ----------------------------------------------------------------------------
@@ -33,6 +33,22 @@ adminProductRoutes.post(
     const report = await importProductsCsv(req.body.csv, req.user!.id, req.body.dryRun);
     if (!req.body.dryRun) await audit(req, 'import', 'product', '', `${report.created} created, ${report.updated} updated, ${report.skipped} skipped`);
     return ok(res, report);
+  }),
+);
+
+const productExportQuery = z.object({ status: z.enum(['draft', 'active', 'archived']).optional(), category: objectId.optional() });
+
+// Registered before '/:id'. Same columns as the import template, so the file can be edited and re-imported.
+adminProductRoutes.get(
+  '/export.csv',
+  requirePermission('products:read'),
+  validate(productExportQuery, 'query'),
+  ah(async (req, res) => {
+    const { csv, count } = await exportProductsCsv(q(req, productExportQuery));
+    await audit(req, 'export', 'product', '', `${count} products exported`);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="celibery-products-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send('﻿' + csv); // BOM so Excel opens Arabic text correctly
   }),
 );
 

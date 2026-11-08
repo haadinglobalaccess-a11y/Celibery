@@ -41,7 +41,8 @@ export async function campaign(req: Request, res: Response) {
 }
 
 export async function settings(_req: Request, res: Response) {
-  res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+  // Revalidated on every load (cheap 304 via ETag) so Admin → Settings changes show after a refresh.
+  res.set('Cache-Control', 'no-cache');
   return ok(res, await svc.publicSettings());
 }
 

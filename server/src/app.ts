@@ -8,10 +8,9 @@ import { corsOrigins, env, isProd } from './config/env';
 import { API_CSP, MEDIA_CSP, buildCsp } from './lib/csp';
 import { integrationsMiddleware } from './integrations/credentials';
 import { localDir, uploadOrigin } from './integrations/storage';
-import { cleanupAbandonedUploads } from './modules/admin/media.service';
-import { reconcileOpenRefunds } from './modules/payments/refund.service';
 import { forbidden } from './lib/errors';
 import { databaseReady } from './db/connect';
+import { runMaintenanceJob, runReservationJob } from './jobs';
 import { ah, ok } from './lib/http';
 import { safeEqual } from './lib/tokens';
 import { loadUser } from './middleware/auth';
@@ -23,7 +22,6 @@ import { authRoutes } from './modules/auth/auth.routes';
 import { llms, robots, sitemap } from './modules/catalog/catalog.controller';
 import { catalogRoutes } from './modules/catalog/catalog.routes';
 import { orderRoutes } from './modules/orders/order.routes';
-import { releaseExpiredReservations } from './modules/orders/order.service';
 import { paymentRoutes } from './modules/payments/payment.routes';
 
 export function createApp(opts: { serveClient?: string } = {}): Express {
@@ -96,7 +94,7 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
     ah(async (req, res) => {
       const auth = req.get('authorization') ?? '';
       if (!env.CRON_SECRET || !safeEqual(auth, `Bearer ${env.CRON_SECRET}`)) throw forbidden();
-      return ok(res, await releaseExpiredReservations(200));
+      return ok(res, await runReservationJob());
     }),
   );
   // Refunds whose gateway outcome was uncertain, and abandoned media uploads.
@@ -105,9 +103,7 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
     ah(async (req, res) => {
       const auth = req.get('authorization') ?? '';
       if (!env.CRON_SECRET || !safeEqual(auth, `Bearer ${env.CRON_SECRET}`)) throw forbidden();
-      const refunds = await reconcileOpenRefunds(50);
-      const media = await cleanupAbandonedUploads(24, 100);
-      return ok(res, { refunds, media });
+      return ok(res, await runMaintenanceJob());
     }),
   );
 

@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { bannerInput } from '../../src/modules/admin/admin.schemas';
 
 describe('admin hero durations', () => {

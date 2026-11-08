@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n, useMaybeI18n } from '../i18n/I18n';
 import { formatPrice } from '../lib/format';
+import { useSettings } from '../state/settings';
 import { DimensionalIcon } from '../three-d/DimensionalIcon';
 import { Icon } from './Icon';
 
@@ -127,15 +128,18 @@ export function Crumbs({ items }: { items: { label: string; to?: string }[] }) {
   );
 }
 
+/** Logos of the payment methods the store can take right now (configured gateway + switched on in Admin). */
 export function PayLogos() {
+  const pay = useSettings()?.payments;
+  if (!pay || !(pay.card || pay.applepay || pay.stcpay || pay.tabby)) return null;
   return (
     <span className="pay-logos pay-brand-logos" aria-label="Accepted payment brands">
-      <img src="/payment-logos/visa.svg" alt="Visa" />
-      <img src="/payment-logos/mastercard.svg" alt="Mastercard" />
-      <img src="/payment-logos/applepay.svg" alt="Apple Pay" />
-      <span className="pay-logo">mada</span>
-      <span className="pay-logo">STC Pay</span>
-      <span className="pay-logo">tabby</span>
+      {pay.card ? <img src="/payment-logos/visa.svg" alt="Visa" /> : null}
+      {pay.card ? <img src="/payment-logos/mastercard.svg" alt="Mastercard" /> : null}
+      {pay.applepay ? <img src="/payment-logos/applepay.svg" alt="Apple Pay" /> : null}
+      {pay.card ? <span className="pay-logo">mada</span> : null}
+      {pay.stcpay ? <span className="pay-logo">STC Pay</span> : null}
+      {pay.tabby ? <span className="pay-logo">tabby</span> : null}
     </span>
   );
 }

@@ -1,6 +1,7 @@
 import type { FilterQuery, Types } from 'mongoose';
 import { escapeRegex } from '../../lib/http';
 import { notFound } from '../../lib/errors';
+import { cleanLocLine, cleanLocRich } from '../../lib/text';
 import { Banner, Campaign, Category, Order, Product, ProductCollection, Review, getSettings, type ProductDoc } from '../../models';
 import type { ProductListQuery } from './catalog.schemas';
 import { availablePaymentMethods } from '../payments/payment.service';
@@ -15,8 +16,14 @@ export function toPublicProduct(p: LeanProduct, defaultLowStock = 5) {
   const { stock, lowStockThreshold, ...rest } = p;
   const threshold = lowStockThreshold ?? defaultLowStock;
   const compareAt = p.compareAtPrice && p.compareAtPrice > p.price ? p.compareAtPrice : null;
+  // Text saved before save-time cleaning existed is normalised here too (idempotent, see lib/text.ts).
+  type Spec = { label?: { ar?: string; en?: string }; value?: { ar?: string; en?: string } };
+  const text: Record<string, unknown> = { name: cleanLocLine(rest.name as never), shortDescription: cleanLocLine(rest.shortDescription as never) };
+  if ('description' in rest) text.description = cleanLocRich(rest.description as never);
+  if (Array.isArray(rest.specs)) text.specs = (rest.specs as Spec[]).map((x) => ({ label: cleanLocLine(x.label), value: cleanLocLine(x.value) }));
   return {
     ...rest,
+    ...text,
     compareAtPrice: compareAt,
     discountPercent: compareAt ? Math.round(((compareAt - p.price) / compareAt) * 100) : 0,
     available: stock > 0,

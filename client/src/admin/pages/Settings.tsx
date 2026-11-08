@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Spinner } from '../../components/ui';
 import { ApiError, del, get, post, put } from '../../lib/api';
 import { invalidateCache } from '../../lib/hooks';

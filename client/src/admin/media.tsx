@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { ApiError, apiUrl, del, get, patch, post, qs } from '../lib/api';
 import { classifyVideoUrl } from '../lib/media';
 import type { Localized } from '../lib/types';

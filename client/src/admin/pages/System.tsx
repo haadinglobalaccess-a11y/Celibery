@@ -1,4 +1,4 @@
-﻿import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { ErrorState, Spinner } from '../../components/ui';
 import { patch, post, put } from '../../lib/api';
 import { useApi } from '../../lib/hooks';

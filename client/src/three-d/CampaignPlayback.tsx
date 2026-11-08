@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { VideoSource } from '../lib/media';
 import { createCampaignPlayer, type CampaignPlayer } from './campaignPlayers';
 

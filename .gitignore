@@ -13,3 +13,8 @@ playwright-report/
 e2e/.artifacts/
 server/uploads/
 /uploads/
+
+# Local audit / editor leftovers
+mobile-audit-report/
+*.backup*
+*-backup

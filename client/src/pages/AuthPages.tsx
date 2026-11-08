@@ -21,7 +21,7 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  useSeo(t.auth.login);
+  useSeo(t.auth.login, undefined, { noindex: true });
   if (user?.type === 'customer') return <Navigate to={safeNext(params.get('next'), lang)} replace />;
 
   const submit = async (e: FormEvent) => {
@@ -76,7 +76,7 @@ export function Register() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', marketingOptIn: false });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  useSeo(t.auth.register);
+  useSeo(t.auth.register, undefined, { noindex: true });
   if (user?.type === 'customer') return <Navigate to={safeNext(params.get('next'), lang)} replace />;
 
   const submit = async (e: FormEvent) => {
@@ -138,7 +138,7 @@ export function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
-  useSeo(t.auth.resetTitle);
+  useSeo(t.auth.resetTitle, undefined, { noindex: true });
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -206,7 +206,7 @@ export function ResetPasswordForm({ onDone, loginHref }: { onDone?: () => void; 
 
 export function ResetPassword() {
   const { t, p } = useI18n();
-  useSeo(t.auth.resetTitle);
+  useSeo(t.auth.resetTitle, undefined, { noindex: true });
   return (
     <div className="container auth-box">
       <h1>{t.auth.resetTitle}</h1>

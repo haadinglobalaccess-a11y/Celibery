@@ -68,7 +68,7 @@ export default function Checkout() {
   const [submitted, setSubmitted] = useState(false);
   const [cityForQuote, setCityForQuote] = useState('');
   const { quote, loading: quoteLoading, error: quoteError } = useQuote(method, contact.email, cityForQuote);
-  useSeo(t.checkout.title);
+  useSeo(t.checkout.title, undefined, { noindex: true });
 
   const isCustomer = user?.type === 'customer';
 

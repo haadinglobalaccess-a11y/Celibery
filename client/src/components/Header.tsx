@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
 import { formatPrice, L, placeholderFor } from '../lib/format';

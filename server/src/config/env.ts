@@ -23,6 +23,14 @@ const schema = z.object({
   JWT_SECRET: z.string().default(''),
   SESSION_TTL_HOURS: z.coerce.number().positive().max(8760).default(168),
   COOKIE_SECURE: bool(false),
+  /**
+   * SameSite of the session cookie. Empty = "none" in production (storefront and API on different
+   * sites, e.g. two *.up.railway.app services) and "lax" otherwise. Set "lax" when the store and
+   * API share one origin (Vercel, or SERVE_CLIENT=1) — the stronger setting.
+   */
+  COOKIE_SAMESITE: z.enum(['', 'lax', 'strict', 'none']).default(''),
+  /** Long-running servers run the scheduled jobs in-process; set true when an external cron calls /api/cron/*. */
+  DISABLE_INTERNAL_SCHEDULER: bool(false),
   PAYMENT_GATEWAY: z.enum(['sandbox', 'moyasar']).default('sandbox'),
   ALLOW_SANDBOX_PAYMENTS: bool(false),
   MOYASAR_SECRET_KEY: z.string().default(''),
@@ -132,6 +140,12 @@ export function jwtSecret(): string {
   if (isProd) throw new Error('JWT_SECRET must be set (min. 32 characters) in production');
   // Development/test fallback only — never used in production (see assertProductionConfig).
   return 'dev-only-insecure-secret-change-me-0123456789abcdef';
+}
+
+/** SameSite for the session cookie (see COOKIE_SAMESITE). "none" always requires Secure. */
+export function cookieSameSite(): 'lax' | 'strict' | 'none' {
+  if (env.COOKIE_SAMESITE) return env.COOKIE_SAMESITE;
+  return isProd ? 'none' : 'lax';
 }
 
 export const corsOrigins = env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
