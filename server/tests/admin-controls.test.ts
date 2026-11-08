@@ -35,7 +35,7 @@ afterAll(async () => {
 });
 
 describe('email (SMTP) credentials managed in Admin', () => {
-  const smtpValues = (over: Record<string, string> = {}) => ({ host: '127.0.0.1', port: String(sink.port), user: SMTP_USER, pass: SMTP_PASS, from: 'CELIBERY International <no-reply@celibery.test>', ...over });
+  const smtpValues = (over: Record<string, string> = {}) => ({ host: '127.0.0.1', port: String(sink.port), user: SMTP_USER, pass: SMTP_PASS, security: 'starttls', fromEmail: 'no-reply@celibery.test', fromName: 'CELIBERY International', ...over });
 
   it('only payments:manage can see or change notification credentials', async () => {
     const administrator = await createStaff('administrator');
@@ -45,10 +45,10 @@ describe('email (SMTP) credentials managed in Admin', () => {
   });
 
   it('validates the values and refuses the test/live split for single-mode providers', async () => {
-    const bad = await superAdmin.put('/api/admin/integrations/smtp/live/credentials').send({ values: { host: 'https://smtp.example.com', port: '99999', from: 'not an address' } });
+    const bad = await superAdmin.put('/api/admin/integrations/smtp/live/credentials').send({ values: { host: 'https://smtp.example.com', port: '99999', fromEmail: 'not an address', security: 'tls9' } });
     expect(bad.status).toBe(400);
     const errs = bad.body.error.details.fieldErrors;
-    expect(Object.keys(errs).sort()).toEqual(['from', 'host', 'port']);
+    expect(Object.keys(errs).sort()).toEqual(['fromEmail', 'host', 'port', 'security']);
     const testSlot = await superAdmin.put('/api/admin/integrations/smtp/test/credentials').send({ values: smtpValues() });
     expect(testSlot.status).toBe(400);
     expect(testSlot.body.error.code).toBe('MODE_NOT_SUPPORTED');
@@ -98,9 +98,9 @@ describe('email (SMTP) credentials managed in Admin', () => {
 
   it('sends a real test email to the signed-in administrator', async () => {
     const before = sink.messages.length;
-    const r = await superAdmin.post('/api/admin/integrations/smtp/test-message');
+    const r = await superAdmin.post('/api/admin/integrations/smtp/test-message').send({});
     expect(r.status).toBe(200);
-    expect(r.body.data).toEqual({ sent: true, to: superAdminEmail });
+    expect(r.body.data).toEqual({ sent: true, to: superAdminEmail, from: 'no-reply@celibery.test' });
     const msg = sink.messages[before];
     expect(msg.to).toEqual([superAdminEmail]);
     expect(msg.data).toMatch(/Subject: CELIBERY — test email|Subject: =\?UTF-8/);
@@ -155,7 +155,7 @@ describe('WhatsApp credentials managed in Admin', () => {
       return new Response(JSON.stringify({ display_phone_number: '+966 50 000 0000', verified_name: 'CELIBERY' }), { status: 200 });
     });
     try {
-      const save = await superAdmin.put('/api/admin/integrations/whatsapp/live/credentials').send({ values: { phoneNumberId: '1234567890', accessToken: 'bad-token-000000', orderTemplate: 'order_update', templateLangAr: 'ar', templateLangEn: 'en_US' } });
+      const save = await superAdmin.put('/api/admin/integrations/whatsapp/live/credentials').send({ values: { businessPhoneNumber: '966500000000', phoneNumberId: '1234567890', accessToken: 'bad-token-000000', orderTemplate: 'order_update', templateLangAr: 'ar', templateLangEn: 'en_US' } });
       expect(save.status).toBe(200);
       const bad = await superAdmin.post('/api/admin/integrations/whatsapp/live/verify');
       expect(bad.body.data.check).toMatchObject({ ok: false });

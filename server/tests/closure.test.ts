@@ -141,7 +141,7 @@ describe('message templates', () => {
       expect(saved.body.data.effective.ar.subject).toBe('تم استلام طلبك {{orderNumber}}'); // Arabic untouched
 
       // Real send through SMTP uses the saved wording.
-      await superAdmin.put('/api/admin/integrations/smtp/live/credentials').send({ values: { host: '127.0.0.1', port: String(sink.port), from: 'shop@celibery.test' } });
+      await superAdmin.put('/api/admin/integrations/smtp/live/credentials').send({ values: { host: '127.0.0.1', port: String(sink.port), security: 'starttls', fromEmail: 'shop@celibery.test' } });
       await superAdmin.post('/api/admin/integrations/smtp/live/verify');
       expect((await superAdmin.post('/api/admin/integrations/smtp/activate').send({ enabled: true, mode: 'live' })).status).toBe(200);
       await Settings.updateOne({ key: 'store' }, { $set: { 'commerce.codEnabled': true, 'commerce.codFee': 0 } });

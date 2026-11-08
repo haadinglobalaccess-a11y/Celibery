@@ -18,7 +18,11 @@ export type FieldDef = {
   maxLength?: number;
   /** Allows spaces (e.g. a display name in an email sender address). Line breaks are always refused. */
   allowSpaces?: boolean;
+  /** Fixed choices (rendered as a select in the admin). */
+  options?: { value: string; label: string }[];
 };
+
+export const EMAIL_RX = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
 
 export type IntegrationDef = {
   key: IntegrationKey;
@@ -93,13 +97,26 @@ export const INTEGRATIONS: Record<IntegrationKey, IntegrationDef> = {
     inUse: true,
     singleMode: true,
     docsUrl: '',
-    verifyFields: ['host', 'port', 'user', 'pass'],
+    verifyFields: ['host', 'port', 'security', 'user', 'pass'],
     fields: [
-      { key: 'host', label: 'SMTP server', secret: false, required: true, hint: 'e.g. smtp.office365.com, smtp.gmail.com, smtp.sendgrid.net', maxLength: 253 },
-      { key: 'port', label: 'Port', secret: false, required: true, hint: '587 (STARTTLS) or 465 (SSL)', maxLength: 5 },
-      { key: 'user', label: 'Username', secret: false, required: false, hint: 'Usually the mailbox address or "apikey"', maxLength: 200 },
-      { key: 'pass', label: 'Password / API key', secret: true, required: false, maxLength: 400 },
-      { key: 'from', label: 'Sender (From)', secret: false, required: true, hint: 'CELIBERY International <no-reply@your-domain.com>', maxLength: 200, allowSpaces: true },
+      { key: 'host', label: 'SMTP host', secret: false, required: true, hint: 'e.g. smtp.office365.com, smtp.gmail.com, smtp.sendgrid.net', maxLength: 253 },
+      { key: 'port', label: 'SMTP port', secret: false, required: true, hint: 'Usually 587 (STARTTLS) or 465 (SSL/TLS)', maxLength: 5 },
+      {
+        key: 'security',
+        label: 'SMTP security',
+        secret: false,
+        required: true,
+        options: [
+          { value: 'starttls', label: 'STARTTLS (port 587)' },
+          { value: 'ssl', label: 'SSL/TLS (port 465)' },
+        ],
+        maxLength: 10,
+      },
+      { key: 'user', label: 'SMTP username', secret: false, required: false, hint: 'Usually the mailbox address (or "apikey" for SendGrid)', maxLength: 200 },
+      { key: 'pass', label: 'SMTP password / app password', secret: true, required: false, hint: 'For Gmail / Microsoft 365 with 2-step verification use an app password', maxLength: 400 },
+      { key: 'fromEmail', label: 'Sender email address (From)', secret: false, required: true, hint: 'The address customers see, e.g. orders@your-domain.com', maxLength: 200 },
+      { key: 'fromName', label: 'Sender display name', secret: false, required: false, hint: 'e.g. CELIBERY International', maxLength: 100, allowSpaces: true },
+      { key: 'replyTo', label: 'Reply-to email (optional)', secret: false, required: false, hint: 'Where customer replies go, e.g. support@your-domain.com', maxLength: 200 },
     ],
   },
   whatsapp: {
@@ -110,10 +127,14 @@ export const INTEGRATIONS: Record<IntegrationKey, IntegrationDef> = {
     inUse: true,
     singleMode: true,
     docsUrl: 'https://developers.facebook.com/docs/whatsapp/cloud-api',
-    verifyFields: ['phoneNumberId', 'accessToken'],
+    verifyFields: ['businessPhoneNumber', 'phoneNumberId', 'accessToken', 'apiVersion'],
     fields: [
-      { key: 'phoneNumberId', label: 'Phone number ID', secret: false, required: true, hint: 'Meta Business → WhatsApp → API setup (digits only)', maxLength: 30 },
-      { key: 'accessToken', label: 'Permanent access token', secret: true, required: true, hint: 'System-user token with whatsapp_business_messaging', maxLength: 600 },
+      // Not 'required' at storage level so WhatsApp set up before this field existed keeps sending; "Test connection" (needed to switch the channel on) refuses to pass without it.
+      { key: 'businessPhoneNumber', label: 'WhatsApp Business phone number', secret: false, required: false, hint: 'Required for Test connection: the number customers receive updates from, international format, e.g. 966500000000', maxLength: 20 },
+      { key: 'phoneNumberId', label: 'Phone number ID', secret: false, required: true, hint: 'Meta → WhatsApp Manager → Phone numbers (the numeric ID of the number above)', maxLength: 30 },
+      { key: 'wabaId', label: 'WhatsApp Business Account ID (optional)', secret: false, required: false, hint: 'Only for reference / support; sending uses the phone number ID', maxLength: 30 },
+      { key: 'accessToken', label: 'Meta access token', secret: true, required: true, hint: 'Permanent system-user token with whatsapp_business_messaging permission', maxLength: 600 },
+      { key: 'apiVersion', label: 'Graph API version', secret: false, required: false, hint: 'Default v20.0', maxLength: 8 },
       { key: 'orderTemplate', label: 'Order update template name', secret: false, required: true, hint: 'Approved template with 3 body parameters: name, status text, link', maxLength: 120 },
       { key: 'templateLangAr', label: 'Arabic template language', secret: false, required: false, hint: 'Default: ar', maxLength: 10 },
       { key: 'templateLangEn', label: 'English template language', secret: false, required: false, hint: 'Default: en', maxLength: 10 },
@@ -159,12 +180,16 @@ export function validateFieldValue(integration: IntegrationKey, field: string, m
     if (field === 'host' && !/^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*$/.test(value))
       return 'SMTP server must be a host name such as smtp.example.com (no https:// and no port)';
     if (field === 'port' && !(/^\d{1,5}$/.test(value) && Number(value) >= 1 && Number(value) <= 65535)) return 'Port must be a number between 1 and 65535';
-    if (field === 'from' && !/^(?:[^<>\r\n]{1,120}<[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>|[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)$/.test(value))
-      return 'Sender must be an email address, optionally with a name: Name <address@domain>';
+    if (field === 'security' && !['starttls', 'ssl'].includes(value)) return 'Choose STARTTLS or SSL/TLS';
+    if ((field === 'fromEmail' || field === 'replyTo') && !EMAIL_RX.test(value)) return `${def.label} must be a valid email address`;
+    if (field === 'fromName' && /[<>"@]/.test(value)) return 'The display name cannot contain < > " or @';
   }
   if (integration === 's3' && field === 'accessKeyId' && !/^[A-Za-z0-9_-]{16,128}$/.test(value)) return 'Access key IDs are 16–128 letters and digits (e.g. AKIA… or a Cloudflare R2 key)';
   if (integration === 'whatsapp') {
+    if (field === 'businessPhoneNumber' && !/^\+?\d{8,15}$/.test(value)) return 'Enter the number in international format, digits only, e.g. 966500000000';
     if (field === 'phoneNumberId' && !/^\d{5,30}$/.test(value)) return 'Phone number ID is the numeric ID from Meta (not the phone number itself)';
+    if (field === 'wabaId' && !/^\d{5,30}$/.test(value)) return 'The WhatsApp Business Account ID is numeric';
+    if (field === 'apiVersion' && !/^v\d{1,2}\.\d$/.test(value)) return 'API versions look like v20.0';
     if (field === 'orderTemplate' && !/^[a-z0-9_]{1,120}$/.test(value)) return 'Template names use lowercase letters, numbers and underscores';
     if ((field === 'templateLangAr' || field === 'templateLangEn') && !/^[a-z]{2,3}(_[A-Z]{2})?$/.test(value)) return 'Language codes look like ar, en or en_US';
   }
@@ -186,6 +211,32 @@ export function validateFieldValue(integration: IntegrationKey, field: string, m
 /** Infers the mode of legacy environment-variable credentials from the key prefix. */
 export function inferModeFromKey(secretKey: string): Mode {
   return /_test_/.test(secretKey) ? 'test' : 'live';
+}
+
+/** Splits "Name <address@domain>" (or a bare address) into display name and address. */
+export function parseSender(from: string): { name: string; email: string } | null {
+  const m = /^\s*(?:"?([^"<>]*?)"?\s*)?<\s*([^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+)\s*>\s*$/.exec(from) ?? /^\s*()([^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+)\s*$/.exec(from);
+  return m ? { name: (m[1] ?? '').trim(), email: m[2] } : null;
+}
+
+/**
+ * Brings values saved in an older shape up to date (SMTP: the combined "from" → fromEmail /
+ * fromName; missing security → derived from the port). Used when reading credentials and by
+ * `npm run migrate`. Returns the same object when nothing changes.
+ */
+export function upgradeValues(integration: IntegrationKey, values: Record<string, string>): Record<string, string> {
+  if (integration !== 'smtp') return values;
+  const out = { ...values };
+  if (!out.fromEmail && out.from) {
+    const s = parseSender(out.from);
+    if (s) {
+      out.fromEmail = s.email;
+      if (!out.fromName && s.name) out.fromName = s.name;
+    }
+  }
+  delete out.from;
+  if (!out.security && out.port) out.security = out.port === '465' ? 'ssl' : 'starttls';
+  return out;
 }
 
 /** The mode slot a single-mode integration stores its one set of credentials in. */

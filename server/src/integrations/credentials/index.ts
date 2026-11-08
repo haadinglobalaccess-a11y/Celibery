@@ -1,8 +1,8 @@
 import { env, isProd } from '../../config/env';
 import { logger } from '../../lib/logger';
-import { buildKeyRing, decryptSecret, encryptSecret, type KeyRing } from '../../lib/secrets';
+import { buildKeyRing, decryptSecret, encryptSecret, fingerprint, type KeyRing } from '../../lib/secrets';
 import { IntegrationCredential, WITH_SECRETS } from '../../models/IntegrationCredential';
-import { INTEGRATIONS, inferModeFromKey, missingRequired, type IntegrationKey, type Mode } from './definitions';
+import { INTEGRATIONS, inferModeFromKey, missingRequired, upgradeValues, verificationSubject, type IntegrationKey, type Mode } from './definitions';
 
 /**
  * Resolves the credentials each integration should use right now.
@@ -89,10 +89,11 @@ function fromEnv(provider: IntegrationKey): ResolvedIntegration {
     return {
       provider,
       source: 'env',
-      enabled: true,
+      enabled: Boolean(env.EMAIL_FROM),
       mode: 'live',
-      values: { host: env.SMTP_HOST, port: String(env.SMTP_PORT), user: env.SMTP_USER, pass: env.SMTP_PASS, from: env.EMAIL_FROM },
-      configured: true,
+      values: upgradeValues('smtp', { host: env.SMTP_HOST, port: String(env.SMTP_PORT), user: env.SMTP_USER, pass: env.SMTP_PASS, from: env.EMAIL_FROM }),
+      // No built-in sender address: the legacy fallback needs EMAIL_FROM too.
+      configured: Boolean(env.EMAIL_FROM),
     };
   }
   if (provider === 'whatsapp' && env.WHATSAPP_ACCESS_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID) {
@@ -140,6 +141,8 @@ function resolveRecord(provider: IntegrationKey, doc: any): ResolvedIntegration 
       logger.error('Stored credential could not be decrypted', { provider, mode, field });
     }
   }
+  Object.assign(values, upgradeValues(provider, values));
+  delete values.from;
   const present = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, Boolean(v)]));
   const configured = !error && missingRequired(provider, present).length === 0;
   return { provider, source: 'admin', enabled: Boolean(doc.enabled) && configured, mode, values, configured, error };
@@ -181,4 +184,38 @@ export function integration(provider: IntegrationKey): ResolvedIntegration {
 /** Express middleware: keeps the snapshot fresh (one indexed query at most every 30 s per instance). */
 export function integrationsMiddleware(_req: unknown, _res: unknown, next: (e?: unknown) => void) {
   loadIntegrations().then(() => next(), () => next());
+}
+
+export type ChannelStatus = {
+  /** Status of the configuration SAVED IN THE ADMIN DASHBOARD (environment variables never count). */
+  status: 'not_configured' | 'configured' | 'failed';
+  message: string;
+  /** The administrator switched this channel on (Admin → Settings → Notifications). */
+  enabled: boolean;
+  checkedAt: Date | null;
+  /** Messages are currently sent through environment-variable credentials (legacy fallback). */
+  usingEnvFallback: boolean;
+};
+
+/**
+ * Configured = saved in the admin, every required field present, and the CURRENT values passed
+ * "Test connection". Failed = the last test of the current values failed. Anything else (nothing
+ * saved, missing fields, changed but not re-tested) = not configured.
+ */
+export async function channelStatus(provider: IntegrationKey): Promise<ChannelStatus> {
+  const doc = await IntegrationCredential.findOne({ provider }).select(WITH_SECRETS).lean();
+  const envFallback = !doc && fromEnv(provider).enabled;
+  if (!doc) return { status: 'not_configured', message: 'Not set up in the admin yet', enabled: false, checkedAt: null, usingEnvFallback: envFallback };
+  const r = resolveRecord(provider, doc);
+  const mode = r.mode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const v = (doc as any).modes?.[mode]?.verification ?? {};
+  const base = { enabled: Boolean(doc.enabled), checkedAt: (v.checkedAt as Date) ?? null, usingEnvFallback: false };
+  if (r.error) return { ...base, status: 'failed', message: 'The saved credentials cannot be decrypted — enter them again' };
+  const missing = missingRequired(provider, Object.fromEntries(Object.entries(r.values).map(([k, x]) => [k, Boolean(x)])));
+  if (missing.length) return { ...base, status: 'not_configured', message: `Missing: ${missing.map((f) => INTEGRATIONS[provider].fields.find((d) => d.key === f)?.label ?? f).join(', ')}` };
+  const current = v.fingerprint && v.fingerprint === fingerprint(verificationSubject(provider, r.values));
+  if (current && v.status === 'ok') return { ...base, status: 'configured', message: v.message || 'Connection verified' };
+  if (current && v.status === 'failed') return { ...base, status: 'failed', message: v.message || 'Connection failed' };
+  return { ...base, status: 'not_configured', message: 'Saved — run “Test connection” to validate' };
 }

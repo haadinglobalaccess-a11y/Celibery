@@ -7,6 +7,7 @@ import { env } from '../../config/env';
 import { forbidden } from '../../lib/errors';
 import { requireAnyPermission, requirePermission } from '../../middleware/auth';
 import { storageStatus } from '../../integrations/storage';
+import { channelStatus } from '../../integrations/credentials';
 import { q, validate } from '../../middleware/validate';
 import { AuditLog, Notification, Settings, getSettings } from '../../models';
 import { emailConfigured, whatsappConfigured } from '../../integrations/notifications';
@@ -199,7 +200,14 @@ adminSystemRoutes.get(
   ah(async (_req, res) =>
     ok(res, {
       settings: await getSettings(),
-      integrations: { ...gatewayDiagnostics(), emailConfigured: emailConfigured(), whatsappConfigured: whatsappConfigured() },
+      integrations: {
+        ...gatewayDiagnostics(),
+        emailConfigured: emailConfigured(),
+        whatsappConfigured: whatsappConfigured(),
+        // Q28: status of the configuration saved in the admin (not environment variables).
+        email: await channelStatus('smtp'),
+        whatsapp: await channelStatus('whatsapp'),
+      },
       hosting: hostingInfo(),
     }),
   ),

@@ -7,9 +7,10 @@ import { ah, ok } from '../../lib/http';
 import { fingerprint, maskSecret } from '../../lib/secrets';
 import { requirePermission } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { encryptFor, integration, invalidateIntegrations, keyRing, loadIntegrations, secretContext } from '../../integrations/credentials';
-import { INTEGRATIONS, MODES, SINGLE_MODE_SLOT, isIntegrationKey, missingRequired, validateFieldValue, verificationSubject, type IntegrationKey, type Mode } from '../../integrations/credentials/definitions';
-import { smtpTransport, toSmtpConfig, verifySmtp, verifyWhatsApp } from '../../integrations/notifications/providers';
+import { channelStatus, encryptFor, integration, invalidateIntegrations, keyRing, loadIntegrations, secretContext } from '../../integrations/credentials';
+import { EMAIL_RX, INTEGRATIONS, MODES, SINGLE_MODE_SLOT, isIntegrationKey, missingRequired, upgradeValues, validateFieldValue, verificationSubject, type IntegrationKey, type Mode } from '../../integrations/credentials/definitions';
+import { smtpError, toSmtpConfig, toWhatsAppConfig, verifySmtp, verifyWhatsApp } from '../../integrations/notifications/providers';
+import { deliverEmail, deliverWhatsApp, normalizeSaudiPhone } from '../../integrations/notifications';
 import { moyasarProvider } from '../../integrations/payments/moyasar';
 import { tabbyProvider } from '../../integrations/payments/tabby';
 import type { CredentialCheck } from '../../integrations/payments/types';
@@ -65,7 +66,7 @@ function publicView(key: IntegrationKey, doc: any) {
   const modes = Object.fromEntries(
     MODES.map((mode) => {
       const m = doc?.modes?.[mode] ?? {};
-      const values = toObj(m.values) as Record<string, string>;
+      const values = upgradeValues(key, toObj(m.values) as Record<string, string>);
       const meta = toObj(m.secretMeta) as Record<string, { masked?: string; fingerprint?: string; updatedAt?: Date }>;
       const fields = def.fields.map((f) =>
         f.secret
@@ -100,6 +101,12 @@ function publicView(key: IntegrationKey, doc: any) {
   };
 }
 
+/** Public view plus, for email/WhatsApp, the status of the saved admin configuration. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function viewWithStatus(key: IntegrationKey, doc: any) {
+  return { ...publicView(key, doc), channel: INTEGRATIONS[key].kind === 'notification' ? await channelStatus(key) : null };
+}
+
 /** Decrypted values of one mode (server-side only). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function decryptedValues(key: IntegrationKey, mode: Mode, doc: any): Record<string, string> {
@@ -114,7 +121,7 @@ function decryptedValues(key: IntegrationKey, mode: Mode, doc: any): Record<stri
       throw unprocessable('CREDENTIALS_UNREADABLE', `The stored ${mode} ${field} cannot be decrypted with the server's current encryption key — enter it again`);
     }
   }
-  return out;
+  return upgradeValues(key, out);
 }
 
 async function runVerification(key: IntegrationKey, values: Record<string, string>): Promise<CredentialCheck> {
@@ -140,7 +147,7 @@ adminIntegrationRoutes.get(
   ah(async (_req, res) => {
     await loadIntegrations(true);
     const docs = await IntegrationCredential.find().lean();
-    const list = (Object.keys(INTEGRATIONS) as IntegrationKey[]).map((k) => publicView(k, docs.find((d: { provider: string }) => d.provider === k)));
+    const list = await Promise.all((Object.keys(INTEGRATIONS) as IntegrationKey[]).map((k) => viewWithStatus(k, docs.find((d: { provider: string }) => d.provider === k))));
     return ok(res, {
       integrations: list,
       encryptionKeyConfigured: Boolean(env.CREDENTIALS_ENCRYPTION_KEY),
@@ -193,6 +200,11 @@ adminIntegrationRoutes.put(
     const set: Record<string, unknown> = { updatedBy: actor(req) };
     const unset: Record<string, 1> = {};
     const changed: string[] = [];
+    // Values upgraded from an older shape (e.g. the combined SMTP "from") are written in the new
+    // shape on this save, and the legacy key is removed.
+    const raw = (toObj(doc?.modes?.[mode]?.values) as Record<string, string>) ?? {};
+    for (const f of def.fields) if (!f.secret && next[f.key] && raw[f.key] !== next[f.key] && !(f.key in input)) set[`modes.${mode}.values.${f.key}`] = next[f.key];
+    if (key === 'smtp' && raw.from !== undefined) unset[`modes.${mode}.values.from`] = 1;
     for (const f of def.fields) {
       if (!(f.key in input)) continue;
       const value = next[f.key];
@@ -223,7 +235,7 @@ adminIntegrationRoutes.put(
     await audit(req, 'credentials_update', 'integration', key, `${mode}: ${changed.join(', ')}`);
     const fresh = await IntegrationCredential.findOne({ provider: key }).lean();
     await loadIntegrations(true);
-    return ok(res, publicView(key, fresh));
+    return ok(res, await viewWithStatus(key, fresh));
   }),
 );
 
@@ -246,7 +258,7 @@ adminIntegrationRoutes.post(
     invalidateIntegrations();
     await audit(req, 'credentials_verify', 'integration', key, `${mode}: ${check.status}`);
     const fresh = await IntegrationCredential.findOne({ provider: key }).lean();
-    return ok(res, { check, integration: publicView(key, fresh) });
+    return ok(res, { check, integration: await viewWithStatus(key, fresh) });
   }),
 );
 
@@ -283,41 +295,75 @@ adminIntegrationRoutes.post(
     await loadIntegrations(true);
     await audit(req, enabled ? 'integration_enable' : 'integration_disable', 'integration', key, `${enabled ? 'enabled' : 'disabled'} in ${mode} mode`);
     const fresh = await IntegrationCredential.findOne({ provider: key }).lean();
-    return ok(res, publicView(key, fresh));
+    return ok(res, await viewWithStatus(key, fresh));
   }),
 );
 
+const testMessageInput = z.object({ to: z.string().trim().max(200).optional(), lang: z.enum(['ar', 'en']).default('ar') });
+
 /**
- * Sends a real test email to the signed-in administrator with the saved SMTP settings — works
- * before email is enabled, so delivery can be confirmed first. Recorded in the notification log.
+ * Sends a real test message with the SAVED settings (works before the channel is enabled, so
+ * delivery can be confirmed first):
+ *  - smtp: a test email to the address the administrator enters (default: their own);
+ *  - whatsapp: the approved order-update template with sample values to the number they enter.
+ * Every attempt is recorded in the delivery log; failures return the provider's reason.
  */
 adminIntegrationRoutes.post(
-  '/smtp/test-message',
+  '/:provider/test-message',
   verifyLimiter,
+  validate(providerParam, 'params'),
+  validate(testMessageInput),
   ah(async (req, res) => {
-    const doc = await IntegrationCredential.findOne({ provider: 'smtp' }).select(WITH_SECRETS).lean();
-    if (!doc) throw notFound('Saved email settings');
-    const smtp = toSmtpConfig(decryptedValues('smtp', SINGLE_MODE_SLOT, doc));
-    if (!smtp) throw unprocessable('NOT_CONFIGURED', 'Save the SMTP server and sender address first');
-    const to = req.user!.email;
-    const t = smtpTransport(smtp, { fresh: true });
-    try {
-      await t.sendMail({
-        from: smtp.from,
-        to,
-        subject: 'CELIBERY — test email',
-        text: `This is a test email from the CELIBERY admin dashboard, sent through ${smtp.host}:${smtp.port}. Email delivery is working.`,
-        html: `<p>This is a test email from the CELIBERY admin dashboard, sent through <strong>${smtp.host}:${smtp.port}</strong>.</p><p>Email delivery is working.</p>`,
-      });
+    const key = req.params.provider as IntegrationKey;
+    if (key !== 'smtp' && key !== 'whatsapp') throw badRequest('NOT_SUPPORTED', 'Test messages are available for email and WhatsApp only');
+    const doc = await IntegrationCredential.findOne({ provider: key }).select(WITH_SECRETS).lean();
+    if (!doc) throw notFound('Saved settings');
+    const values = decryptedValues(key, SINGLE_MODE_SLOT, doc);
+
+    if (key === 'smtp') {
+      const smtp = toSmtpConfig(values);
+      if (!smtp) throw unprocessable('NOT_CONFIGURED', 'Save the SMTP host and sender email address first');
+      const to = (req.body.to as string | undefined) || req.user!.email;
+      if (!EMAIL_RX.test(to)) throw badRequest('VALIDATION_ERROR', 'Enter a valid recipient email address', { fieldErrors: { to: ['Enter a valid email address'] } });
+      try {
+        await deliverEmail(
+          smtp,
+          to,
+          {
+            subject: 'CELIBERY — test email',
+            text: `This is a test email from the CELIBERY admin dashboard, sent from ${smtp.fromEmail} through ${smtp.host}:${smtp.port}. Email delivery is working.`,
+            html: `<p>This is a test email from the CELIBERY admin dashboard, sent from <strong>${escHtml(smtp.fromEmail)}</strong> through <strong>${escHtml(smtp.host)}:${smtp.port}</strong>.</p><p>Email delivery is working.</p>`,
+          },
+          { fresh: true },
+        );
+      } catch (e) {
+        const detail = smtpError(e, smtp);
+        await Notification.create({ channel: 'email', to, template: 'admin.smtp_test', user: req.user!.id, status: 'failed', detail });
+        await audit(req, 'credentials_test_message', 'integration', key, `failed to ${to}`);
+        throw unprocessable('SEND_FAILED', `The test email could not be sent: ${detail}`);
+      }
       await Notification.create({ channel: 'email', to, template: 'admin.smtp_test', user: req.user!.id, status: 'sent' });
-      await audit(req, 'credentials_test_message', 'integration', 'smtp', `sent to ${to}`);
-      return ok(res, { sent: true, to });
+      await audit(req, 'credentials_test_message', 'integration', key, `sent to ${to}`);
+      return ok(res, { sent: true, to, from: smtp.fromEmail });
+    }
+
+    const wa = toWhatsAppConfig(values);
+    if (!wa) throw unprocessable('NOT_CONFIGURED', 'Save the phone number ID and access token first');
+    const to = normalizeSaudiPhone(String(req.body.to ?? ''));
+    if (!/^\d{8,15}$/.test(to)) throw badRequest('VALIDATION_ERROR', 'Enter the recipient WhatsApp number, e.g. 9665XXXXXXXX', { fieldErrors: { to: ['Enter a valid number'] } });
+    const lang = req.body.lang === 'en' ? 'en' : 'ar';
+    try {
+      await deliverWhatsApp(wa, to, lang, [req.user!.name || 'CELIBERY', lang === 'ar' ? 'رسالة تجريبية من لوحة التحكم' : 'Test message from the admin dashboard', env.PUBLIC_SITE_URL]);
     } catch (e) {
       const detail = String((e as Error).message ?? e).slice(0, 300);
-      await Notification.create({ channel: 'email', to, template: 'admin.smtp_test', user: req.user!.id, status: 'failed', detail });
-      throw unprocessable('SEND_FAILED', `The test email could not be sent: ${detail}`);
-    } finally {
-      t.close();
+      await Notification.create({ channel: 'whatsapp', to, template: 'admin.whatsapp_test', user: req.user!.id, status: 'failed', detail });
+      await audit(req, 'credentials_test_message', 'integration', key, `failed to ${to}`);
+      throw unprocessable('SEND_FAILED', `The test WhatsApp message could not be sent: ${detail}`);
     }
+    await Notification.create({ channel: 'whatsapp', to, template: 'admin.whatsapp_test', user: req.user!.id, status: 'sent' });
+    await audit(req, 'credentials_test_message', 'integration', key, `sent to ${to}`);
+    return ok(res, { sent: true, to, from: wa.businessPhoneNumber || wa.phoneNumberId });
   }),
 );
+
+const escHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);

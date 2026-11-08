@@ -21,6 +21,7 @@
 import { DEFAULT_ROLES, PERMISSIONS } from '../lib/permissions';
 import { decryptSecret, encryptSecret, needsReencryption } from '../lib/secrets';
 import { keyRing, secretContext } from '../integrations/credentials';
+import { upgradeValues } from '../integrations/credentials/definitions';
 import type { IntegrationKey, Mode } from '../integrations/credentials/definitions';
 import { IntegrationCredential, Order, Page, Payment, ProcessedEvent, Refund, Role, WITH_SECRETS } from '../models';
 import { PAGES } from '../seed/base-data';
@@ -136,5 +137,20 @@ run(async () => {
       }
     }
   }
+
+  // 7. Email settings saved with the combined sender ("Name <address>") → From email + display name + security.
+  const smtpDoc = await IntegrationCredential.findOne({ provider: 'smtp' }).lean();
+  const smtpValues = smtpDoc?.modes?.live?.values as unknown as Record<string, string> | Map<string, string> | undefined;
+  if (smtpValues) {
+    const before = smtpValues instanceof Map ? Object.fromEntries(smtpValues) : smtpValues;
+    const after = upgradeValues('smtp', before);
+    const set: Record<string, string> = {};
+    for (const [k, v] of Object.entries(after)) if (before[k] !== v) set[`modes.live.values.${k}`] = v;
+    if (Object.keys(set).length || 'from' in before) {
+      log(`Email settings: upgrade ${Object.keys(set).map((k) => k.split('.').pop()).join(', ') || 'sender'}`);
+      if (!dry) await IntegrationCredential.updateOne({ _id: smtpDoc!._id }, { $set: set, $unset: { 'modes.live.values.from': 1 } });
+    }
+  }
+
   log('Migration complete.');
 });

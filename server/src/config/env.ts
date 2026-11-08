@@ -36,7 +36,8 @@ const schema = z.object({
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().default(''),
   SMTP_PASS: z.string().default(''),
-  EMAIL_FROM: z.string().default('CELIBERY International <no-reply@example.com>'),
+  /** Legacy fallback only (Admin → Settings → Notifications is the primary place). No built-in sender address. */
+  EMAIL_FROM: z.string().default(''),
   WHATSAPP_ACCESS_TOKEN: z.string().default(''),
   WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
   WHATSAPP_ORDER_TEMPLATE: z.string().default('order_update'),

@@ -1,12 +1,13 @@
 import { logger } from '../../lib/logger';
 import { Notification, getSettings, templateOverride } from '../../models';
 import { integration } from '../credentials';
-import { activeSmtp, activeWhatsApp, smtpTransport, whatsappMessagesUrl } from './providers';
+import { activeSmtp, activeWhatsApp, smtpFrom, smtpTransport, whatsappMessagesUrl, whatsappTemplateBody, type SmtpConfig, type WhatsAppConfig } from './providers';
 import { orderEmail, passwordResetEmail, staffInviteEmail, whatsappStatusText, type OrderEvent } from './templates';
 
 /**
- * Email (SMTP) and WhatsApp credentials are managed in Admin → Settings → Notifications
- * (encrypted at rest), with the legacy SMTP_* / WHATSAPP_* environment variables as fallback.
+ * Email (SMTP) and WhatsApp accounts are chosen and configured by the administrator in Admin →
+ * Settings → Notifications & reviews (credentials encrypted at rest). The legacy SMTP_* /
+ * WHATSAPP_* environment variables are an optional fallback, ignored once the dashboard has settings.
  * When a provider is not configured or is disabled, the attempt is recorded with status
  * "skipped" — the system never reports a message as sent unless the provider accepted it.
  */
@@ -17,6 +18,30 @@ export const whatsappConfigured = () => integration('whatsapp').enabled;
 
 type Ctx = { template: string; order?: unknown; user?: unknown };
 
+/** Sends one email with the given SMTP account (administrator-selected sender and reply-to). Throws on failure. */
+export async function deliverEmail(smtp: SmtpConfig, to: string, content: { subject: string; html: string; text: string }, opts: { fresh?: boolean } = {}) {
+  const t = smtpTransport(smtp, opts);
+  try {
+    await t.sendMail({ from: smtpFrom(smtp), replyTo: smtp.replyTo || undefined, to, subject: content.subject, html: content.html, text: content.text });
+  } finally {
+    if (opts.fresh) t.close();
+  }
+}
+
+/** Sends the approved order-update template from the administrator-selected WhatsApp number. Throws on failure. */
+export async function deliverWhatsApp(wa: WhatsAppConfig, to: string, lang: 'ar' | 'en', params: string[]) {
+  const res = await fetch(whatsappMessagesUrl(wa), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${wa.accessToken}`, 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(15_000),
+    body: JSON.stringify(whatsappTemplateBody(wa, to, lang, params)),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+    throw new Error(`WhatsApp API ${res.status}: ${String(body.error?.message ?? 'request rejected').slice(0, 200)}`);
+  }
+}
+
 export async function sendEmail(to: string, content: { subject: string; html: string; text: string }, ctx: Ctx) {
   const smtp = await activeSmtp();
   if (!smtp) {
@@ -24,7 +49,7 @@ export async function sendEmail(to: string, content: { subject: string; html: st
     return { status: 'skipped' as const };
   }
   try {
-    await smtpTransport(smtp).sendMail({ from: smtp.from, to, subject: content.subject, html: content.html, text: content.text });
+    await deliverEmail(smtp, to, content);
     await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'sent' });
     return { status: 'sent' as const };
   } catch (err) {
@@ -52,22 +77,7 @@ export async function sendWhatsAppTemplate(phone: string, lang: 'ar' | 'en', par
     return { status: 'skipped' as const };
   }
   try {
-    const res = await fetch(whatsappMessagesUrl(wa), {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${wa.accessToken}`, 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(15_000),
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'template',
-        template: {
-          name: wa.orderTemplate,
-          language: { code: lang === 'ar' ? wa.langAr : wa.langEn },
-          components: [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }],
-        },
-      }),
-    });
-    if (!res.ok) throw new Error(`WhatsApp API ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    await deliverWhatsApp(wa, to, lang, params);
     await Notification.create({ channel: 'whatsapp', to, template: ctx.template, order: ctx.order, status: 'sent' });
     return { status: 'sent' as const };
   } catch (err) {

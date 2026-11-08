@@ -16,7 +16,9 @@ import { MediaField } from '../media';
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySettings = any;
-type Diagnostics = { cardGateway: string; sandboxAllowed: boolean; emailConfigured: boolean; whatsappConfigured: boolean };
+/** Status of an email/WhatsApp account saved in the admin (server: channelStatus). */
+type ChannelStatus = { status: 'not_configured' | 'configured' | 'failed'; message: string; enabled: boolean; checkedAt: string | null; usingEnvFallback: boolean };
+type Diagnostics = { cardGateway: string; sandboxAllowed: boolean; emailConfigured: boolean; whatsappConfigured: boolean; email?: ChannelStatus; whatsapp?: ChannelStatus };
 type Hosting = { appRegion: string; databaseRegion: string; mediaRegion: string; mediaStorage: { provider: string; uploadsEnabled: boolean; reason: string; maxImageMb: number; maxVideoMb: number; publicBaseUrl: string } };
 
 type TabKey = 'store' | 'legal' | 'brand' | 'shipping' | 'cod' | 'orders' | 'payments' | 'notifications' | 'seo' | 'hosting';
@@ -385,16 +387,32 @@ export function SettingsPage() {
       {tab === 'notifications' ? (
         <>
           <Card title="Customer order updates (Q28: email and WhatsApp)" actions={saveBtn(() => save({ notifications: s.notifications }))}>
-            <label className="check">
-              <input type="checkbox" checked={s.notifications.emailOrderUpdates} onChange={(e) => set('notifications', 'emailOrderUpdates', e.target.checked)} /> Email updates {diag ? <Configured ok={diag.emailConfigured} /> : null}
-            </label>
-            <label className="check">
-              <input type="checkbox" checked={s.notifications.whatsappOrderUpdates} onChange={(e) => set('notifications', 'whatsappOrderUpdates', e.target.checked)} /> WhatsApp updates {diag ? <Configured ok={diag.whatsappConfigured} /> : null}
-            </label>
-            <p className="muted" style={{ fontSize: 13 }}>A channel sends only when it is ticked here and its provider below is enabled.</p>
+            <div data-testid="q28-status">
+              {(
+                [
+                  ['email', 'emailOrderUpdates', 'Email order updates', diag?.email],
+                  ['whatsapp', 'whatsappOrderUpdates', 'WhatsApp order updates', diag?.whatsapp],
+                ] as const
+              ).map(([k, flag, label, st]) => (
+                <div key={k} className="sum-row" style={{ alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }} data-testid={`q28-${k}`}>
+                  <label className="check" style={{ margin: 0 }}>
+                    <input type="checkbox" checked={s.notifications[flag]} onChange={(e) => set('notifications', flag, e.target.checked)} /> {label}
+                  </label>
+                  <span>
+                    {st ? <ChannelBadge status={st} /> : null}
+                    {st?.message ? <span className="muted" style={{ fontSize: 13 }}> {st.message}</span> : null}
+                    {st && st.status === 'configured' && !st.enabled ? <span className="muted" style={{ fontSize: 13 }}> · account not switched on below</span> : null}
+                    {st?.usingEnvFallback ? <span className="muted" style={{ fontSize: 13 }}> · currently sending with legacy server settings</span> : null}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="muted" style={{ fontSize: 13 }}>
+              Customers receive a channel only when its box is ticked here <strong>and</strong> its account below is configured, tested and switched on. The email account and WhatsApp number are chosen here — no server settings are needed.
+            </p>
           </Card>
           {canPayments ? (
-            <Integrations only={['smtp', 'whatsapp']} />
+            <Integrations only={['smtp', 'whatsapp']} onChanged={() => void get<{ integrations: Diagnostics }>('/api/admin/settings').then((r) => setDiag(r.integrations)).catch(() => undefined)} />
           ) : (
             <Card title="Email & WhatsApp providers">
               <p className="muted">Only Super Administrators (permission “payments:manage”) can view or change the email (SMTP) and WhatsApp credentials.</p>
@@ -795,7 +813,11 @@ function NotificationLog() {
   );
 }
 
-const Configured = ({ ok }: { ok: boolean }) => (ok ? <span className="badge badge--success">configured</span> : <span className="badge badge--warning">provider not enabled</span>);
+function ChannelBadge({ status }: { status: ChannelStatus }) {
+  if (status.status === 'configured') return <span className="badge badge--success" data-status="configured">Configured</span>;
+  if (status.status === 'failed') return <span className="badge badge--danger" data-status="failed">Connection failed</span>;
+  return <span className="badge badge--warning" data-status="not_configured">Not configured</span>;
+}
 
 // ---------------------------------------------------------------------------------------------
 // Gateway / integration credentials
@@ -803,7 +825,7 @@ const Configured = ({ ok }: { ok: boolean }) => (ok ? <span className="badge bad
 
 type FieldView = { key: string; secret: boolean; set: boolean; masked?: string; value?: string; updatedAt?: string | null };
 type ModeView = { fields: FieldView[]; missing: string[]; verification: { status: string; message?: string; checkedAt?: string } };
-type FieldDef = { key: string; label: string; secret: boolean; required: boolean; hint?: string };
+type FieldDef = { key: string; label: string; secret: boolean; required: boolean; hint?: string; options?: { value: string; label: string }[] };
 type IntegrationView = {
   key: string;
   label: string;
@@ -822,10 +844,12 @@ type IntegrationView = {
   modes: Record<'test' | 'live', ModeView>;
   effective: { source: 'admin' | 'env' | 'none'; enabled: boolean; mode: 'test' | 'live'; configured: boolean; error: string | null };
   env: Record<string, string> | null;
+  /** Email/WhatsApp only: status of the configuration saved in the admin. */
+  channel?: ChannelStatus | null;
 };
 type IntegrationsResponse = { integrations: IntegrationView[]; encryptionKeyConfigured: boolean; encryptionAvailable: boolean; production: boolean };
 
-function Integrations({ only }: { only: string[] }) {
+function Integrations({ only, onChanged }: { only: string[]; onChanged?: () => void }) {
   const [data, setData] = useState<IntegrationsResponse | null>(null);
   const [err, setErr] = useState<unknown>(null);
   const load = useCallback(() => {
@@ -848,7 +872,7 @@ function Integrations({ only }: { only: string[] }) {
       {data.integrations
         .filter((i) => only.includes(i.key))
         .map((i) => (
-          <GatewayCard key={i.key} integration={i} canStore={data.encryptionAvailable} production={data.production} onChanged={(next) => setData({ ...data, integrations: data.integrations.map((x) => (x.key === next.key ? next : x)) })} />
+          <GatewayCard key={i.key} integration={i} canStore={data.encryptionAvailable} production={data.production} onChanged={(next) => (setData({ ...data, integrations: data.integrations.map((x) => (x.key === next.key ? next : x)) }), onChanged?.())} />
         ))}
     </>
   );
@@ -872,6 +896,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
   const [err, setErr] = useState<unknown>(null);
   const [confirmLive, setConfirmLive] = useState<{ enabled: boolean; mode: 'test' | 'live' } | null>(null);
   const [typed, setTyped] = useState('');
+  const [testTo, setTestTo] = useState('');
   const toast = useToast();
   const m = i.modes[mode];
   const dirty = Object.keys(draft).length > 0;
@@ -911,8 +936,8 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
     });
   const sendTest = () =>
     run('test', async () => {
-      const r = await post<{ sent: boolean; to: string }>('/api/admin/integrations/smtp/test-message');
-      toast(`Test email sent to ${r.to}`);
+      const r = await post<{ sent: boolean; to: string; from: string }>(`/api/admin/integrations/${i.key}/test-message`, { to: testTo.trim() || undefined });
+      toast(i.key === 'smtp' ? `Test email sent to ${r.to} from ${r.from}` : `Test WhatsApp message sent to +${r.to} from +${r.from}`);
     });
   const requestActivate = (enabled: boolean, target: 'test' | 'live') => {
     if (enabled && i.kind === 'payment' && target === 'live' && !(i.enabled && i.activeMode === 'live')) setConfirmLive({ enabled, mode: target });
@@ -933,6 +958,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
           ) : (
             <span className="badge">stored only — not connected yet</span>
           )}
+          {i.channel ? <ChannelBadge status={i.channel} /> : null}
           <span className="badge">{sourceLabel}</span>
         </div>
       </div>
@@ -982,6 +1008,17 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
                     </button>
                   ) : null}
                 </div>
+              ) : editing && f.options ? (
+                <select className="select" value={(draft[f.key] as string | undefined) ?? view?.value ?? ''} onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}>
+                  <option value="" disabled>
+                    Choose…
+                  </option>
+                  {f.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
               ) : editing ? (
                 <input
                   className="input ltr"
@@ -1001,17 +1038,28 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
         {i.verifiable ? <VerificationBadge v={m.verification} /> : <span className="muted">Automatic connection test not available for this integration.</span>}
         <div className="actions">
           <button className="btn btn--primary btn--sm" disabled={!dirty || !canStore || Boolean(busy)} onClick={() => void saveCreds()}>
-            {busy === 'save' ? 'Saving…' : i.singleMode ? 'Save settings' : `Save ${mode} credentials`}
+            {busy === 'save' ? 'Saving…' : i.singleMode ? 'Save configuration' : `Save ${mode} credentials`}
           </button>
           {i.verifiable ? (
             <button className="btn btn--outline btn--sm" disabled={dirty || Boolean(busy) || m.missing.length > 0} onClick={() => void verify()} title={dirty ? 'Save first' : undefined}>
               {busy === 'verify' ? 'Testing…' : 'Test connection'}
             </button>
           ) : null}
-          {i.key === 'smtp' ? (
-            <button className="btn btn--outline btn--sm" disabled={dirty || Boolean(busy) || m.missing.length > 0} onClick={() => void sendTest()} title="Sends a real email to your own address">
-              {busy === 'test' ? 'Sending…' : 'Send test email to me'}
-            </button>
+          {i.key === 'smtp' || i.key === 'whatsapp' ? (
+            <span className="test-send" style={{ display: 'inline-flex', gap: 6 }}>
+              <input
+                className="input ltr"
+                style={{ width: 220 }}
+                type={i.key === 'smtp' ? 'email' : 'tel'}
+                aria-label={i.key === 'smtp' ? 'Test recipient email' : 'Test recipient WhatsApp number'}
+                placeholder={i.key === 'smtp' ? 'recipient@example.com' : '9665XXXXXXXX'}
+                value={testTo}
+                onChange={(e) => setTestTo(e.target.value)}
+              />
+              <button className="btn btn--outline btn--sm" disabled={dirty || Boolean(busy) || m.missing.length > 0 || !testTo.trim()} onClick={() => void sendTest()} title={dirty ? 'Save first' : 'Sends a real message with the saved settings'}>
+                {busy === 'test' ? 'Sending…' : i.key === 'smtp' ? 'Send test email' : 'Send test WhatsApp message'}
+              </button>
+            </span>
           ) : null}
         </div>
       </div>

@@ -35,12 +35,18 @@ describe('integration credential rules', () => {
     expect(validateFieldValue('smtp', 'port', 'live', '0')).toMatch(/between 1 and 65535/);
     expect(validateFieldValue('smtp', 'port', 'live', '70000')).toMatch(/between 1 and 65535/);
     // The sender may contain a display name with spaces, but never line breaks (header injection).
-    expect(validateFieldValue('smtp', 'from', 'live', 'CELIBERY International <no-reply@celibery.sa>')).toBeNull();
-    expect(validateFieldValue('smtp', 'from', 'live', 'no-reply@celibery.sa')).toBeNull();
-    expect(validateFieldValue('smtp', 'from', 'live', 'CELIBERY\r\nBcc: x@evil.test <a@b.co>')).toMatch(/line breaks/);
-    expect(validateFieldValue('smtp', 'from', 'live', 'not an address')).toMatch(/email address/);
+    expect(validateFieldValue('smtp', 'fromEmail', 'live', 'no-reply@celibery.sa')).toBeNull();
+    expect(validateFieldValue('smtp', 'fromEmail', 'live', 'CELIBERY <no-reply@celibery.sa>')).toMatch(/spaces|valid email/);
+    expect(validateFieldValue('smtp', 'fromEmail', 'live', 'not-an-address')).toMatch(/valid email/);
+    expect(validateFieldValue('smtp', 'replyTo', 'live', 'support@celibery.sa')).toBeNull();
+    // The display name may contain spaces, but never line breaks (header injection) or address syntax.
+    expect(validateFieldValue('smtp', 'fromName', 'live', 'CELIBERY International')).toBeNull();
+    expect(validateFieldValue('smtp', 'fromName', 'live', 'CELIBERY\r\nBcc: x@evil.test')).toMatch(/line breaks/);
+    expect(validateFieldValue('smtp', 'fromName', 'live', 'Evil <a@b.co>')).toMatch(/cannot contain/);
+    expect(validateFieldValue('smtp', 'security', 'live', 'ssl')).toBeNull();
+    expect(validateFieldValue('smtp', 'security', 'live', 'tls')).toMatch(/STARTTLS or SSL/);
     expect(validateFieldValue('smtp', 'user', 'live', 'a user')).toMatch(/spaces/);
-    expect(missingRequired('smtp', { host: true, port: true })).toEqual(['from']);
+    expect(missingRequired('smtp', { host: true, port: true })).toEqual(['security', 'fromEmail']);
   });
   it('WhatsApp settings: numeric phone number ID, template name and language codes', () => {
     expect(validateFieldValue('whatsapp', 'phoneNumberId', 'live', '109876543210')).toBeNull();
@@ -50,12 +56,17 @@ describe('integration credential rules', () => {
     expect(validateFieldValue('whatsapp', 'templateLangEn', 'live', 'en_US')).toBeNull();
     expect(validateFieldValue('whatsapp', 'templateLangAr', 'live', 'arabic')).toMatch(/Language codes/);
     expect(missingRequired('whatsapp', { phoneNumberId: true })).toEqual(['accessToken', 'orderTemplate']);
+    expect(validateFieldValue('whatsapp', 'businessPhoneNumber', 'live', '966500000000')).toBeNull();
+    expect(validateFieldValue('whatsapp', 'businessPhoneNumber', 'live', '+96650')).toMatch(/international format/);
+    expect(validateFieldValue('whatsapp', 'apiVersion', 'live', 'v21.0')).toBeNull();
+    expect(validateFieldValue('whatsapp', 'apiVersion', 'live', '21')).toMatch(/v20.0/);
   });
   it('a verification covers every connection value for SMTP, and only the secret key for gateways (unchanged)', () => {
-    const base = { host: 'smtp.a.test', port: '587', user: 'u', pass: 'p', from: 'a@b.co' };
+    const base = { host: 'smtp.a.test', port: '587', security: 'starttls', user: 'u', pass: 'p', fromEmail: 'a@b.co' };
     expect(verificationSubject('smtp', base)).not.toBe(verificationSubject('smtp', { ...base, host: 'smtp.b.test' }));
     expect(verificationSubject('smtp', base)).not.toBe(verificationSubject('smtp', { ...base, pass: 'q' }));
-    expect(verificationSubject('smtp', base)).toBe(verificationSubject('smtp', { ...base, from: 'c@d.co' })); // sender is not part of the handshake
+    expect(verificationSubject('smtp', base)).toBe(verificationSubject('smtp', { ...base, fromEmail: 'c@d.co' })); // sender is not part of the handshake
+    expect(verificationSubject('smtp', base)).not.toBe(verificationSubject('smtp', { ...base, security: 'ssl' }));
     expect(verificationSubject('moyasar', { secretKey: 'sk_test_1', publishableKey: 'pk' })).toBe('sk_test_1');
   });
 });

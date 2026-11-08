@@ -40,13 +40,24 @@ test.describe.serial('admin dashboard controls', () => {
     await expect(card).toBeVisible();
     await expect(card.getByRole('tab')).toHaveCount(0); // single credential set, no test/live tabs
     await expect(card).toContainText('Not configured');
+    // Q28 status reflects the admin configuration (no SMTP/WhatsApp environment variables on this server).
+    const q28 = page.getByTestId('q28-status');
+    await expect(q28.getByTestId('q28-email').locator('[data-status]')).toHaveAttribute('data-status', 'not_configured');
+    await expect(q28.getByTestId('q28-whatsapp').locator('[data-status]')).toHaveAttribute('data-status', 'not_configured');
+    // The WhatsApp account card offers every Q28 field.
+    const wa = page.locator('section.gateway', { hasText: 'WhatsApp Business (Cloud API)' });
+    for (const label of ['WhatsApp Business phone number', 'Phone number ID', 'WhatsApp Business Account ID', 'Meta access token', 'Graph API version', 'Order update template name']) await expect(wa.getByLabel(new RegExp('^' + label))).toBeVisible();
+    await expect(wa.getByLabel('Test recipient WhatsApp number')).toBeVisible();
+    await expect(wa.getByRole('button', { name: 'Send test WhatsApp message' })).toBeVisible();
 
-    await card.getByLabel('SMTP server').fill('127.0.0.1');
-    await card.getByLabel('Port').fill(String(sink.port));
-    await card.getByLabel('Username').fill('mailer');
-    await card.getByLabel('Password / API key').fill('e2e-smtp-pass-77');
-    await card.getByLabel('Sender (From)').fill('CELIBERY International <no-reply@celibery.test>');
-    await card.getByRole('button', { name: 'Save settings' }).click();
+    await card.getByLabel('SMTP host').fill('127.0.0.1');
+    await card.getByLabel('SMTP port').fill(String(sink.port));
+    await card.getByLabel('SMTP security').selectOption('starttls');
+    await card.getByLabel('SMTP username').fill('mailer');
+    await card.getByLabel('SMTP password').fill('e2e-smtp-pass-77');
+    await card.getByLabel('Sender email address').fill('no-reply@celibery.test');
+    await card.getByLabel('Sender display name').fill('CELIBERY International');
+    await card.getByRole('button', { name: 'Save configuration' }).click();
     await expect(card).toContainText('Managed here');
     // The password is never shown again — only a masked preview.
     await expect(card.locator('.secret-row code')).toContainText('••••');
@@ -54,10 +65,12 @@ test.describe.serial('admin dashboard controls', () => {
 
     await card.getByRole('button', { name: 'Test connection' }).click();
     await expect(card).toContainText('connection verified');
+    await expect(q28.getByTestId('q28-email').locator('[data-status]')).toHaveAttribute('data-status', 'configured');
     await card.getByRole('button', { name: 'Enable', exact: true }).click();
     await expect(card.locator('.badge', { hasText: /^enabled$/ })).toBeVisible();
 
-    await card.getByRole('button', { name: 'Send test email to me' }).click();
+    await card.getByLabel('Test recipient email').fill(creds().email);
+    await card.getByRole('button', { name: 'Send test email' }).click();
     await expect.poll(() => sink.messages.some((m) => m.to.includes(creds().email))).toBe(true);
 
     const log = page.locator('.a-card', { hasText: 'Delivery log' });
