@@ -69,6 +69,7 @@ export function SettingsPage() {
           announcement: { enabled: true, text: emptyL, link: '', ...(r.settings.announcement ?? {}) },
           business: { description: emptyL, ...r.settings.business },
           checkoutRecovery: { enabled: true, abandonAfterMinutes: 60, retentionDays: 30, ...(r.settings.checkoutRecovery ?? {}) },
+          orderNotifications: { confirmationEmail: true, whatsappPrepare: true, whatsappBusinessNumber: '', ...(r.settings.orderNotifications ?? {}) },
           commerce: { shippingAvailable: true, shippingUnavailableMessage: emptyL, fulfilmentMode: 'manual', codAllowedCities: [], ...c, ...money, codCitiesText: (c.codAllowedCities ?? []).join('\n') },
         });
         setDiag(r.integrations);
@@ -441,6 +442,14 @@ export function SettingsPage() {
               Customers receive a channel only when its box is ticked here <strong>and</strong> its account below is configured, tested and switched on. The email account and WhatsApp number are chosen here — no server settings are needed.
             </p>
           </Card>
+          <OrderConfirmationCard
+            value={s.orderNotifications}
+            emailMasterOn={s.notifications.emailOrderUpdates !== false}
+            email={diag?.email}
+            saving={saving}
+            onChange={(k, v) => set('orderNotifications', k, v)}
+            onSave={() => save({ orderNotifications: s.orderNotifications })}
+          />
           {canPayments ? (
             <Integrations only={['smtp', 'whatsapp']} onChanged={() => void get<{ integrations: Diagnostics }>('/api/admin/settings').then((r) => setDiag(r.integrations)).catch(() => undefined)} />
           ) : (
@@ -623,6 +632,148 @@ function ShippingZones({ zones, deliverToUnlistedCities, saving, onSave }: { zon
 // Message templates (email + WhatsApp status text)
 // ---------------------------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------------------------
+// Order confirmation (email + prepared WhatsApp message)
+// ---------------------------------------------------------------------------------------------
+
+type OrderNotificationSettings = { confirmationEmail: boolean; whatsappPrepare: boolean; whatsappBusinessNumber: string };
+type WaTest = { status: 'prepared'; to: string; from: string; message: string; link: string };
+
+function OrderConfirmationCard({
+  value,
+  emailMasterOn,
+  email,
+  saving,
+  onChange,
+  onSave,
+}: {
+  value: OrderNotificationSettings;
+  emailMasterOn: boolean;
+  email?: ChannelStatus;
+  saving: boolean;
+  onChange: (key: keyof OrderNotificationSettings, v: unknown) => void;
+  onSave: () => void;
+}) {
+  const toast = useToast();
+  const [testTo, setTestTo] = useState('');
+  const [testPhone, setTestPhone] = useState('');
+  const [testLang, setTestLang] = useState<'ar' | 'en'>('ar');
+  const [busy, setBusy] = useState('');
+  const [err, setErr] = useState<unknown>(null);
+  const [emailResult, setEmailResult] = useState<string>('');
+  const [wa, setWa] = useState<WaTest | null>(null);
+  const run = async (label: string, fn: () => Promise<void>) => {
+    setErr(null);
+    setBusy(label);
+    try {
+      await fn();
+    } catch (e) {
+      setErr(e);
+    } finally {
+      setBusy('');
+    }
+  };
+  const smtpReady = email?.status === 'configured' && email.enabled;
+  return (
+    <Card title="Order confirmation" actions={
+      <button className="btn btn--primary btn--sm" disabled={saving} onClick={onSave} data-testid="order-confirmation-save">
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+    }>
+      <div data-testid="order-confirmation-settings">
+        <h3 style={{ fontSize: 15, margin: '0 0 6px' }}>Email</h3>
+        <label className="check">
+          <input type="checkbox" checked={value.confirmationEmail} onChange={(e) => onChange('confirmationEmail', e.target.checked)} data-testid="oc-email-enabled" /> Email an order confirmation to the customer
+        </label>
+        <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+          Sent once per order, after the order is confirmed: cash-on-delivery orders right away, online payments once the payment is confirmed. It contains the order number, date, products,
+          quantities, prices, shipping, total, payment method, status and address, in the customer’s language. It replaces the short “Order received” / “Payment confirmed” emails, so the customer gets one email, not two.
+          Failed sends are retried automatically (up to 5 attempts); placing the order never depends on the email.
+        </p>
+        <p style={{ fontSize: 13 }}>
+          Email account:{' '}
+          {email ? <ChannelBadge status={email} /> : null}
+          {email && !smtpReady ? <span className="muted"> — set up and switch on the email account under “Email & WhatsApp providers” below, or confirmations are recorded as skipped.</span> : null}
+          {!emailMasterOn ? <span className="alert alert--warning" style={{ display: 'block', marginTop: 6 }}>“Email order updates” above is switched off, so no order emails (including confirmations) are sent.</span> : null}
+        </p>
+
+        <h3 style={{ fontSize: 15, margin: '16px 0 6px' }}>WhatsApp (without the WhatsApp API)</h3>
+        <label className="check">
+          <input type="checkbox" checked={value.whatsappPrepare} onChange={(e) => onChange('whatsappPrepare', e.target.checked)} data-testid="oc-wa-enabled" /> Prepare a WhatsApp confirmation for every order
+        </label>
+        <div className="form-grid form-grid--2 settings-form-grid">
+          <F label="Official CELIBERY WhatsApp Business number" hint="Full international number, e.g. +966 5X XXX XXXX. Staff must be signed in to WhatsApp with this number when they send.">
+            <input className="input ltr" inputMode="tel" value={value.whatsappBusinessNumber} onChange={(e) => onChange('whatsappBusinessNumber', e.target.value)} placeholder="+9665XXXXXXXX" data-testid="oc-wa-number" />
+          </F>
+        </div>
+        <p className="alert alert--warning" style={{ fontSize: 13 }} data-testid="oc-wa-explainer">
+          Without WhatsApp Business Platform (API) access, a website cannot send WhatsApp messages by itself. The system prepares the confirmation message and a WhatsApp link to the customer’s number;
+          on the order page a staff member clicks <strong>Open WhatsApp &amp; Send</strong> and presses Send in WhatsApp. The order shows “Prepared” → “Opened” → “Sent (confirmed by staff)” — a message is never shown
+          as sent just because WhatsApp was opened, and WhatsApp does not report delivery in this mode.
+        </p>
+
+        <h3 style={{ fontSize: 15, margin: '16px 0 6px' }}>Test</h3>
+        <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>Uses a clearly marked sample order and the saved template (edit it in the template editor below: “Order confirmation”).</p>
+        <ErrorBox error={err} />
+        <div className="form-grid form-grid--2 settings-form-grid">
+          <F label="Language">
+            <select className="select" value={testLang} onChange={(e) => setTestLang(e.target.value as 'ar' | 'en')}>
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </F>
+          <span />
+          <F label="Send a test confirmation email to">
+            <input className="input ltr" type="email" value={testTo} onChange={(e) => setTestTo(e.target.value)} placeholder="you@example.com" data-testid="oc-test-email" />
+          </F>
+          <div style={{ alignSelf: 'end' }}>
+            <button
+              className="btn btn--outline btn--sm"
+              disabled={Boolean(busy) || !testTo.trim()}
+              data-testid="oc-test-email-send"
+              onClick={() =>
+                void run('email', async () => {
+                  setEmailResult('');
+                  const r = await post<{ sent: boolean; to: string; from: string }>('/api/admin/order-notifications/test-email', { to: testTo.trim(), lang: testLang });
+                  setEmailResult(`Test email accepted by the mail server: from ${r.from} to ${r.to}.`);
+                  toast('Test email sent');
+                })
+              }
+            >
+              {busy === 'email' ? 'Sending…' : 'Send test email'}
+            </button>
+          </div>
+          <F label="Prepare a test WhatsApp message for">
+            <input className="input ltr" inputMode="tel" value={testPhone} onChange={(e) => setTestPhone(e.target.value)} placeholder="05XXXXXXXX" data-testid="oc-test-phone" />
+          </F>
+          <div style={{ alignSelf: 'end' }}>
+            <button
+              className="btn btn--outline btn--sm"
+              disabled={Boolean(busy) || !testPhone.trim()}
+              data-testid="oc-test-wa-prepare"
+              onClick={() => void run('wa', async () => setWa(await post<WaTest>('/api/admin/order-notifications/test-whatsapp', { phone: testPhone.trim(), lang: testLang })))}
+            >
+              {busy === 'wa' ? 'Preparing…' : 'Prepare test message'}
+            </button>
+          </div>
+        </div>
+        {emailResult ? <p className="alert alert--success" data-testid="oc-test-email-result">{emailResult}</p> : null}
+        {wa ? (
+          <div data-testid="oc-test-wa-result" style={{ border: '1px solid var(--line, #ddd)', borderRadius: 12, padding: 12, marginTop: 8 }}>
+            <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+              Prepared for <span className="ltr">+{wa.to}</span> — not sent. {wa.from ? <>Send it from <span className="ltr">+{wa.from}</span>.</> : 'Set the business number above.'}
+            </p>
+            <p style={{ whiteSpace: 'pre-wrap' }} dir={testLang === 'ar' ? 'rtl' : 'ltr'}>{wa.message}</p>
+            <a className="btn btn--outline btn--sm" href={wa.link} target="_blank" rel="noopener noreferrer">
+              Open WhatsApp
+            </a>
+          </div>
+        ) : null}
+      </div>
+    </Card>
+  );
+}
+
 type TplContent = { subject: string; body: string; whatsapp: string };
 type TemplateView = {
   key: string;
@@ -630,6 +781,8 @@ type TemplateView = {
   group: 'order' | 'return' | 'account';
   variables: string[];
   whatsapp: boolean;
+  /** 'chat' = the whole click-to-chat message staff send manually; 'param' = Meta template parameter {{2}}. */
+  whatsappMode?: 'param' | 'chat';
   defaults: Record<'ar' | 'en', TplContent>;
   effective: Record<'ar' | 'en', TplContent>;
   customized: boolean;
@@ -638,7 +791,7 @@ type Preview = { email: { subject: string; html: string; text: string }; whatsap
 
 function MessageTemplates() {
   const [list, setList] = useState<TemplateView[] | null>(null);
-  const [key, setKey] = useState('order.order_placed');
+  const [key, setKey] = useState('order.confirmation');
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [draft, setDraft] = useState<Record<'ar' | 'en', TplContent> | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -697,8 +850,8 @@ function MessageTemplates() {
       }
     >
       <p className="muted" style={{ fontSize: 13 }}>
-        Plain text with placeholders. Available: {tpl.variables.map((v) => <code key={v} className="ltr" style={{ marginInlineEnd: 6 }}>{`{{${v}}}`}</code>)}. The CELIBERY header,{' '}
-        {tpl.group === 'order' ? 'order total, tracking number and ' : ''}the button with the link are added automatically and cannot be removed.
+        Plain text with placeholders. Available: {tpl.variables.map((v) => <code key={v} className="ltr" style={{ marginInlineEnd: 6 }}>{`{{${v}}}`}</code>)}. Unknown placeholders are refused when saving. The CELIBERY header,{' '}
+        {tpl.key === 'order.confirmation' ? 'the full order summary (products, quantities, prices, shipping, total, payment method, status, address) and ' : tpl.group === 'order' ? 'order total, tracking number and ' : ''}the button with the link are added automatically and cannot be removed.
       </p>
       <ErrorBox error={err} />
       <Tabs tabs={[['ar', 'العربية'], ['en', 'English']]} value={lang} onChange={(l) => (setLang(l), setPreview(null))} />
@@ -709,7 +862,11 @@ function MessageTemplates() {
         <F label="Email text" hint="Blank line = new paragraph">
           <textarea className="input" rows={5} value={d.body} onChange={(e) => setField('body', e.target.value)} />
         </F>
-        {tpl.whatsapp ? (
+        {tpl.whatsapp && tpl.whatsappMode === 'chat' ? (
+          <F label="WhatsApp message (prepared for staff to send)" hint="Staff send this from the CELIBERY WhatsApp Business number with “Open WhatsApp & Send” on the order page. Line breaks allowed, max 1024 characters. Nothing is sent automatically.">
+            <textarea className="input" rows={9} value={d.whatsapp} onChange={(e) => setField('whatsapp', e.target.value)} data-testid="tpl-whatsapp" />
+          </F>
+        ) : tpl.whatsapp ? (
           <F
             label="WhatsApp status text (template parameter {{2}})"
             hint="Sent inside your Meta-approved WhatsApp template (name set in the WhatsApp integration). One line, max 1024 characters. Changing the template itself requires re-approval in Meta WhatsApp Manager."
@@ -762,12 +919,17 @@ function MessageTemplates() {
             <p style={{ marginTop: 0 }}>
               <strong>{preview.email.subject}</strong>
             </p>
-            <div style={{ whiteSpace: 'pre-wrap' }}>{preview.email.text.replace(/\nhttps?:\/\/\S+$/, '')}</div>
+            {tpl.whatsappMode === 'chat' ? (
+              // The real email built from a sample order; sandboxed (no scripts, no navigation).
+              <iframe title="Email preview" sandbox="" srcDoc={preview.email.html} style={{ width: '100%', height: 560, border: '1px solid var(--line, #ddd)', borderRadius: 8, background: '#f5f5f5' }} data-testid="tpl-email-frame" />
+            ) : (
+              <div style={{ whiteSpace: 'pre-wrap' }}>{preview.email.text.replace(/\nhttps?:\/\/\S+$/, '')}</div>
+            )}
           </div>
           {preview.whatsapp != null ? (
             <div style={{ padding: 16, borderTop: '1px solid var(--line, #ddd)' }}>
-              <p className="muted" style={{ fontSize: 12, margin: 0 }}>WhatsApp parameter {'{{2}}'}</p>
-              <p style={{ margin: 0 }}>{preview.whatsapp}</p>
+              <p className="muted" style={{ fontSize: 12, margin: 0 }}>{tpl.whatsappMode === 'chat' ? 'Prepared WhatsApp message (sample order)' : <>WhatsApp parameter {'{{2}}'}</>}</p>
+              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }} data-testid="tpl-whatsapp-preview">{preview.whatsapp}</p>
             </div>
           ) : null}
         </div>

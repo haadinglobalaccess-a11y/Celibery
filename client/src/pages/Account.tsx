@@ -160,6 +160,7 @@ export function AccountAddresses() {
           + {t.account.addAddress}
         </button>
       )}
+      {err && !editing ? <p className="alert alert--error">{err}</p> : null}
       {!data.length && !editing ? <p className="muted">{t.account.noAddresses}</p> : null}
       {data.map((a) => (
         <div key={a._id} className="order-card">
@@ -176,7 +177,14 @@ export function AccountAddresses() {
             <button
               className="btn btn--ghost btn--sm"
               onClick={async () => {
-                await del(`/api/me/addresses/${a._id}`);
+                // Confirm first; a failed delete is shown instead of being silently ignored.
+                if (!window.confirm(t.account.deleteAddressConfirm)) return;
+                try {
+                  await del(`/api/me/addresses/${a._id}`);
+                  setErr('');
+                } catch (ex) {
+                  setErr((ex as Error).message);
+                }
                 reload();
               }}
             >

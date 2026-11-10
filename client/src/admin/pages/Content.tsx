@@ -79,9 +79,24 @@ function HomepageSettings() {
   const [h, setH] = useState<Homepage | null>(null);
   const [err, setErr] = useState<unknown>(null);
   const toast = useToast();
+  const [loadErr, setLoadErr] = useState<unknown>(null);
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
-    get<{ settings: { homepage: Partial<Homepage> } }>('/api/admin/settings').then((r) => setH({ ...HOMEPAGE_DEFAULTS, ...r.settings.homepage }));
-  }, []);
+    setLoadErr(null);
+    get<{ settings: { homepage: Partial<Homepage> } }>('/api/admin/settings')
+      .then((r) => setH({ ...HOMEPAGE_DEFAULTS, ...r.settings.homepage }))
+      // Without this a failed request left the homepage editor spinning forever.
+      .catch(setLoadErr);
+  }, [retry]);
+  if (loadErr && !h)
+    return (
+      <>
+        <ErrorBox error={loadErr} />
+        <button type="button" className="btn btn--outline btn--sm" onClick={() => setRetry((n) => n + 1)}>
+          Retry
+        </button>
+      </>
+    );
   if (!h) return <Spinner />;
   const save = async (e: FormEvent) => {
     e.preventDefault();

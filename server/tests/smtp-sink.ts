@@ -9,6 +9,8 @@ export type SinkMessage = { from: string; to: string[]; data: string };
 
 export async function startSmtpSink(creds?: { user: string; pass: string }) {
   const messages: SinkMessage[] = [];
+  /** When true, every MAIL FROM is answered with a temporary failure (simulates a mail-server outage). */
+  let failing = false;
   const sockets = new Set<net.Socket>();
   const server = net.createServer((socket) => {
     sockets.add(socket);
@@ -68,7 +70,8 @@ export async function startSmtpSink(creds?: { user: string; pass: string }) {
             send('334 VXNlcm5hbWU6');
           } else send('504 Unrecognized authentication type');
         } else if (cmd === 'MAIL') {
-          if (!authed) send('530 Authentication required');
+          if (failing) send('451 4.3.0 Temporary failure, try again later');
+          else if (!authed) send('530 Authentication required');
           else (cur.from = line.replace(/^MAIL FROM:\s*/i, '')), send('250 OK');
         } else if (cmd === 'RCPT') cur.to.push(line.replace(/^RCPT TO:\s*/i, '').replace(/[<>]/g, '')), send('250 OK');
         else if (cmd === 'DATA') (inData = true), send('354 End data with <CR><LF>.<CR><LF>');
@@ -84,6 +87,9 @@ export async function startSmtpSink(creds?: { user: string; pass: string }) {
   return {
     port,
     messages,
+    setFailing: (v: boolean) => {
+      failing = v;
+    },
     close: () =>
       new Promise<void>((resolve) => {
         for (const s of sockets) s.destroy();

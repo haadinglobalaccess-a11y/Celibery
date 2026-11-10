@@ -130,6 +130,19 @@ const settingsUpdate = z
       })
       .partial(),
     reviews: z.object({ enabled: z.boolean() }).partial(),
+    orderNotifications: z
+      .object({
+        confirmationEmail: z.boolean(),
+        whatsappPrepare: z.boolean(),
+        // Stored as digits only (international format without "+", e.g. 9665XXXXXXXX); empty = not set.
+        whatsappBusinessNumber: z
+          .string()
+          .trim()
+          .max(24)
+          .transform((v) => v.replace(/[\s()+-]/g, ''))
+          .refine((v) => v === '' || /^[1-9]\d{7,14}$/.test(v), 'Enter the full international number, e.g. +966 5X XXX XXXX'),
+      })
+      .partial(),
     checkoutRecovery: z.object({ enabled: z.boolean(), abandonAfterMinutes: z.number().int().min(5).max(10080), retentionDays: z.number().int().min(1).max(365) }).partial(),
     seo: z.object({ title: loc, description: loc, allowAiCrawlers: z.boolean() }).partial(),
   })

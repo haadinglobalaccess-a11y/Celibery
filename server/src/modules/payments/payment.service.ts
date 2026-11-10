@@ -2,6 +2,7 @@ import { env } from '../../config/env';
 import { badRequest, notFound, serviceUnavailable, unprocessable } from '../../lib/errors';
 import { logger } from '../../lib/logger';
 import { notifyOrder } from '../../integrations/notifications';
+import { queueOrderConfirmation } from '../../integrations/notifications/order-confirmation';
 import { integration, loadIntegrations } from '../../integrations/credentials';
 import { effectiveCardGateway, providerByName, providerFor, sandboxAllowed, type OnlineMethod } from '../../integrations/payments';
 import { moyasarProvider } from '../../integrations/payments/moyasar';
@@ -147,6 +148,7 @@ export async function applyGatewayStatus(paymentId: string, result: StatusResult
     );
     if (confirmed) {
       void notifyOrder(confirmed.toObject(), 'payment_confirmed', orderLink(confirmed));
+      void queueOrderConfirmation(confirmed._id); // once per order (idempotent)
     } else {
       // Paid after the order was cancelled/expired: keep the money visible and flag for staff.
       // (Never touches an order whose payment was already recorded or refunded.)

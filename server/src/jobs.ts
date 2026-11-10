@@ -3,6 +3,7 @@ import { cleanupAbandonedUploads } from './modules/admin/media.service';
 import { releaseExpiredReservations } from './modules/orders/order.service';
 import { reconcileOpenRefunds } from './modules/payments/refund.service';
 import { markAbandonedDrafts } from './modules/checkout-drafts/draft.service';
+import { retryOrderNotifications } from './integrations/notifications/order-confirmation';
 
 /**
  * Scheduled maintenance. On Vercel these run through Vercel Cron (vercel.json → /api/cron/*).
@@ -11,11 +12,12 @@ import { markAbandonedDrafts } from './modules/checkout-drafts/draft.service';
  * (cron + scheduler, or several instances) are safe.
  */
 
-/** Cancels unpaid online orders whose stock reservation expired and returns the stock; records abandoned checkouts. */
+/** Cancels unpaid online orders whose stock reservation expired and returns the stock; records abandoned checkouts; retries failed order confirmation emails. */
 export async function runReservationJob() {
   const reservations = await releaseExpiredReservations(200);
   const checkouts = await markAbandonedDrafts();
-  return { ...reservations, checkouts };
+  const confirmations = await retryOrderNotifications(50);
+  return { ...reservations, checkouts, confirmations };
 }
 
 /** Refunds whose gateway outcome was uncertain, and abandoned media uploads. */

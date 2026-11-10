@@ -74,6 +74,25 @@ describe('authentication', () => {
     expect((await client().post('/api/auth/login').send({ email, password: 'NewPass123' })).status).toBe(200);
   });
 
+  it('changes the password: needs the current one, signs out other devices, keeps this one signed in', async () => {
+    const { c, email } = await createCustomer();
+    const other = client();
+    expect((await other.post('/api/auth/login').send({ email, password: 'Passw0rd!x' })).status).toBe(200);
+
+    const wrong = await c.post('/api/auth/change-password').send({ currentPassword: 'Not-it-123', newPassword: 'Changed-Pass-9' });
+    expect(wrong.status).toBe(400);
+    expect(wrong.body.error.code).toBe('WRONG_PASSWORD');
+    expect((await c.post('/api/auth/change-password').send({ currentPassword: 'Passw0rd!x', newPassword: 'short' })).status).toBe(400);
+
+    const ok = await c.post('/api/auth/change-password').send({ currentPassword: 'Passw0rd!x', newPassword: 'Changed-Pass-9' });
+    expect(ok.status).toBe(200);
+    expect((await c.get('/api/auth/me')).body.data.email).toBe(email); // this session was re-issued
+    expect((await other.get('/api/auth/me')).body.data).toBeNull(); // other sessions revoked
+    expect((await client().post('/api/auth/login').send({ email, password: 'Passw0rd!x' })).status).toBe(401);
+    expect((await client().post('/api/auth/login').send({ email, password: 'Changed-Pass-9' })).status).toBe(200);
+    expect((await client().post('/api/auth/change-password').send({ currentPassword: 'x', newPassword: 'Changed-Pass-9' })).status).toBe(401); // signed out
+  });
+
   it('requires the CSRF header on state-changing requests', async () => {
     const r = await request(app).post('/api/auth/login').send({ email: 'sara@test.local', password: 'Secret123' });
     expect(r.status).toBe(403);

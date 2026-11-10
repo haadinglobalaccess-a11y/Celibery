@@ -31,12 +31,19 @@ export type TemplateDef = {
   variables: string[];
   /** Sent to customers on WhatsApp too (status text parameter). */
   whatsapp: boolean;
+  /**
+   * 'param' (default): the WhatsApp text is parameter {{2}} of the Meta-approved template (one line).
+   * 'chat': the WhatsApp text is the whole click-to-chat message staff send manually (line breaks allowed).
+   */
+  whatsappMode?: 'param' | 'chat';
   defaults: Record<Lang, TemplateContent>;
 };
 
 const ORDER_VARS = ['name', 'orderNumber', 'total', 'trackingNumber', 'storeName'];
 const RETURN_VARS = ['name', 'orderNumber', 'returnNumber', 'refundAmount', 'note', 'storeName'];
 const ACCOUNT_VARS = ['name', 'storeName'];
+/** Order confirmation (email + prepared WhatsApp message). */
+export const CONFIRMATION_VARS = ['customer_name', 'order_number', 'order_date', 'order_total', 'currency', 'payment_method', 'order_status', 'products', 'shipping_address', 'tracking_number', 'store_name'];
 
 const order = (key: string, label: string, ar: [string, string], en: [string, string]): TemplateDef => ({
   key: `order.${key}`,
@@ -52,6 +59,26 @@ const order = (key: string, label: string, ar: [string, string], en: [string, st
 const ret = (key: string, label: string, ar: [string, string], en: [string, string]): TemplateDef => ({ ...order(key, label, ar, en), group: 'return', variables: RETURN_VARS });
 
 export const TEMPLATES: TemplateDef[] = [
+  {
+    key: 'order.confirmation',
+    label: 'Order confirmation (email + WhatsApp message)',
+    group: 'order',
+    variables: CONFIRMATION_VARS,
+    whatsapp: true,
+    whatsappMode: 'chat',
+    defaults: {
+      ar: {
+        subject: 'تأكيد الطلب {{order_number}} — {{store_name}}',
+        body: 'مرحباً {{customer_name}}،\n\nشكراً لتسوقك من {{store_name}}! تم تأكيد طلبك رقم {{order_number}}، وتجد تفاصيله أدناه.\n\nسنبلغك فور شحن طلبك.',
+        whatsapp: 'مرحباً {{customer_name}}،\n\nشكراً لتسوقك من {{store_name}}!\n\nتم استلام طلبك رقم {{order_number}} بنجاح.\n\nالمنتجات:\n{{products}}\n\nإجمالي الطلب: {{order_total}} {{currency}}\nطريقة الدفع: {{payment_method}}\n\nنقدّر ثقتك في {{store_name}}.',
+      },
+      en: {
+        subject: 'Order confirmation {{order_number}} — {{store_name}}',
+        body: 'Hello {{customer_name}},\n\nThank you for shopping with {{store_name}}! Your order {{order_number}} has been confirmed — the details are below.\n\nWe will let you know as soon as it ships.',
+        whatsapp: 'Hello {{customer_name}},\n\nThank you for shopping with {{store_name}}!\n\nYour order {{order_number}} has been successfully received.\n\nItems:\n{{products}}\n\nOrder Total: {{order_total}} {{currency}}\nPayment method: {{payment_method}}\n\nWe appreciate your trust in {{store_name}}.',
+      },
+    },
+  },
   order('order_placed', 'Order received', ['تم استلام طلبك {{orderNumber}}', 'شكراً لتسوقك معنا. استلمنا طلبك وسنبلغك بكل تحديث.'], ['We received your order {{orderNumber}}', 'Thank you for shopping with us. We have received your order and will keep you updated.']),
   order('payment_confirmed', 'Payment confirmed', ['تم تأكيد الدفع للطلب {{orderNumber}}', 'تم تأكيد الدفع بنجاح وطلبك قيد التجهيز.'], ['Payment confirmed for order {{orderNumber}}', 'Your payment has been confirmed and your order is being prepared.']),
   order('processing', 'Order being prepared', ['طلبك {{orderNumber}} قيد التجهيز', 'نقوم الآن بتجهيز طلبك للشحن.'], ['Your order {{orderNumber}} is being prepared', 'We are now preparing your order for shipping.']),
@@ -96,8 +123,8 @@ const FIXED = {
   en: { brand: 'CELIBERY International', total: 'Total', tracking: 'Tracking number', view: 'View order', reset: 'Reset password', invite: 'Set password' },
 } as const;
 
-const PLACEHOLDER = /\{\{\s*([A-Za-z]+)\s*\}\}/g;
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const PLACEHOLDER = /\{\{\s*([A-Za-z_]+)\s*\}\}/g;
+export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 /** Problems with a piece of template text (unknown or malformed placeholders). */
 export function placeholderErrors(text: string, allowed: string[]): string[] {
@@ -117,6 +144,13 @@ export function whatsappParamErrors(text: string): string[] {
   return errors;
 }
 
+/** The whole click-to-chat message (sent by staff from WhatsApp, so line breaks are fine). */
+export function whatsappChatErrors(text: string): string[] {
+  const errors: string[] = [];
+  if (text.length > 1024) errors.push('The WhatsApp message is limited to 1024 characters');
+  return errors;
+}
+
 /** Validates an override for one template. Returns field → errors. */
 export function validateOverride(def: TemplateDef, o: NonNullable<TemplateOverride>): Record<string, string[]> {
   const out: Record<string, string[]> = {};
@@ -127,7 +161,7 @@ export function validateOverride(def: TemplateDef, o: NonNullable<TemplateOverri
     if (c.body != null) add('body', [...placeholderErrors(c.body, def.variables), ...(c.body.length > 5000 ? ['The text is limited to 5000 characters'] : [])]);
     if (c.whatsapp != null && c.whatsapp !== '') {
       if (!def.whatsapp) add('whatsapp', ['This message is not sent on WhatsApp']);
-      else add('whatsapp', [...placeholderErrors(c.whatsapp, def.variables), ...whatsappParamErrors(c.whatsapp)]);
+      else add('whatsapp', [...placeholderErrors(c.whatsapp, def.variables), ...(def.whatsappMode === 'chat' ? whatsappChatErrors(c.whatsapp) : whatsappParamErrors(c.whatsapp))]);
     }
   }
   return out;
@@ -146,7 +180,7 @@ export function fill(text: string, vars: Record<string, string | undefined>): st
   return text.replace(PLACEHOLDER, (_, k: string) => vars[k] ?? '');
 }
 
-function layout(lang: Lang, inner: string) {
+export function layout(lang: Lang, inner: string) {
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
   return `<!doctype html><html lang="${lang}" dir="${dir}"><body style="margin:0;background:#f5f5f5;font-family:Arial,Tahoma,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px">
@@ -157,11 +191,11 @@ function layout(lang: Lang, inner: string) {
 </table></td></tr></table></body></html>`;
 }
 
-const button = (href: string, label: string) =>
+export const button = (href: string, label: string) =>
   `<p><a href="${esc(href)}" style="display:inline-block;background:#111;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none">${esc(label)}</a></p>`;
 
 /** Plain text → escaped HTML paragraphs (blank line = new paragraph, single newline = <br>). */
-const paragraphs = (text: string) =>
+export const paragraphs = (text: string) =>
   text
     .split(/\n\s*\n/)
     .map((p) => p.trim())

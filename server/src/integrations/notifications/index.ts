@@ -104,7 +104,10 @@ export async function notifyOrder(order: NotifiableOrder, event: OrderEvent, lin
     const tasks: Promise<unknown>[] = [];
     // Admin-edited wording (Settings → Notifications → Message templates), defaults otherwise.
     const override = await templateOverride(`order.${event}`);
-    if (settings?.notifications?.emailOrderUpdates !== false) {
+    // "Order received" / "Payment confirmed" emails are replaced by the full order confirmation
+    // (order-confirmation.ts) while it is switched on, so the customer gets one email, not two.
+    const replacedByConfirmation = (event === 'order_placed' || event === 'payment_confirmed') && settings?.orderNotifications?.confirmationEmail !== false;
+    if (settings?.notifications?.emailOrderUpdates !== false && !replacedByConfirmation) {
       const content = orderEmail(lang, event, {
         name: order.contact.name,
         orderNumber: order.orderNumber,

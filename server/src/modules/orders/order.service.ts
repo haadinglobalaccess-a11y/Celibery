@@ -7,6 +7,7 @@ import { vatIncluded } from '../../lib/money';
 import { randomToken, sha256 } from '../../lib/tokens';
 import { cleanLocLine } from '../../lib/text';
 import { notifyOrder } from '../../integrations/notifications';
+import { queueOrderConfirmation } from '../../integrations/notifications/order-confirmation';
 import type { OrderEvent } from '../../integrations/notifications/templates';
 import { manualCourier } from '../../integrations/shipping';
 import {
@@ -364,7 +365,11 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
   }
 
   const plain = order.toObject ? order.toObject() : order;
-  if (isCod) void notifyOrder(plain, 'order_placed', orderLink(plain, accessToken));
+  if (isCod) {
+    void notifyOrder(plain, 'order_placed', orderLink(plain, accessToken));
+    // Order confirmation email + prepared WhatsApp message (online payments: once the payment is confirmed).
+    void queueOrderConfirmation(plain._id, { link: orderLink(plain, accessToken) });
+  }
   return { order: plain, accessToken, replayed: false };
 }
 
@@ -454,6 +459,8 @@ export async function transitionOrder(
 
   const ev = eventFor[to];
   if (ev && opts.notify !== false) void notifyOrder(saved.toObject(), ev, orderLink(saved));
+  // Confirmed by staff (e.g. after a manual payment check): send the order confirmation (once per order).
+  if (to === 'confirmed' && opts.notify !== false) void queueOrderConfirmation(saved._id);
   return saved.toObject();
 }
 

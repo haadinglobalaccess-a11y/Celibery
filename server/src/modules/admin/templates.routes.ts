@@ -18,6 +18,7 @@ import {
   type Lang,
   type TemplateOverride,
 } from '../../integrations/notifications/templates';
+import { previewConfirmation } from '../../integrations/notifications/order-confirmation';
 
 /**
  * Admin → Settings → Notifications → Message templates. Wording of customer emails and the
@@ -39,6 +40,7 @@ function view(def: (typeof TEMPLATES)[number], o: TemplateOverride & { updatedAt
     group: def.group,
     variables: def.variables,
     whatsapp: def.whatsapp,
+    whatsappMode: def.whatsappMode ?? 'param',
     defaults: def.defaults,
     override: o ? { ar: o.ar ?? {}, en: o.en ?? {} } : null,
     effective: { ar: resolveContent(def, 'ar', o), en: resolveContent(def, 'en', o) },
@@ -100,6 +102,7 @@ adminTemplateRoutes.post(
       o = { ...(o ?? {}), [lang]: { ...(o?.[lang] ?? {}), ...req.body.content } };
       assertValid(def.key, { [lang]: req.body.content });
     }
+    if (def.key === 'order.confirmation') return ok(res, await previewConfirmation(lang, o));
     const cta = def.key === 'auth.password_reset' ? (lang === 'ar' ? 'إعادة تعيين كلمة المرور' : 'Reset password') : def.key === 'staff.invite' ? (lang === 'ar' ? 'تعيين كلمة المرور' : 'Set password') : lang === 'ar' ? 'عرض الطلب' : 'View order';
     const lines: [string, string][] = def.group === 'order' ? [[lang === 'ar' ? 'الإجمالي' : 'Total', SAMPLE_VARS.total], [lang === 'ar' ? 'رقم التتبع' : 'Tracking number', SAMPLE_VARS.trackingNumber]] : [];
     const email = buildEmail(def, lang, SAMPLE_VARS, o, { lines, cta: { href: 'https://example.com/order', label: cta } });

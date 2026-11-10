@@ -144,7 +144,9 @@ describe('message templates', () => {
       await superAdmin.put('/api/admin/integrations/smtp/live/credentials').send({ values: { host: '127.0.0.1', port: String(sink.port), security: 'starttls', fromEmail: 'shop@celibery.test' } });
       await superAdmin.post('/api/admin/integrations/smtp/live/verify');
       expect((await superAdmin.post('/api/admin/integrations/smtp/activate').send({ enabled: true, mode: 'live' })).status).toBe(200);
-      await Settings.updateOne({ key: 'store' }, { $set: { 'commerce.codEnabled': true, 'commerce.codFee': 0 } });
+      // The "Order received" email is only sent while the full order confirmation is switched off
+      // (otherwise the confirmation replaces it — see order-notifications.test.ts).
+      await Settings.updateOne({ key: 'store' }, { $set: { 'commerce.codEnabled': true, 'commerce.codFee': 0, 'orderNotifications.confirmationEmail': false } });
       const email = `tpl-${uid().slice(0, 6)}@test.local`;
       const r = await c.post('/api/checkout').send({ idempotencyKey: uid(), items: [{ productId: await pid('DEMO-AD-30W'), quantity: 1 }], contact: { ...contact, email }, shippingAddress: address, paymentMethod: 'cod', lang: 'en' });
       expect(r.status).toBe(201);
@@ -158,7 +160,7 @@ describe('message templates', () => {
       await eventually(() => Notification.exists({ to: email, status: 'sent' }));
     } finally {
       await sink.close();
-      await Settings.updateOne({ key: 'store' }, { $set: { 'commerce.codEnabled': false } });
+      await Settings.updateOne({ key: 'store' }, { $set: { 'commerce.codEnabled': false, 'orderNotifications.confirmationEmail': true } });
     }
   });
 });

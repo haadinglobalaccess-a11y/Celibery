@@ -8,6 +8,7 @@ import { invalidateAdminCache } from '../data';
 import { useAT } from '../i18n';
 import { AIcon } from '../icons';
 import { EmptyState, ErrorBox, ErrorPanel, F, Modal, Skeleton, SkeletonTable, Status, usePerms } from '../kit';
+import { OrderConfirmationPanel } from './OrderConfirmation';
 
 type OrderRow = {
   _id: string;
@@ -967,6 +968,8 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
             )}
             <p className="a-footnote">{t.order.skippedNote}</p>
           </Section>
+
+          <OrderConfirmationPanel key={`${o.status}-${o.paymentStatus}`} orderId={o._id} canWrite={canWrite} />
 
           <Section id="od-return" title={t.order.relatedReturn}>
             {returned ? (

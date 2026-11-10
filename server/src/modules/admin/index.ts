@@ -10,6 +10,7 @@ import { adminCustomerRoutes, adminStaffRoutes } from './people.routes';
 import { adminReturnRoutes } from './returns.routes';
 import { adminSystemRoutes } from './system.routes';
 import { adminTemplateRoutes } from './templates.routes';
+import { adminOrderNotificationRoutes } from './order-notifications.routes';
 
 /** All admin APIs require a staff session; each route additionally checks its permission. */
 export const adminRoutes = Router();
@@ -28,3 +29,4 @@ adminRoutes.use('/integrations', adminIntegrationRoutes);
 adminRoutes.use('/media', adminMediaRoutes);
 adminRoutes.use('/returns', adminReturnRoutes);
 adminRoutes.use('/templates', adminTemplateRoutes);
+adminRoutes.use('/order-notifications', adminOrderNotificationRoutes);

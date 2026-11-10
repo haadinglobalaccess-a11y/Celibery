@@ -145,6 +145,15 @@ const SettingsSchema = new Schema(
       enabled: { type: Boolean, default: false },
     },
     /** Abandoned / incomplete checkout tracking (Admin → Abandoned checkouts). */
+    /** Order confirmation (Admin → Settings → Notifications & reviews → Order confirmation). */
+    orderNotifications: {
+      /** Email the customer a full order confirmation once the order is confirmed (COD placed / payment confirmed). */
+      confirmationEmail: { type: Boolean, default: true },
+      /** Prepare a WhatsApp click-to-chat confirmation for staff to send manually (no WhatsApp API). */
+      whatsappPrepare: { type: Boolean, default: true },
+      /** CELIBERY's official WhatsApp Business number (digits, international format) staff send from. */
+      whatsappBusinessNumber: { type: String, default: '' },
+    },
     checkoutRecovery: {
       /** Save checkout progress so customers can resume and staff can see incomplete checkouts. */
       enabled: { type: Boolean, default: true },

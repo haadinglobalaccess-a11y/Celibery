@@ -185,3 +185,91 @@ No recovery emails or WhatsApp messages are sent. There is no consent mechanism 
 | `DELETE /api/admin/checkouts/:id` | Delete (audited) |
 
 **Business action.** The privacy policy (Website content → Policy pages) should state that checkout details are saved to let customers resume, kept for the configured retention period, and that customers can opt out at checkout.
+
+## 2e. Order confirmation & notifications (2026-11-10)
+
+**When.** An order counts as successfully placed once it is **confirmed**:
+
+- cash on delivery: right after the order is created;
+- card / Apple Pay / STC Pay / Tabby: when the gateway confirms the payment (an unpaid order gets nothing);
+- or when staff move a pending order to Confirmed.
+
+The confirmation is queued after the order is saved, outside the order transaction, and never throws. A notification problem cannot fail, roll back or duplicate an order.
+
+**Email.**
+
+- One confirmation email per order, through the SMTP account configured in Admin (no new credentials).
+- It is in the order's language, Arabic (RTL) or English.
+- The editable text comes from Settings → Message templates → *Order confirmation*.
+- A system-generated summary that cannot be removed: order number, date, payment method (name only), status, shipping address, tracking number, products with quantities and amounts, subtotal, discount, shipping, COD fee, total and VAT.
+- While it is on, it replaces the short "Order received" / "Payment confirmed" emails, so the customer gets one email, not two. WhatsApp Cloud API status messages, if that integration is ever configured, are unchanged.
+
+**WhatsApp (no API).**
+
+- The system *prepares* the message (admin template) and a `https://wa.me/<customer>?text=…` link.
+- On the order page staff click **Open WhatsApp & Send** and press Send themselves, from the official business number set in Settings.
+- Statuses:
+
+| Status | Meaning |
+|---|---|
+| Prepared — not sent | Message and link are ready |
+| Opened in WhatsApp — not confirmed | Clicking the link only records this; it is never counted as sent |
+| Sent (confirmed by staff) | A staff member confirmed they pressed Send. WhatsApp does not report delivery in this mode. |
+
+- No WhatsApp Web automation, bots or unofficial endpoints are used.
+- `whatsapp-channel.ts` keeps the delivery channel pluggable: an official WhatsApp Business Platform channel can later return real `sent`/`failed` results without redesign.
+
+**Reliability & idempotency.**
+
+- One `OrderNotification` record per (order, channel, kind), protected by a unique index and created with `$setOnInsert`. Webhook replays, repeated verifications and parallel triggers produce exactly one email.
+- A worker claims a record atomically (`sending` + 2-minute lock), so the immediate attempt, the scheduled retry and an admin click never send twice.
+- Failed sends retry with back-off (1, 5, 15, 60 minutes) through the existing 5-minute scheduled job (`runReservationJob`), up to 5 attempts.
+- Without SMTP, the email is recorded as *skipped* with the reason. Staff can press **Send now** later.
+- Sending again needs the explicit **Send another copy** action, which asks for confirmation and is audited.
+
+**Templates.**
+
+- Variables: `{{customer_name}} {{order_number}} {{order_date}} {{order_total}} {{currency}} {{payment_method}} {{order_status}} {{products}} {{shipping_address}} {{tracking_number}} {{store_name}}`.
+- Unknown or malformed placeholders are refused when saving.
+- At send time, a stored template that fails validation falls back to the built-in wording and records why. A message can never go out with a broken `{{…}}`.
+- Values and text are HTML-escaped; header newlines are stripped.
+- The built-in Arabic/English wording is only a default. Admin edits are stored in the database (`MessageTemplate`) and *Reset* restores the default.
+
+**Settings.** Admin → Settings → Notifications & reviews → **Order confirmation** has:
+
+- confirmation email on/off (the existing "Email order updates" master switch still applies);
+- WhatsApp preparation on/off;
+- the official WhatsApp Business number (validated, stored as international digits);
+- **Send test email** (sample order, `[TEST]` subject) and **Prepare test message**;
+- an explanation that sending WhatsApp messages needs a manual Send without the API.
+
+The template editor shows the real email (sandboxed iframe) and the WhatsApp message.
+
+**Order page.** The **Order confirmation** card shows email and WhatsApp status, recipient, attempts, next retry, last error, the prepared message, the actions and the full notification history (who, when, what). The existing delivery log also records every email attempt.
+
+**Database changes.**
+
+- New collection `ordernotifications`.
+- `Settings.orderNotifications {confirmationEmail: true, whatsappPrepare: true, whatsappBusinessNumber: ''}`, with defaults and no migration.
+- No existing data is changed.
+
+**APIs.**
+
+| Method & path | Permission | Purpose |
+|---|---|---|
+| `GET /api/admin/order-notifications/orders/:id` | `orders:read` | Status, config and history (no secrets) |
+| `POST /api/admin/order-notifications/orders/:id/email` `{resend?}` | `orders:write` | Send now, or send another copy (409 `ALREADY_SENT` without `resend`) |
+| `POST /api/admin/order-notifications/orders/:id/whatsapp/prepare` `{again?}` | `orders:write` | Prepare or re-prepare |
+| `POST /api/admin/order-notifications/orders/:id/whatsapp/opened` | `orders:write` | Record that WhatsApp was opened (not a delivery) |
+| `POST /api/admin/order-notifications/orders/:id/whatsapp/confirm-sent` | `orders:write` | Staff confirm the send |
+| `POST /api/admin/order-notifications/test-email` `{to, lang}` | `settings:write` | Test email with sample data |
+| `POST /api/admin/order-notifications/test-whatsapp` `{phone, lang}` | `settings:write` | Prepare a test message |
+
+`PUT /api/admin/settings` accepts `orderNotifications`. `POST /api/admin/templates/order.confirmation/preview` renders the full email and WhatsApp text.
+
+**Limitations.**
+
+- "Sent" for email means the mail server accepted it; inbox delivery is not tracked (no bounce handling).
+- WhatsApp needs a staff member to press Send, and its delivery cannot be verified without the official API.
+- If the server stops between the SMTP server accepting an email and the record being saved, that one email could be sent again after the lock expires. This is inherent to SMTP.
+- A guest's first email links to their private tracking page. A retried email links to the tracking page without the private token, because the token is never stored.

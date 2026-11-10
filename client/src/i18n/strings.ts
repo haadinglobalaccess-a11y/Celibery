@@ -341,6 +341,7 @@ const ar = {
     currentPassword: 'كلمة المرور الحالية',
     changePassword: 'تغيير كلمة المرور',
     noAddresses: 'لا توجد عناوين محفوظة',
+    deleteAddressConfirm: 'هل تريد حذف هذا العنوان؟',
     wishlistEmpty: 'قائمة المفضلة فارغة',
   },
   footer: {
@@ -732,6 +733,7 @@ const en: Dict = {
     currentPassword: 'Current password',
     changePassword: 'Change password',
     noAddresses: 'No saved addresses',
+    deleteAddressConfirm: 'Delete this address?',
     wishlistEmpty: 'Your wishlist is empty',
   },
   footer: {

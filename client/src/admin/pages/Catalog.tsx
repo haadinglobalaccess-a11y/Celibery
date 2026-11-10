@@ -144,11 +144,16 @@ export function Inventory({ canWrite }: { canWrite: boolean }) {
   const history = useApi<Movement[]>(tab === 'history' ? `/api/admin/inventory/movements` : null);
   const toast = useToast();
   const query = qs({ q: params.get('q') ?? undefined, lowStock: params.get('lowStock') ?? undefined, page: params.get('page') ?? undefined, limit: 50 });
+  const [loadErr, setLoadErr] = useState<Error | null>(null);
   useEffect(() => {
-    api<InvRow[]>(`/api/admin/inventory${query}`).then((r) => {
-      setRows(r.data);
-      setMeta({ page: Number(r.meta?.page ?? 1), pages: Number(r.meta?.pages ?? 1) });
-    });
+    setLoadErr(null);
+    api<InvRow[]>(`/api/admin/inventory${query}`)
+      .then((r) => {
+        setRows(r.data);
+        setMeta({ page: Number(r.meta?.page ?? 1), pages: Number(r.meta?.pages ?? 1) });
+      })
+      // Without this a failed request left the table spinning forever.
+      .catch((e: Error) => setLoadErr(e));
   }, [query, nonce]);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -202,7 +207,9 @@ export function Inventory({ canWrite }: { canWrite: boolean }) {
             </label>
           </div>
           <div className="a-card table-wrap inventory-table-card">
-            {!rows ? (
+            {loadErr ? (
+              <ErrorState message={loadErr.message} onRetry={() => setNonce((n) => n + 1)} />
+            ) : !rows ? (
               <Spinner />
             ) : (
               <table className="table inventory-table">
@@ -326,13 +333,19 @@ export function Customers() {
   const [rows, setRows] = useState<CustRow[] | null>(null);
   const [meta, setMeta] = useState({ pages: 1, total: 0 });
   const nl = useApi<{ _id: string; email: string; lang: string; createdAt: string }[]>(tab === 'newsletter' ? '/api/admin/customers/newsletter' : null);
+  const [loadErr, setLoadErr] = useState<Error | null>(null);
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
     setRows(null);
-    api<CustRow[]>(`/api/admin/customers${qs({ q: search || undefined, page })}`).then((r) => {
-      setRows(r.data);
-      setMeta({ pages: Number(r.meta?.pages ?? 1), total: Number(r.meta?.total ?? 0) });
-    });
-  }, [search, page]);
+    setLoadErr(null);
+    api<CustRow[]>(`/api/admin/customers${qs({ q: search || undefined, page })}`)
+      .then((r) => {
+        setRows(r.data);
+        setMeta({ pages: Number(r.meta?.pages ?? 1), total: Number(r.meta?.total ?? 0) });
+      })
+      // Without this a failed request left the table spinning forever.
+      .catch((e: Error) => setLoadErr(e));
+  }, [search, page, retry]);
   const exportNl = () => {
     const csv = 'email,lang,subscribed_at\n' + (nl.data ?? []).map((s) => `${s.email},${s.lang},${s.createdAt}`).join('\n');
     const a = document.createElement('a');
@@ -364,7 +377,9 @@ export function Customers() {
             <input className="input customers-search-input" placeholder="Search name, email, phone…" value={q} onChange={(e) => setQ(e.target.value)} />
           </form>
           <div className="a-card table-wrap customers-table-card">
-            {!rows ? (
+            {loadErr ? (
+              <ErrorState message={loadErr.message} onRetry={() => setRetry((n) => n + 1)} />
+            ) : !rows ? (
               <Spinner />
             ) : (
               <table className="table customers-table">
