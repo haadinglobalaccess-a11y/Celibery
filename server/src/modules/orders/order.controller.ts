@@ -7,6 +7,7 @@ import { Order, getSettings } from '../../models';
 import { q } from '../../middleware/validate';
 import { availablePaymentMethods, initiatePayment, retryPayment, verifyOrderPayment } from '../payments/payment.service';
 import * as svc from './order.service';
+import { markConverted } from '../checkout-drafts/draft.service';
 import { trackSchema } from './order.schemas';
 import { cancelReturnByCustomer, createReturn, returnOptions, toCustomerReturn } from '../returns/return.service';
 
@@ -43,6 +44,8 @@ export async function quote(req: Request, res: Response) {
 export async function checkout(req: Request, res: Response) {
   const customerId = req.user?.type === 'customer' ? req.user.id : undefined;
   const { order, accessToken, replayed } = await svc.createOrder(req.body, customerId);
+  // The saved checkout becomes "converted" and points at this order (idempotent; never creates orders).
+  await markConverted(req.body.draftToken, { customerId }, { _id: String(order._id), orderNumber: order.orderNumber });
   const view = svc.toCustomerOrder(order);
   if (order.paymentMethod === 'cod' || replayed) {
     return ok(res, { order: view, accessToken, replayed, redirectUrl: null }, replayed ? 200 : 201);

@@ -158,6 +158,7 @@ export type PublicSettings = {
   };
   payments: { card: boolean; applepay: boolean; stcpay: boolean; tabby: boolean; cod: boolean; gateway: string; sandbox: boolean };
   reviewsEnabled: boolean;
+  checkoutRecovery?: { enabled: boolean };
   seo?: { title?: Localized; description?: Localized };
   announcement?: { enabled: boolean; text: Localized; link: string };
 };

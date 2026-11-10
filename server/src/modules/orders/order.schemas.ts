@@ -49,6 +49,8 @@ export const checkoutSchema = z.object({
   customerNote: z.string().trim().max(500).default(''),
   lang: z.enum(['ar', 'en']).default('ar'),
   saveAddress: z.boolean().optional().default(false),
+  /** Saved-checkout token (Abandoned checkouts): links that draft to this order. Never used for pricing. */
+  draftToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/).optional(),
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 

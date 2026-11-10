@@ -16,3 +16,4 @@ export * from './PageRevision';
 export * from './IntegrationCredential';
 export * from './ReturnRequest';
 export * from './MessageTemplate';
+export * from './CheckoutDraft';

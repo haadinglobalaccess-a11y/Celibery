@@ -7,6 +7,7 @@ const P: Record<string, string> = {
   inventory: 'M3 9l9-5 9 5v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9zM8 20v-7h8v7',
   customers: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7.5M22 21v-1a6 6 0 0 0-4-5.6',
   returns: 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3',
+  checkouts: 'M6 7h12l-1 13H7L6 7zM9 7a3 3 0 0 1 6 0M12 11v3.5l2 1.5',
   discounts: 'M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01',
   reports: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
   staff: 'M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3zM9 12l2 2 4-4',

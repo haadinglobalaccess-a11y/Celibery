@@ -123,3 +123,65 @@ Each was repaired by decoding the original bytes back, never retyped or guessed.
 - `npm run build`: passes. The built bundle was checked: no secrets, no hard-coded API host.
 - `npm test`: 197/197 passed, 21 files (baseline before changes: 186/186). New files: `server/tests/production-readiness.test.ts`, `server/tests/unit/text.test.ts`.
 - `npm run test:e2e`: 54 passed, 1 skipped (already skipped before), 0 failed — desktop, mobile and tablet. New files: `e2e/production-readiness.spec.ts`, `e2e/product-journey.spec.ts`. The first run of the reviews test exposed the settings cache bug (§2 item 6).
+
+## 2d. Abandoned / incomplete checkout tracking (2026-11-10)
+
+**What it does.** While a customer fills in the checkout, the page saves their progress automatically: contact, delivery address, payment *method* and cart. It saves after a short pause in typing, never before the customer's first edit. Admin → **Abandoned checkouts** lists every checkout that was started, with these filters:
+
+- all incomplete
+- recently abandoned (last 7 days)
+- in progress
+- recovered
+- converted to order
+- all abandoned / all
+
+Each checkout has a detail view: what was entered, what is still missing, the products and total, the timeline, whether the customer came back, and the order it became.
+
+**Statuses.**
+
+| Status | Meaning |
+|---|---|
+| In progress | Activity within the threshold |
+| Abandoned | No activity for the configurable threshold (default 60 minutes). Worked out from the last activity time, so it is accurate even before the 5-minute scheduled job records the abandonment time. |
+| Recovered | The customer came back after abandoning |
+| Converted | The checkout became an order, linked by order ID (unique, idempotent) |
+
+A saved checkout never creates an order.
+
+**Reliability.**
+
+- Every change is written to the browser's localStorage at once, then sent to the server.
+- Failed saves retry with back-off and run as soon as the connection returns.
+- Unsent changes go out with `fetch keepalive` when the page closes.
+- A device that shuts down mid-checkout sends them on the next visit.
+- The browser generates the 256-bit token before the first save and reuses it, so a lost response can never create a duplicate record. The server stores only the token's SHA-256 hash.
+
+**Privacy & security.**
+
+- The checkout has no card fields; payment happens on the gateway's page.
+- Only an allow-list of fields is stored. Unknown keys such as `cardNumber` or `cvv` are dropped.
+- Any text containing a Luhn-valid 13–19 digit number is discarded.
+- Prices are always the store's, never the browser's.
+- Half-typed emails and phone numbers are not kept.
+- A draft linked to a customer account is available only to that signed-in customer.
+- Admin access needs `orders:read`. Deleting needs `orders:write` and is written to the activity log.
+- Customers see a notice and can opt out ("Don't save my details"), which deletes the saved copy.
+- Drafts expire automatically after the retention period (default 30 days, TTL index).
+
+No recovery emails or WhatsApp messages are sent. There is no consent mechanism for marketing messages, so recovery stays manual.
+
+**Settings.** Admin → Settings → Warranty, VAT & stock → *Checkout recovery*: on/off, abandoned-after minutes (5–10,080), retention days (1–365).
+
+**APIs.**
+
+| Method & path | Purpose |
+|---|---|
+| `PUT /api/checkout/draft` | Save progress |
+| `GET /api/checkout/draft?token=` | Restore (signed-in customers: no token needed) |
+| `DELETE /api/checkout/draft` | Customer erases the saved copy |
+| `POST /api/checkout` | Accepts an optional `draftToken` and marks that draft converted |
+| `GET /api/admin/checkouts` | List, with `filter`, `q`, `page`, `limit`; includes per-filter counts |
+| `GET /api/admin/checkouts/:id` | Detail |
+| `DELETE /api/admin/checkouts/:id` | Delete (audited) |
+
+**Business action.** The privacy policy (Website content → Policy pages) should state that checkout details are saved to let customers resume, kept for the configured retention period, and that customers can opt out at checkout.

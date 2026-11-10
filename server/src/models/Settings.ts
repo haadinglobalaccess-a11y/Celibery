@@ -144,6 +144,15 @@ const SettingsSchema = new Schema(
       /** Q19: no real reviews yet — reviews stay hidden until enabled and genuinely collected. */
       enabled: { type: Boolean, default: false },
     },
+    /** Abandoned / incomplete checkout tracking (Admin → Abandoned checkouts). */
+    checkoutRecovery: {
+      /** Save checkout progress so customers can resume and staff can see incomplete checkouts. */
+      enabled: { type: Boolean, default: true },
+      /** Minutes without activity after which an unfinished checkout counts as abandoned. */
+      abandonAfterMinutes: { type: Number, default: 60, min: 5, max: 10080 },
+      /** Days a saved checkout is kept after its last activity (then deleted automatically). */
+      retentionDays: { type: Number, default: 30, min: 1, max: 365 },
+    },
     seo: {
       title: { type: LocalizedSchema, default: () => ({}) },
       description: { type: LocalizedSchema, default: () => ({}) },

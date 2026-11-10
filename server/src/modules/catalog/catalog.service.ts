@@ -334,6 +334,8 @@ export async function publicSettings() {
     },
     payments: paymentsConfigured,
     reviewsEnabled: s?.reviews?.enabled ?? false,
+    /** Checkout progress is saved (with a notice) only while this is on. */
+    checkoutRecovery: { enabled: s?.checkoutRecovery?.enabled !== false },
     seo: s?.seo,
     announcement: s?.announcement ?? { enabled: true, text: { ar: '', en: '' }, link: '' },
   };

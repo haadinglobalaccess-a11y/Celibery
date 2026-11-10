@@ -22,6 +22,7 @@ import { authRoutes } from './modules/auth/auth.routes';
 import { llms, robots, sitemap } from './modules/catalog/catalog.controller';
 import { catalogRoutes } from './modules/catalog/catalog.routes';
 import { orderRoutes } from './modules/orders/order.routes';
+import { draftRoutes } from './modules/checkout-drafts/draft.routes';
 import { paymentRoutes } from './modules/payments/payment.routes';
 
 export function createApp(opts: { serveClient?: string } = {}): Express {
@@ -110,6 +111,7 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   app.use('/api/auth', authRoutes);
   app.use('/api', paymentRoutes);
   app.use('/api', catalogRoutes);
+  app.use('/api', draftRoutes);
   app.use('/api', orderRoutes);
   app.use('/api/me', accountRoutes);
   app.use('/api/admin', adminRoutes);

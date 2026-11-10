@@ -68,6 +68,7 @@ export function SettingsPage() {
           ...r.settings,
           announcement: { enabled: true, text: emptyL, link: '', ...(r.settings.announcement ?? {}) },
           business: { description: emptyL, ...r.settings.business },
+          checkoutRecovery: { enabled: true, abandonAfterMinutes: 60, retentionDays: 30, ...(r.settings.checkoutRecovery ?? {}) },
           commerce: { shippingAvailable: true, shippingUnavailableMessage: emptyL, fulfilmentMode: 'manual', codAllowedCities: [], ...c, ...money, codCitiesText: (c.codAllowedCities ?? []).join('\n') },
         });
         setDiag(r.integrations);
@@ -302,6 +303,7 @@ export function SettingsPage() {
       ) : null}
 
       {tab === 'orders' ? (
+        <>
         <Card
           title="Warranty, returns, VAT and stock"
           actions={saveBtn(() =>
@@ -346,6 +348,34 @@ export function SettingsPage() {
             </F>
           </div>
         </Card>
+        <Card
+          title="Checkout recovery (abandoned checkouts)"
+          actions={saveBtn(() =>
+            save({
+              checkoutRecovery: {
+                enabled: s.checkoutRecovery.enabled,
+                abandonAfterMinutes: Number(s.checkoutRecovery.abandonAfterMinutes),
+                retentionDays: Number(s.checkoutRecovery.retentionDays),
+              },
+            }),
+          )}
+        >
+          <p className="muted" style={{ fontSize: 13 }}>
+            Saves what customers type at checkout (contact, delivery address, payment method and cart — never card details) so they can continue later and you can see unfinished checkouts in Abandoned checkouts. Customers see a notice and can opt out.
+          </p>
+          <div className="form-grid form-grid--2 settings-form-grid">
+            <label className="check span-2">
+              <input type="checkbox" data-testid="recovery-enabled" checked={s.checkoutRecovery.enabled} onChange={(e) => set('checkoutRecovery', 'enabled', e.target.checked)} /> Save checkout progress
+            </label>
+            <F label="Abandoned after (minutes without activity)" hint="5 minutes to 7 days. Until then the checkout counts as in progress.">
+              <input className="input" type="number" min={5} max={10080} data-testid="recovery-minutes" value={s.checkoutRecovery.abandonAfterMinutes} onChange={(e) => set('checkoutRecovery', 'abandonAfterMinutes', e.target.value)} />
+            </F>
+            <F label="Keep saved checkouts for (days)" hint="1–365 days after the last activity; then they are deleted automatically.">
+              <input className="input" type="number" min={1} max={365} value={s.checkoutRecovery.retentionDays} onChange={(e) => set('checkoutRecovery', 'retentionDays', e.target.value)} />
+            </F>
+          </div>
+        </Card>
+        </>
       ) : null}
 
       {tab === 'payments' ? (

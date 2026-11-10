@@ -19,6 +19,8 @@ type CartCtx = {
   setQty: (productId: string, qty: number) => void;
   remove: (productId: string) => void;
   clear: () => void;
+  /** Puts saved checkout items back (resume checkout). Items already in the bag are kept. */
+  restore: (items: CartItem[]) => void;
   discountCode: string;
   setDiscountCode: (c: string) => void;
   /** Last product added — drives the animated "added to cart" panel under the header. */
@@ -93,10 +95,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
     setDiscountCode('');
   }, []);
+  const restore = useCallback((saved: CartItem[]) => {
+    setItems((cur) => {
+      const have = new Set(cur.map((i) => i.productId));
+      const add = saved.filter((i) => /^[a-f0-9]{24}$/i.test(i.productId) && Number.isInteger(i.quantity) && i.quantity > 0 && !have.has(i.productId));
+      return [...cur, ...add.map((i) => ({ ...i, quantity: Math.min(99, i.quantity) }))].slice(0, 50);
+    });
+  }, []);
 
   const value = useMemo(
-    () => ({ items, count: items.reduce((s, i) => s + i.quantity, 0), add, setQty, remove, clear, discountCode, setDiscountCode, peek, closePeek }),
-    [items, add, setQty, remove, clear, discountCode, peek, closePeek],
+    () => ({ items, count: items.reduce((s, i) => s + i.quantity, 0), add, setQty, remove, clear, restore, discountCode, setDiscountCode, peek, closePeek }),
+    [items, add, setQty, remove, clear, restore, discountCode, peek, closePeek],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

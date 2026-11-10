@@ -130,6 +130,7 @@ const settingsUpdate = z
       })
       .partial(),
     reviews: z.object({ enabled: z.boolean() }).partial(),
+    checkoutRecovery: z.object({ enabled: z.boolean(), abandonAfterMinutes: z.number().int().min(5).max(10080), retentionDays: z.number().int().min(1).max(365) }).partial(),
     seo: z.object({ title: loc, description: loc, allowAiCrawlers: z.boolean() }).partial(),
   })
   .partial();

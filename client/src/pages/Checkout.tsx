@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Field, PayLogos } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { ApiError, get, post, uuid } from '../lib/api';
+import { draftStore, draftSync, loadDraft, optInToDraft, optOutOfDraft, type DraftPayload, type DraftStatus } from '../lib/checkoutDraft';
 import { formatPrice, L } from '../lib/format';
 import { useSeo } from '../lib/useSeo';
 import type { Address, OrderView } from '../lib/types';
@@ -69,6 +70,8 @@ export default function Checkout() {
   const [cityForQuote, setCityForQuote] = useState('');
   const { quote, loading: quoteLoading, error: quoteError } = useQuote(method, contact.email, cityForQuote);
   useSeo(t.checkout.title, undefined, { noindex: true });
+  /** Set once a saved checkout was restored, so a saved address never overwrites it. */
+  const restoredRef = useRef(false);
 
   const isCustomer = user?.type === 'customer';
 
@@ -82,7 +85,7 @@ export default function Checkout() {
       .then((list) => {
         setSaved(list);
         const def = list.find((a) => a.isDefault) ?? list[0];
-        if (def) setAddr({ ...emptyAddress, ...def });
+        if (def && !restoredRef.current) setAddr({ ...emptyAddress, ...def });
       })
       .catch(() => undefined);
   }, [isCustomer, user]);
@@ -121,6 +124,70 @@ export default function Checkout() {
     }
   });
 
+  // -- Saved checkout (Admin > Abandoned checkouts; resume later) --
+  const recoveryOn = settings?.checkoutRecovery?.enabled === true;
+  const [optedOut, setOptedOut] = useState(() => draftStore.optedOut());
+  const [draftStatus, setDraftStatus] = useState<DraftStatus>('idle');
+  const [restoredNote, setRestoredNote] = useState(false);
+  // Wait for a saved checkout before deciding that the bag is empty.
+  const [restoring, setRestoring] = useState(() => !draftStore.optedOut() && Boolean(draftStore.token() || draftStore.pending()));
+  const restoreTried = useRef(false);
+  /** Saving starts with the customer's first edit, never from prefilled or default values alone. */
+  const interacted = useRef(false);
+  useEffect(() => draftSync.subscribe(setDraftStatus), []);
+  // Never wait for a restore indefinitely (e.g. settings could not load): fall back to the normal page.
+  useEffect(() => {
+    if (!restoring) return;
+    const id = setTimeout(() => setRestoring(false), 5000);
+    return () => clearTimeout(id);
+  }, [restoring]);
+  useEffect(() => {
+    if (restoreTried.current || !settings) return;
+    restoreTried.current = true;
+    if (!recoveryOn || draftStore.optedOut()) {
+      setRestoring(false);
+      return;
+    }
+    const pending = draftStore.pending(); // newest: typed on this device but maybe not yet on the server
+    void loadDraft().then((saved) => {
+      const pick = <T extends Record<string, string>>(local: T | undefined, server: T | undefined, key: keyof T) => (local?.[key] || server?.[key] || '') as string;
+      const c = { name: pick(pending?.contact, saved?.contact, 'name'), email: pick(pending?.contact, saved?.contact, 'email'), phone: pick(pending?.contact, saved?.contact, 'phone') };
+      const keys = ['fullName', 'phone', 'city', 'district', 'street', 'buildingNumber', 'postalCode', 'shortAddress'] as const;
+      const a = Object.fromEntries(keys.map((k) => [k, pick(pending?.shippingAddress, saved?.shippingAddress, k)])) as Record<(typeof keys)[number], string>;
+      const any = Object.values(c).some(Boolean) || Object.values(a).some(Boolean);
+      if (any) {
+        restoredRef.current = true;
+        setContact((cur) => ({ name: c.name || cur.name, email: c.email || cur.email, phone: c.phone || cur.phone }));
+        setAddr((cur) => ({ ...cur, ...Object.fromEntries(keys.filter((k) => a[k]).map((k) => [k, a[k]])), _id: undefined }));
+        setRestoredNote(true);
+      }
+      const m = pending?.paymentMethod || saved?.paymentMethod;
+      if (m) setMethod(m);
+      const code = pending?.discountCode || saved?.discountCode;
+      if (code && !cart.discountCode) cart.setDiscountCode(code);
+      if (!cart.items.length && saved?.items.length) {
+        cart.restore(saved.items.map((i) => ({ productId: i.productId, quantity: i.quantity, snapshot: { slug: i.slug, name: i.name, image: i.image, price: i.price, model: i.model } })));
+      }
+      setRestoring(false);
+      if (pending) void draftSync.flush(); // changes the device never managed to send
+    });
+  }, [settings, recoveryOn, cart]);
+
+  const draftPayload: DraftPayload = {
+    items: cart.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+    contact,
+    shippingAddress: { fullName: addr.fullName, phone: addr.phone, city: addr.city, district: addr.district, street: addr.street, buildingNumber: addr.buildingNumber, postalCode: addr.postalCode, shortAddress: addr.shortAddress },
+    paymentMethod: method,
+    discountCode: cart.discountCode,
+    lang,
+  };
+  const draftJson = JSON.stringify(draftPayload);
+  useEffect(() => {
+    if (!recoveryOn || optedOut || submitted || restoring || !interacted.current) return;
+    draftSync.schedule(JSON.parse(draftJson) as DraftPayload);
+  }, [draftJson, recoveryOn, optedOut, submitted, restoring]);
+
+  if (restoring && !cart.items.length && !submitted) return <div className="container cx-checkout" aria-busy="true" />;
   if (!cart.items.length && !submitted) return <Navigate to={p('/cart')} replace />;
 
   const validate = () => {
@@ -170,9 +237,13 @@ export default function Checkout() {
         customerNote: note,
         lang,
         saveAddress: isCustomer && saveAddress && !addr._id,
+        // Links the saved checkout to this order (it is then shown as converted).
+        draftToken: recoveryOn && !optedOut ? (draftStore.token() ?? undefined) : undefined,
       });
       const { order, accessToken, redirectUrl } = res;
       rememberOrder(order.orderNumber, accessToken);
+      draftSync.reset();
+      draftStore.finish();
       try {
         sessionStorage.removeItem('cel_checkout_key');
       } catch {
@@ -212,7 +283,7 @@ export default function Checkout() {
           </p>
         ) : null}
       </div>
-      <form className="cart-layout" onSubmit={submit} noValidate>
+      <form className="cart-layout" onSubmit={submit} onChangeCapture={() => (interacted.current = true)} noValidate>
         <div>
           <section className="panel">
             <h2>
@@ -243,6 +314,40 @@ export default function Checkout() {
                 />
               </Field>
             </div>
+            {restoredNote ? (
+              <p className="alert alert--success" role="status" data-testid="draft-restored" style={{ marginTop: 12 }}>
+                {t.checkout.draftRestored}
+              </p>
+            ) : null}
+            {recoveryOn ? (
+              <p className="muted" data-testid="draft-notice" style={{ fontSize: 12, marginTop: 12 }}>
+                {optedOut ? t.checkout.draftOptedOut : t.checkout.draftNotice}{' '}
+                <button
+                  type="button"
+                  className="link-btn"
+                  data-testid={optedOut ? 'draft-optin' : 'draft-optout'}
+                  onClick={() => {
+                    if (optedOut) {
+                      optInToDraft();
+                      setOptedOut(false);
+                      interacted.current = true;
+                      draftSync.schedule(draftPayload);
+                    } else {
+                      setOptedOut(true);
+                      void optOutOfDraft();
+                    }
+                  }}
+                >
+                  {optedOut ? t.checkout.draftOptIn : t.checkout.draftOptOut}
+                </button>
+                {!optedOut && (draftStatus === 'saving' || draftStatus === 'saved' || draftStatus === 'offline') ? (
+                  <span aria-live="polite" data-testid="draft-status" data-status={draftStatus}>
+                    {' · '}
+                    {draftStatus === 'saving' ? t.checkout.draftSaving : draftStatus === 'saved' ? t.checkout.draftSaved : t.checkout.draftOffline}
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
           </section>
 
           <section className="panel">

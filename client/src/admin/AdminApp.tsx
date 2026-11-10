@@ -21,19 +21,21 @@ import { Overview } from './pages/Overview';
 import { ProductEdit, Products } from './pages/Products';
 import { Reports } from './pages/Reports';
 import { Returns } from './pages/Returns';
+import { AbandonedCheckoutDetail, AbandonedCheckouts } from './pages/AbandonedCheckouts';
 import { SettingsPage } from './pages/Settings';
 import { ActivityLog, Staff } from './pages/System';
 
 const MEDIA_PERMS = ['media:write', 'products:write', 'content:write'];
 const SETTINGS_PERMS = ['settings:write', 'business:write', 'payments:manage'];
 
-type NavKey = 'dashboard' | 'orders' | 'products' | 'categories' | 'inventory' | 'customers' | 'returns' | 'discounts' | 'reports' | 'staff' | 'settings' | 'content' | 'media' | 'activity';
+type NavKey = 'dashboard' | 'orders' | 'checkouts' | 'products' | 'categories' | 'inventory' | 'customers' | 'returns' | 'discounts' | 'reports' | 'staff' | 'settings' | 'content' | 'media' | 'activity';
 type NavItem = { key: NavKey; to: string; icon: string; perm: string[]; badge?: 'pending' | 'lowStock' };
 
 /** Spec §7 navigation order; existing website-management pages are kept in a second group. */
 const NAV: NavItem[] = [
   { key: 'dashboard', to: '/admin', icon: 'dashboard', perm: ['overview:read'] },
   { key: 'orders', to: '/admin/orders', icon: 'orders', perm: ['orders:read'], badge: 'pending' },
+  { key: 'checkouts', to: '/admin/checkouts', icon: 'checkouts', perm: ['orders:read'] },
   { key: 'products', to: '/admin/products', icon: 'products', perm: ['products:read'] },
   { key: 'categories', to: '/admin/categories', icon: 'categories', perm: ['categories:write'] },
   { key: 'inventory', to: '/admin/inventory', icon: 'inventory', perm: ['inventory:read'], badge: 'lowStock' },
@@ -513,6 +515,8 @@ function Shell({ lang, setLang }: { lang: AdminLang; setLang: (l: AdminLang) => 
             <Route index element={can('overview:read') ? <Overview /> : first ? <Navigate to={first.to} replace /> : <Forbidden />} />
             <Route path="orders" element={guard('orders:read', <Orders />)} />
             <Route path="orders/:id" element={guard('orders:read', <OrderDetail perms={perms} />)} />
+            <Route path="checkouts" element={guard('orders:read', en(<AbandonedCheckouts />))} />
+            <Route path="checkouts/:id" element={guard('orders:read', en(<AbandonedCheckoutDetail canDelete={can('orders:write')} />))} />
             <Route path="returns" element={guard('orders:read', <Returns />)} />
             <Route path="products" element={guard('products:read', en(<Products canWrite={can('products:write')} />))} />
             <Route path="products/new" element={guard('products:write', en(<ProductEdit />))} />
