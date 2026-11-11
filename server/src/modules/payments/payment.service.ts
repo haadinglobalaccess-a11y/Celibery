@@ -1,4 +1,4 @@
-import { env } from '../../config/env';
+import { env, isProd } from '../../config/env';
 import { badRequest, notFound, serviceUnavailable, unprocessable } from '../../lib/errors';
 import { logger } from '../../lib/logger';
 import { notifyOrder } from '../../integrations/notifications';
@@ -147,18 +147,32 @@ export async function applyGatewayStatus(paymentId: string, result: StatusResult
       { new: true },
     );
     if (confirmed) {
+      if (payment.provider === 'sandbox' && isProd) {
+        // Private staging / misconfigured production: make it impossible to mistake for real money.
+        await Order.updateOne({ _id: confirmed._id }, { $push: { history: { status: 'payment_review', note: 'TEST payment (sandbox gateway) — no money was collected. Do not ship.', visibleToCustomer: false } } });
+        logger.error('Order confirmed by the sandbox gateway in production', { order: confirmed.orderNumber });
+      }
       void notifyOrder(confirmed.toObject(), 'payment_confirmed', orderLink(confirmed));
       void queueOrderConfirmation(confirmed._id); // once per order (idempotent)
     } else {
       // Paid after the order was cancelled/expired: keep the money visible and flag for staff.
       // (Never touches an order whose payment was already recorded or refunded.)
-      await Order.updateOne(
+      const late = await Order.updateOne(
         { _id: payment.order, paymentStatus: { $in: ['pending', 'failed', 'expired'] } },
         {
           $set: { paymentStatus: 'paid', paidAt: new Date() },
           $push: { history: { status: 'payment_review', note: 'Payment received after the order was cancelled — refund or restore the order', visibleToCustomer: false } },
         },
       );
+      if (late.modifiedCount === 0) {
+        // The order was already paid by another payment (e.g. two browser tabs): the customer paid
+        // twice. This payment record just became "paid", so flag it for a refund instead of hiding it.
+        await Order.updateOne(
+          { _id: payment.order },
+          { $push: { history: { status: 'payment_review', note: `A second payment was received for this order (payment ${String(payment._id)}) — refund the duplicate`, visibleToCustomer: false } } },
+        );
+        logger.warn('Duplicate payment received for an order', { paymentId: String(payment._id) });
+      }
     }
     return 'paid';
   }

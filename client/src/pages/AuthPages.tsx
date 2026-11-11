@@ -32,7 +32,9 @@ export function Login() {
       await login(email, password);
       nav(safeNext(params.get('next'), lang), { replace: true });
     } catch (err) {
-      setError((err as ApiError).message);
+      // Staff accounts with two-factor authentication sign in through the admin page.
+      if ((err as ApiError).code === 'MFA_REQUIRED') setError(lang === 'ar' ? 'هذا حساب موظف — سجّل الدخول من صفحة الإدارة ‎/admin' : 'This is a staff account — sign in on the admin page (/admin).');
+      else setError((err as ApiError).message);
       setBusy(false);
     }
   };

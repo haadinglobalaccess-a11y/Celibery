@@ -286,7 +286,7 @@ export async function queueOrderConfirmation(orderId: unknown, opts: { link?: st
           { $setOnInsert: { orderNumber: order.orderNumber, provider: 'smtp', status, lang, to, nextAttemptAt: to ? new Date() : null, lastError: detail, history: [hist(to ? 'queued' : 'skipped', status, detail)] } },
           { upsert: true },
         );
-        if (r.upsertedId && to) void processConfirmationEmail(r.upsertedId, { link: opts.link });
+        if (r.upsertedId && to) void processConfirmationEmail(r.upsertedId, { link: opts.link }).catch((err: unknown) => logger.error('Order confirmation email attempt failed', { err: String(err) }));
       } catch (err) {
         if ((err as { code?: number }).code !== 11000) throw err; // a parallel trigger created it
       }

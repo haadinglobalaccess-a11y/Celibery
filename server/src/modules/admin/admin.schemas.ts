@@ -24,7 +24,12 @@ export const text = (max: number, min = 0, minMessage?: string) =>
 export const localized = z.object({ ar: text(20000).default(''), en: text(20000).default('') });
 const localizedShort = z.object({ ar: text(300).default(''), en: text(300).default('') });
 const requiredLocalized = z.object({ ar: text(300, 1, 'Arabic is required'), en: text(300, 1, 'English is required') });
-const url = z.string().trim().max(1000).refine((v) => v === '' || /^https?:\/\//.test(v) || v.startsWith('/'), 'Must be a URL (https://…) or a site path (/…)');
+/**
+ * Links and media URLs saved by staff: an absolute http(s) URL or a path on this site. Paths that
+ * start with "//" or "/\" are refused — browsers treat them as another website (open redirect).
+ */
+export const isSafeLink = (v: string) => v === '' || /^https?:\/\/[^\s/\\]+(?:[/?#][^\s]*)?$/i.test(v) || /^\/(?![/\\])[^\s]*$/.test(v);
+const url = z.string().trim().max(1000).refine(isSafeLink, 'Must be a URL (https://…) or a site path (/…)');
 const slug = z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,100}$/, 'Use lowercase letters, numbers and dashes');
 /** Product / category / collection image: a URL (external or uploaded) plus optional media-library metadata. */
 const image = z.object({

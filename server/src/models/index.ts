@@ -18,3 +18,4 @@ export * from './ReturnRequest';
 export * from './MessageTemplate';
 export * from './CheckoutDraft';
 export * from './OrderNotification';
+export * from './Security';

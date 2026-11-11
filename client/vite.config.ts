@@ -34,6 +34,18 @@ export default defineConfig(({ mode }) => ({
   envDir: '..',
   preview: {
     allowedHosts: ['celiberyclient-production.up.railway.app'],
+    // The Railway storefront service is served by `vite preview`, which sends no security headers
+    // by default (verified 11 Nov 2026). Same header set as vercel.json: the page — including
+    // /admin — cannot be framed (clickjacking), HTTPS is pinned, MIME sniffing is off.
+    headers: {
+      'Content-Security-Policy': "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(self)',
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    },
   },
   server: {
     port: 5173,

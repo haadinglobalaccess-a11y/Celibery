@@ -234,6 +234,8 @@ export type Me = {
   preferredLang?: Lang;
   title?: string;
   role?: { key: string; name: Localized; permissions: string[] } | null;
+  /** Staff only: two-factor authentication state. */
+  mfa?: { enabled: boolean; required: boolean };
 };
 
 export type Address = {

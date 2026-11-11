@@ -5,6 +5,7 @@ import { forbidden, notFound } from '../../lib/errors';
 import { ah, ok } from '../../lib/http';
 import { logger } from '../../lib/logger';
 import { safeEqual } from '../../lib/tokens';
+import { securityEvent } from '../../lib/security-log';
 import { sandboxAllowed } from '../../integrations/payments';
 import { SandboxPayment } from '../../integrations/payments/sandbox';
 import { Payment, ProcessedEvent } from '../../models';
@@ -102,7 +103,10 @@ paymentRoutes.post(
     const secret = webhookSecret('moyasar');
     const body = req.body as { id?: string; type?: string; secret_token?: string; data?: { id?: string; invoice_id?: string } };
     // Invalid signatures are rejected before any record is written.
-    if (!secret || !body?.secret_token || !safeEqual(String(body.secret_token), secret)) throw forbidden('Invalid webhook signature');
+    if (!secret || !body?.secret_token || !safeEqual(String(body.secret_token), secret)) {
+      securityEvent('webhook.bad_signature', req, { provider: 'moyasar', configured: Boolean(secret) });
+      throw forbidden('Invalid webhook signature');
+    }
     const ref = body.data?.invoice_id;
     if (!ref || !body.id) return ok(res, { ignored: true });
     return handleEvent(res, 'moyasar', String(body.id), String(ref));
@@ -115,7 +119,10 @@ paymentRoutes.post(
   ah(async (req: Request, res: Response) => {
     const secret = webhookSecret('tabby');
     const given = req.get('x-celibery-webhook-secret') ?? '';
-    if (!secret || !safeEqual(given, secret)) throw forbidden('Invalid webhook signature');
+    if (!secret || !safeEqual(given, secret)) {
+      securityEvent('webhook.bad_signature', req, { provider: 'tabby', configured: Boolean(secret) });
+      throw forbidden('Invalid webhook signature');
+    }
     const body = req.body as { id?: string; status?: string };
     if (!body?.id) return ok(res, { ignored: true });
     return handleEvent(res, 'tabby', `${body.id}:${String(body.status ?? '').toLowerCase()}`, String(body.id));

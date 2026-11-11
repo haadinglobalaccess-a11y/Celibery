@@ -1,4 +1,4 @@
-import { env, isProd } from '../../config/env';
+import { devFallbacksAllowed, env } from '../../config/env';
 import { logger } from '../../lib/logger';
 import { buildKeyRing, decryptSecret, encryptSecret, fingerprint, type KeyRing } from '../../lib/secrets';
 import { IntegrationCredential, WITH_SECRETS } from '../../models/IntegrationCredential';
@@ -39,7 +39,7 @@ export function keyRing(): KeyRing | null {
   const raw = `${env.CREDENTIALS_ENCRYPTION_KEY}|${env.CREDENTIALS_ENCRYPTION_KEY_PREVIOUS}`;
   if (ringCache?.raw === raw) return ringCache.ring;
   let ring = buildKeyRing(env.CREDENTIALS_ENCRYPTION_KEY, env.CREDENTIALS_ENCRYPTION_KEY_PREVIOUS);
-  if (!ring && !isProd) {
+  if (!ring && devFallbacksAllowed()) {
     // Development/test only: a fixed, clearly non-secret key so the feature works locally.
     // Production refuses to store credentials without a real key (see requireKeyRing).
     ring = buildKeyRing('ZGV2LW9ubHktaW5zZWN1cmUta2V5LWRvLW5vdC11c2U=', '');

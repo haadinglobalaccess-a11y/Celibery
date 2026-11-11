@@ -27,3 +27,10 @@ export const loginSchema = z.object({ email, password: z.string().min(1).max(128
 export const forgotSchema = z.object({ email, lang: z.enum(['ar', 'en']).optional() });
 export const resetSchema = z.object({ token: z.string().min(20).max(200), password });
 export const changePasswordSchema = z.object({ currentPassword: z.string().min(1).max(128), newPassword: password });
+
+/** 6-digit authenticator code, or a recovery code such as 7K3Q-9XWD-M2PA. */
+const mfaCode = z.string().trim().min(6).max(20).regex(/^[0-9A-Za-z -]+$/);
+export const mfaVerifySchema = z.object({ mfaToken: z.string().min(20).max(1000), code: mfaCode });
+export const mfaPasswordSchema = z.object({ password: z.string().min(1).max(128) });
+export const mfaCodeSchema = z.object({ code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code') });
+export const mfaDisableSchema = z.object({ password: z.string().min(1).max(128), code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code') });

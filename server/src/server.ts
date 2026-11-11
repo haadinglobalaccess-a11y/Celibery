@@ -13,6 +13,12 @@ async function main() {
   const serveClient = process.env.SERVE_CLIENT ? path.resolve(__dirname, '../../client/dist') : undefined;
   const app = createApp({ serveClient });
   const server = app.listen(env.PORT, () => logger.info(`CELIBERY API listening on port ${env.PORT}`, { env: env.NODE_ENV, serveClient: Boolean(serveClient) }));
+  // Slow-client protection (slowloris): headers must arrive within 20 s and a request within 2 min
+  // (large local media uploads included). Keep-alive above the typical 60 s load-balancer idle timeout.
+  server.headersTimeout = 20_000;
+  server.requestTimeout = 120_000;
+  server.keepAliveTimeout = 65_000;
+  server.maxHeadersCount = 100;
 
   // No Vercel Cron here: run the scheduled jobs in-process unless an external cron calls /api/cron/*.
   const stopScheduler = env.DISABLE_INTERNAL_SCHEDULER || env.NODE_ENV === 'test' ? () => undefined : startScheduler();
@@ -36,6 +42,10 @@ async function main() {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
+
+// A failed background task (a notification, a log write) must never take the whole store offline:
+// log it and keep serving. Programming errors outside a request still restart the process.
+process.on('unhandledRejection', (reason) => logger.error('Unhandled promise rejection', { err: reason instanceof Error ? reason.stack : String(reason) }));
 
 main().catch((err) => {
   // Full stack on stderr: the most useful line in a host's deploy log when start-up fails.

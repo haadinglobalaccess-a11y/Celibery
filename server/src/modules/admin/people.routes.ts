@@ -2,11 +2,14 @@ import { Router } from 'express';
 import { audit } from '../../lib/audit';
 import { badRequest, conflict, forbidden, notFound } from '../../lib/errors';
 import { ah, escapeRegex, ok } from '../../lib/http';
-import { requirePermission } from '../../middleware/auth';
+import type { Request } from 'express';
+import type { Permission } from '../../lib/permissions';
+import { securityEvent } from '../../lib/security-log';
+import { requirePermission, revokeAllSessions } from '../../middleware/auth';
 import { q, validate } from '../../middleware/validate';
 import { NewsletterSubscription, Order, Role, User } from '../../models';
 import { emailConfigured, sendStaffInviteEmail } from '../../integrations/notifications';
-import { createResetToken, resetLink } from '../auth/auth.service';
+import { createResetToken, resetLink, resetMfaForUser } from '../auth/auth.service';
 import { customerListQuery, customerStatus, idParam, roleInput, staffCreate, staffUpdate } from './admin.schemas';
 
 // ---- Customers ---------------------------------------------------------------------------
@@ -87,9 +90,33 @@ adminCustomerRoutes.patch(
 export const adminStaffRoutes = Router();
 adminStaffRoutes.use(requirePermission('staff:manage'));
 
+/**
+ * Least privilege for staff management: nobody can grant a permission they do not hold
+ * themselves, or manage (edit, deactivate, reset the password or two-factor of) a colleague who
+ * holds permissions they lack. A custom role with staff:manage can therefore never escalate to
+ * Super Administrator. The Super Administrator holds every permission and is unaffected.
+ */
+function assertCanGrant(req: Request, permissions: readonly string[]) {
+  const missing = permissions.filter((p) => !req.user!.permissions.has(p as Permission));
+  if (missing.length) {
+    securityEvent('staff.privilege_blocked', req, { missing });
+    throw forbidden('You cannot grant permissions that you do not have yourself');
+  }
+}
+async function assertCanManage(req: Request, staffId: string) {
+  const target = await User.findOne({ _id: staffId, type: 'staff' }).select('role').lean();
+  if (!target) throw notFound('Staff member');
+  const role = target.role ? await Role.findById(target.role).select('permissions').lean() : null;
+  const missing = (role?.permissions ?? []).filter((p) => !req.user!.permissions.has(p as Permission));
+  if (missing.length) {
+    securityEvent('staff.privilege_blocked', req, { targetUserId: staffId, missing });
+    throw forbidden('You cannot manage a staff member who has permissions that you do not have');
+  }
+}
+
 adminStaffRoutes.get(
   '/',
-  ah(async (_req, res) => ok(res, await User.find({ type: 'staff' }).select('name email title active role lastLoginAt createdAt').populate('role', 'key name').sort({ createdAt: 1 }).lean())),
+  ah(async (_req, res) => ok(res, await User.find({ type: 'staff' }).select('name email title active role lastLoginAt createdAt mfaEnabled').populate('role', 'key name').sort({ createdAt: 1 }).lean())),
 );
 
 /**
@@ -104,6 +131,7 @@ adminStaffRoutes.post(
     if (await User.exists({ email: req.body.email })) throw conflict('EMAIL_IN_USE', 'A user with this email already exists');
     const role = await Role.findById(req.body.roleId).lean();
     if (!role) throw badRequest('INVALID_ROLE', 'Role not found');
+    assertCanGrant(req, role.permissions as string[]);
     const user = await User.create({ type: 'staff', name: req.body.name, email: req.body.email, title: req.body.title, role: role._id, preferredLang: 'en' });
     const token = await createResetToken(user._id, 72 * 60);
     const link = resetLink(token, 'en', true);
@@ -119,11 +147,14 @@ adminStaffRoutes.patch(
   validate(staffUpdate),
   ah(async (req, res) => {
     if (req.params.id === req.user!.id && (req.body.active === false || req.body.roleId)) throw forbidden('You cannot deactivate yourself or change your own role');
+    await assertCanManage(req, req.params.id);
     const set: Record<string, unknown> = {};
     if (req.body.name) set.name = req.body.name;
     if (req.body.title !== undefined) set.title = req.body.title;
     if (req.body.roleId) {
-      if (!(await Role.exists({ _id: req.body.roleId }))) throw badRequest('INVALID_ROLE', 'Role not found');
+      const newRole = await Role.findById(req.body.roleId).select('permissions').lean();
+      if (!newRole) throw badRequest('INVALID_ROLE', 'Role not found');
+      assertCanGrant(req, newRole.permissions as string[]);
       set.role = req.body.roleId;
     }
     const update: Record<string, unknown> = { $set: set };
@@ -133,6 +164,7 @@ adminStaffRoutes.patch(
     }
     const u = await User.findOneAndUpdate({ _id: req.params.id, type: 'staff' }, update, { new: true }).select('name email title active role').lean();
     if (!u) throw notFound('Staff member');
+    if (req.body.active === false) await revokeAllSessions(u._id);
     await audit(req, 'update', 'staff', req.params.id, JSON.stringify(req.body));
     return ok(res, u);
   }),
@@ -142,6 +174,7 @@ adminStaffRoutes.post(
   '/:id/reset-link',
   validate(idParam, 'params'),
   ah(async (req, res) => {
+    await assertCanManage(req, req.params.id);
     const u = await User.findOne({ _id: req.params.id, type: 'staff' }).lean();
     if (!u) throw notFound('Staff member');
     const token = await createResetToken(u._id, 72 * 60);
@@ -152,12 +185,27 @@ adminStaffRoutes.post(
   }),
 );
 
+/** A staff member lost their authenticator: two-factor is switched off and every session ends. */
+adminStaffRoutes.post(
+  '/:id/reset-mfa',
+  validate(idParam, 'params'),
+  ah(async (req, res) => {
+    if (req.params.id === req.user!.id) throw forbidden('Use your own profile to change your two-factor authentication');
+    await assertCanManage(req, req.params.id);
+    await resetMfaForUser(req.params.id);
+    securityEvent('mfa.reset_by_admin', req, { targetUserId: req.params.id });
+    await audit(req, 'mfa_reset', 'staff', req.params.id);
+    return ok(res, { reset: true });
+  }),
+);
+
 adminStaffRoutes.get('/roles/all', ah(async (_req, res) => ok(res, await Role.find().sort({ system: -1, key: 1 }).lean())));
 
 adminStaffRoutes.post(
   '/roles',
   validate(roleInput),
   ah(async (req, res) => {
+    assertCanGrant(req, req.body.permissions ?? []);
     const r = await Role.create({ ...req.body, system: false });
     await audit(req, 'create', 'role', r._id, r.key);
     return ok(res, r, 201);
@@ -172,6 +220,7 @@ adminStaffRoutes.put(
     const role = await Role.findById(req.params.id);
     if (!role) throw notFound('Role');
     if (role.system) throw forbidden('The administrator role cannot be changed');
+    assertCanGrant(req, [...(role.permissions as string[]), ...(req.body.permissions ?? [])]);
     role.set({ name: req.body.name, permissions: req.body.permissions });
     await role.save();
     // Permissions are re-read on every request, so changes apply immediately.
@@ -187,6 +236,7 @@ adminStaffRoutes.delete(
     const role = await Role.findById(req.params.id);
     if (!role) throw notFound('Role');
     if (role.system) throw forbidden('System roles cannot be deleted');
+    assertCanGrant(req, role.permissions as string[]);
     if (await User.exists({ role: role._id })) throw conflict('ROLE_IN_USE', 'Reassign staff using this role first');
     await role.deleteOne();
     await audit(req, 'delete', 'role', req.params.id, role.key);

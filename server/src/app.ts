@@ -15,7 +15,8 @@ import { ah, ok } from './lib/http';
 import { safeEqual } from './lib/tokens';
 import { loadUser } from './middleware/auth';
 import { errorHandler, notFoundHandler } from './middleware/error';
-import { apiLimiter, csrfGuard } from './middleware/security';
+import { apiLimiter, csrfGuard, rejectOperatorKeys } from './middleware/security';
+import { securityEvent } from './lib/security-log';
 import { accountRoutes } from './modules/account/account.routes';
 import { adminRoutes } from './modules/admin';
 import { authRoutes } from './modules/auth/auth.routes';
@@ -28,7 +29,9 @@ import { paymentRoutes } from './modules/payments/payment.routes';
 export function createApp(opts: { serveClient?: string } = {}): Express {
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  // Exactly the number of proxies in front of the app (TRUST_PROXY_HOPS): req.ip is then the real
+  // client address and a forged X-Forwarded-For cannot dodge per-IP rate limits.
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
 
   // Content-Security-Policy (lib/csp.ts — the same policy is written into index.html at build time
   // and sent by Vercel for the static site). JSON API responses get an even stricter policy.
@@ -87,14 +90,17 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   app.get('/robots.txt', ah(robots));
   app.get('/llms.txt', ah(llms));
 
-  app.use('/api', apiLimiter, csrfGuard, integrationsMiddleware, loadUser);
+  app.use('/api', apiLimiter, csrfGuard, rejectOperatorKeys, integrationsMiddleware, loadUser);
 
   // Scheduled job (Vercel Cron sends Authorization: Bearer <CRON_SECRET>).
   app.get(
     '/api/cron/release-reservations',
     ah(async (req, res) => {
       const auth = req.get('authorization') ?? '';
-      if (!env.CRON_SECRET || !safeEqual(auth, `Bearer ${env.CRON_SECRET}`)) throw forbidden();
+      if (!env.CRON_SECRET || !safeEqual(auth, `Bearer ${env.CRON_SECRET}`)) {
+        securityEvent('cron.bad_secret', req);
+        throw forbidden();
+      }
       return ok(res, await runReservationJob());
     }),
   );
@@ -103,7 +109,10 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
     '/api/cron/maintenance',
     ah(async (req, res) => {
       const auth = req.get('authorization') ?? '';
-      if (!env.CRON_SECRET || !safeEqual(auth, `Bearer ${env.CRON_SECRET}`)) throw forbidden();
+      if (!env.CRON_SECRET || !safeEqual(auth, `Bearer ${env.CRON_SECRET}`)) {
+        securityEvent('cron.bad_secret', req);
+        throw forbidden();
+      }
       return ok(res, await runMaintenanceJob());
     }),
   );

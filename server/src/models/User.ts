@@ -33,6 +33,15 @@ const UserSchema = new Schema(
     failedLogins: { type: Number, default: 0, select: false },
     lockUntil: { type: Date, select: false },
     lastLoginAt: { type: Date },
+    lastLoginIp: { type: String, default: '', select: false },
+    // Two-factor authentication (TOTP, RFC 6238) — staff accounts. Secrets are AES-256-GCM
+    // encrypted with CREDENTIALS_ENCRYPTION_KEY (lib/secrets.ts); recovery codes are SHA-256 hashed.
+    mfaEnabled: { type: Boolean, default: false },
+    mfaSecret: { type: String, select: false },
+    mfaPendingSecret: { type: String, select: false },
+    /** Last accepted TOTP time step: a code can be used once (replay protection). */
+    mfaLastStep: { type: Number, default: 0, select: false },
+    mfaRecoveryHashes: { type: [String], default: undefined, select: false },
     preferredLang: { type: String, enum: ['ar', 'en'], default: 'ar' },
     addresses: { type: [AddressSchema], default: [] },
     wishlist: { type: [{ type: Schema.Types.ObjectId, ref: 'Product' }], default: [] },

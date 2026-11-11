@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { get, post } from '../lib/api';
+import { ApiError, get, post } from '../lib/api';
 import type { Me } from '../lib/types';
 
 type AuthCtx = {
@@ -7,6 +7,8 @@ type AuthCtx = {
   ready: boolean;
   refresh: () => Promise<Me | null>;
   login: (email: string, password: string) => Promise<Me>;
+  /** Second sign-in step for staff with two-factor authentication. */
+  verifyMfa: (mfaToken: string, code: string) => Promise<Me>;
   register: (data: { name: string; email: string; password: string; phone?: string; lang: string; marketingOptIn?: boolean }) => Promise<Me>;
   logout: () => Promise<void>;
 };
@@ -35,7 +37,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const me = await post<Me>('/api/auth/login', { email, password });
+    const r = await post<Me | { mfaRequired: true; mfaToken: string }>('/api/auth/login', { email, password });
+    // Staff with two-factor authentication: no session yet. The admin sign-in asks for the code.
+    if ('mfaRequired' in r) throw new ApiError(401, 'MFA_REQUIRED', 'Enter the code from your authenticator app', { mfaToken: r.mfaToken });
+    setUser(r);
+    return r;
+  }, []);
+
+  const verifyMfa = useCallback(async (mfaToken: string, code: string) => {
+    const me = await post<Me>('/api/auth/mfa/verify', { mfaToken, code });
     setUser(me);
     return me;
   }, []);
@@ -51,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  return <Ctx.Provider value={{ user, ready, refresh, login, register, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, ready, refresh, login, verifyMfa, register, logout }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

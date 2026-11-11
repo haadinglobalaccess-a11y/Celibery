@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
-import { forbidden, notFound } from '../../lib/errors';
+import { AppError, forbidden, notFound } from '../../lib/errors';
+import { GatewayError } from '../../integrations/payments/http';
 import { ok } from '../../lib/http';
 import { safeEqual, sha256 } from '../../lib/tokens';
 import { normalizeSaudiPhone } from '../../integrations/notifications';
@@ -55,9 +56,12 @@ export async function checkout(req: Request, res: Response) {
     return ok(res, { order: view, accessToken, replayed, redirectUrl: pay.redirectUrl, paymentId: pay.paymentId }, 201);
   } catch (err) {
     // The order exists and holds stock; the customer can retry payment from the order page.
-    return ok(res, { order: view, accessToken, replayed, redirectUrl: null, paymentError: (err as Error).message }, 201);
+    return ok(res, { order: view, accessToken, replayed, redirectUrl: null, paymentError: err instanceof AppError && !(err instanceof GatewayError) ? err.message : 'Could not start the payment. Please try again from your order page.' }, 201);
   }
 }
+
+/** The guest access token from the query string; arrays and other shapes are ignored. */
+const queryToken = (req: Request) => (typeof req.query.token === 'string' && req.query.token ? req.query.token : undefined);
 
 /** Grants access to an order for its owner, a holder of the guest access token, or staff. */
 async function loadAccessibleOrder(req: Request, orderNumber: string, token?: string) {
@@ -65,7 +69,7 @@ async function loadAccessibleOrder(req: Request, orderNumber: string, token?: st
   if (!order) throw notFound('Order');
   const owner = req.user?.type === 'customer' && order.customer && String(order.customer) === req.user.id;
   const staff = req.user?.type === 'staff' && req.user.permissions.has('orders:read');
-  const tokenOk = Boolean(token) && safeEqual(sha256(token!), order.accessTokenHash);
+  const tokenOk = typeof token === 'string' && token.length > 0 && token.length <= 100 && Boolean(order.accessTokenHash) && safeEqual(sha256(token), String(order.accessTokenHash));
   if (!owner && !staff && !tokenOk) throw notFound('Order'); // do not reveal existence
   return order;
 }
@@ -84,7 +88,7 @@ export async function retry(req: Request, res: Response) {
 }
 
 export async function getOrder(req: Request, res: Response) {
-  const order = await loadAccessibleOrder(req, req.params.orderNumber, (req.query.token as string) || undefined);
+  const order = await loadAccessibleOrder(req, req.params.orderNumber, queryToken(req));
   return ok(res, svc.toCustomerOrder(order));
 }
 
@@ -93,7 +97,7 @@ export async function track(req: Request, res: Response) {
   const input = q(req, trackSchema);
   const order = await Order.findOne({ orderNumber: input.orderNumber }).select('+accessTokenHash').lean();
   if (!order) throw notFound('Order');
-  if (input.token && safeEqual(sha256(input.token), order.accessTokenHash)) return ok(res, { full: true, order: svc.toCustomerOrder(order) });
+  if (input.token && order.accessTokenHash && safeEqual(sha256(input.token), String(order.accessTokenHash))) return ok(res, { full: true, order: svc.toCustomerOrder(order) });
   if (input.phone && normalizeSaudiPhone(input.phone) === normalizeSaudiPhone(order.contact.phone)) {
     const v = svc.toCustomerOrder(order);
     return ok(res, {
@@ -121,7 +125,7 @@ export async function myOrders(req: Request, res: Response) {
 
 /** Return options and existing return requests for an order the caller can access. */
 export async function orderReturns(req: Request, res: Response) {
-  const order = await loadAccessibleOrder(req, req.params.orderNumber, (req.query.token as string) || undefined);
+  const order = await loadAccessibleOrder(req, req.params.orderNumber, queryToken(req));
   return ok(res, await returnOptions(order));
 }
 

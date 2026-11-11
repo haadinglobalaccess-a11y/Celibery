@@ -53,6 +53,18 @@ const schema = z.object({
   WHATSAPP_TEMPLATE_LANG_EN: z.string().default('en'),
   CRON_SECRET: z.string().default(''),
 
+  // ---- Security hardening ------------------------------------------------------------------
+  /**
+   * Number of reverse-proxy hops in front of the app (Express "trust proxy"). 1 = Vercel or
+   * Railway edge only. Use 2 when a CDN/WAF such as Cloudflare sits in front of Railway. Too high a
+   * value lets clients spoof X-Forwarded-For and evade per-IP rate limits.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+  /** Where rate-limit counters live: "mongo" (shared by every instance) or "memory" (one process only). */
+  RATE_LIMIT_STORE: z.enum(['mongo', 'memory']).default('mongo'),
+  /** When true, staff accounts must enrol two-factor authentication before using the admin. */
+  STAFF_MFA_REQUIRED: bool(false),
+
   // Encryption at rest for credentials managed in Admin → Settings (lib/secrets.ts).
   // 32 random bytes, base64 or hex. Keep it OUT of the database and the repository.
   CREDENTIALS_ENCRYPTION_KEY: z.string().default(''),
@@ -98,9 +110,29 @@ export const env = parsed.data;
 export const isProd = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
 
+/**
+ * True when the process runs on a hosting platform (Vercel, Railway, Render, Fly, Cloud Run,
+ * Heroku…), whatever NODE_ENV says. Development fallbacks (built-in JWT secret, built-in
+ * credential key) are never used there: a forgotten NODE_ENV=production must not turn the public
+ * development secret into the key that signs admin sessions.
+ */
+export function isHostedPlatform(e: NodeJS.ProcessEnv = process.env): boolean {
+  return Boolean(e.VERCEL || e.RAILWAY_ENVIRONMENT || e.RAILWAY_PROJECT_ID || e.RENDER || e.FLY_APP_NAME || e.K_SERVICE || e.DYNO);
+}
+
+/** Development fallbacks are allowed only for local development and tests. */
+export const devFallbacksAllowed = () => !isProd && !isHostedPlatform();
+
 /** Fails fast on configuration that would be unsafe in production. */
 export function assertProductionConfig() {
-  if (!isProd) return;
+  if (!isProd) {
+    if (isHostedPlatform()) {
+      // eslint-disable-next-line no-console
+      console.warn('SECURITY WARNING: running on a hosting platform with NODE_ENV=' + env.NODE_ENV + '. Set NODE_ENV=production. Development secrets are disabled.');
+      if (env.JWT_SECRET.length < 32) throw new Error('Unsafe configuration: JWT_SECRET (min. 32 characters) is required on a hosting platform');
+    }
+    return;
+  }
   const problems: string[] = [];
   if (!env.MONGODB_URI) problems.push('MONGODB_URI is required');
   if (env.JWT_SECRET.length < 32) problems.push('JWT_SECRET must be at least 32 characters');
@@ -132,12 +164,13 @@ export function assertProductionConfig() {
       problems.push(String((e as Error).message));
     }
   }
+  if (env.TRUST_PROXY_HOPS > 2) problems.push('TRUST_PROXY_HOPS above 2 lets clients spoof their IP address; use the real number of proxies');
   if (problems.length) throw new Error('Unsafe production configuration: ' + problems.join('; '));
 }
 
 export function jwtSecret(): string {
   if (env.JWT_SECRET && env.JWT_SECRET.length >= 32) return env.JWT_SECRET;
-  if (isProd) throw new Error('JWT_SECRET must be set (min. 32 characters) in production');
+  if (!devFallbacksAllowed()) throw new Error('JWT_SECRET must be set (min. 32 characters) in production and on hosting platforms');
   // Development/test fallback only — never used in production (see assertProductionConfig).
   return 'dev-only-insecure-secret-change-me-0123456789abcdef';
 }

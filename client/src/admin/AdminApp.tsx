@@ -14,6 +14,7 @@ import { AdminLangScope, readAdminLang, saveAdminLang, useAT, type AdminLang } f
 import { AIcon } from './icons';
 import { Modal } from './kit';
 import { MediaLibraryPage } from './media';
+import { MfaEnrollmentGate, MfaSettings } from './security';
 import { Categories, Customers, CustomerDetail, Discounts, Inventory } from './pages/Catalog';
 import { Content } from './pages/Content';
 import { OrderDetail, Orders } from './pages/Orders';
@@ -53,11 +54,14 @@ const NAV_WEBSITE: NavItem[] = [
 ];
 
 function AdminLogin() {
-  const { login, logout } = useAuth();
+  const { login, verifyMfa, logout } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Second step (two-factor authentication): short-lived challenge from the password step.
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -69,11 +73,54 @@ function AdminLogin() {
         setError('This account does not have admin access.');
       }
     } catch (err) {
-      setError((err as ApiError).message);
+      const ex = err as ApiError;
+      if (ex.code === 'MFA_REQUIRED') {
+        setMfaToken((ex.details as { mfaToken: string }).mfaToken);
+        setPassword('');
+      } else setError(ex.message);
     } finally {
       setBusy(false);
     }
   };
+  const submitCode = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      await verifyMfa(mfaToken!, code);
+    } catch (err) {
+      const ex = err as ApiError;
+      setError(ex.message);
+      setCode('');
+      // Expired or locked challenge: start again from the password.
+      if (/expired|Too many/i.test(ex.message)) setMfaToken(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (mfaToken)
+    return (
+      <div className="admin-login">
+        <form className="a-card form-grid" onSubmit={submitCode}>
+          <Logo />
+          <h1 style={{ fontSize: 20 }}>Two-factor authentication</h1>
+          <p className="a-muted" style={{ margin: 0 }}>
+            Enter the 6-digit code from your authenticator app, or one of your recovery codes.
+          </p>
+          <label className="field">
+            <span className="label">Code</span>
+            <input className="input ltr" autoFocus inputMode="text" autoComplete="one-time-code" maxLength={20} required value={code} onChange={(e) => setCode(e.target.value)} data-testid="admin-mfa-code" />
+          </label>
+          {error ? <p className="alert alert--error">{error}</p> : null}
+          <button className="btn btn--primary" disabled={busy} data-testid="admin-mfa-verify">
+            Verify
+          </button>
+          <button type="button" className="btn" onClick={() => (setMfaToken(null), setCode(''), setError(''))}>
+            Back
+          </button>
+        </form>
+      </div>
+    );
   return (
     <div className="admin-login">
       <form className="a-card form-grid" onSubmit={submit}>
@@ -411,6 +458,7 @@ function UserMenu({ lang, setLang }: { lang: AdminLang; setLang: (l: AdminLang) 
             <dt>{t.shell.permissions}</dt>
             <dd className="a-perms ltr">{(user.role?.permissions ?? []).join(' · ') || '—'}</dd>
           </dl>
+          <MfaSettings />
         </Modal>
       ) : null}
       {panel === 'prefs' ? (
@@ -568,6 +616,12 @@ export default function AdminApp() {
     return (
       <I18nProvider lang="en">
         <AdminLogin />
+      </I18nProvider>
+    );
+  if (user?.mfa?.required && !user.mfa.enabled)
+    return (
+      <I18nProvider lang="en">
+        <MfaEnrollmentGate />
       </I18nProvider>
     );
   return (

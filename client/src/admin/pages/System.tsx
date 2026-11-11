@@ -33,7 +33,7 @@ const PERMISSIONS: [string, string][] = [
 ];
 
 type Role = { _id: string; key: string; name: Localized; permissions: string[]; system: boolean };
-type StaffRow = { _id: string; name: string; email: string; title: string; active: boolean; role?: { _id: string; key: string; name: Localized }; lastLoginAt?: string };
+type StaffRow = { _id: string; name: string; email: string; title: string; active: boolean; role?: { _id: string; key: string; name: Localized }; lastLoginAt?: string; mfaEnabled?: boolean };
 
 export function Staff() {
   const [tab, setTab] = useState<'staff' | 'roles'>('staff');
@@ -148,7 +148,14 @@ export function Staff() {
                     </select>
                   </td>
                   <td>{dt(s.lastLoginAt)}</td>
-                  <td>{s.active ? <span className="badge badge--success">active</span> : <span className="badge badge--danger">disabled</span>}</td>
+                  <td>
+                    {s.active ? <span className="badge badge--success">active</span> : <span className="badge badge--danger">disabled</span>}{' '}
+                    {s.mfaEnabled ? (
+                      <span className="badge" title="Two-factor authentication is on">
+                        2FA
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="actions">
                     <button
                       className="btn btn--ghost btn--sm"
@@ -166,13 +173,34 @@ export function Staff() {
                     <button
                       className="btn btn--ghost btn--sm"
                       onClick={async () => {
-                        const r = await post<{ inviteLink: string | null; emailStatus: string }>(`/api/admin/staff/${s._id}/reset-link`);
-                        setLink(r.inviteLink);
-                        toast(r.emailStatus === 'sent' ? 'Reset link emailed' : 'Reset link created');
+                        try {
+                          const r = await post<{ inviteLink: string | null; emailStatus: string }>(`/api/admin/staff/${s._id}/reset-link`);
+                          setLink(r.inviteLink);
+                          toast(r.emailStatus === 'sent' ? 'Reset link emailed' : 'Reset link created');
+                        } catch (ex) {
+                          toast((ex as Error).message, 'error');
+                        }
                       }}
                     >
                       Send reset link
                     </button>
+                    {s.mfaEnabled ? (
+                      <button
+                        className="btn btn--ghost btn--sm"
+                        onClick={async () => {
+                          if (!window.confirm(`Turn off two-factor authentication for ${s.name}? Only do this when they lost their phone. They will be signed out everywhere.`)) return;
+                          try {
+                            await post(`/api/admin/staff/${s._id}/reset-mfa`);
+                            toast('Two-factor authentication reset');
+                            staff.reload();
+                          } catch (ex) {
+                            toast((ex as Error).message, 'error');
+                          }
+                        }}
+                      >
+                        Reset 2FA
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
               ))}
