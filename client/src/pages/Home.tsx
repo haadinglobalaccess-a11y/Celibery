@@ -7,6 +7,7 @@ import { useSettings } from '../state/settings';
 import type { HomeData } from '../lib/types';
 import { BrandStory, CampaignGallery, CategorySpotlights, CategoryUniverse, ClosingCampaign, Ecosystem, ExploreCollection, FlagshipCampaigns, WhyCelibery } from '../storefront/HomeSections';
 import { TheatreStage } from '../storefront/motion';
+import { HomeFaq } from '../storefront/Faq';
 import { Ambient, CinematicHero } from '../three-d';
 
 function HomeSkeleton() {
@@ -89,6 +90,8 @@ export default function Home() {
       <WhyCelibery />
       {/* 07 */}
       <BrandStory data={data} />
+      {/* FAQ preview (Admin → Website → FAQ management) — before the newsletter, hidden when empty */}
+      <HomeFaq faq={data.faq} />
       {/* 08 */}
       <ClosingCampaign data={data} />
       </TheatreStage>

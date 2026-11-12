@@ -5,6 +5,7 @@ import { cleanLocLine, cleanLocRich } from '../../lib/text';
 import { Banner, Campaign, Category, Order, Product, ProductCollection, Review, getSettings, type ProductDoc } from '../../models';
 import type { ProductListQuery } from './catalog.schemas';
 import { availablePaymentMethods } from '../payments/payment.service';
+import { homepageFaq } from '../faq/faq.service';
 
 export const PUBLIC_PRODUCT_FIELDS =
   'slug sku model name shortDescription category series images price compareAtPrice stock lowStockThreshold featured attributes tags isBundle dataSource createdAt';
@@ -298,6 +299,8 @@ export async function homePayload() {
     campaigns,
     brandStory: { text: settings?.homepage?.brandStory ?? { ar: '', en: '' }, imageUrl: settings?.homepage?.brandStoryImageUrl ?? '' },
     newsletterEnabled: settings?.homepage?.newsletterEnabled ?? true,
+    // Admin → Website → FAQ management: published, homepage-selected questions only.
+    faq: await homepageFaq(),
   };
 }
 

@@ -140,6 +140,20 @@ const SettingsSchema = new Schema(
       brandStoryImageUrl: { type: String, default: '' },
       newsletterEnabled: { type: Boolean, default: true },
     },
+    /** FAQ display (Admin → Website → FAQ management → Display settings). Questions live in the Faq collection. */
+    faq: {
+      homepageEnabled: { type: Boolean, default: true },
+      /** How many homepage-selected questions the homepage preview shows. */
+      homepageLimit: { type: Number, default: 6, min: 1, max: 12 },
+      showCategoryFilters: { type: Boolean, default: false },
+      /** Optional heading / subtitle; empty = the storefront's default wording. */
+      title: { type: LocalizedSchema, default: () => ({}) },
+      subtitle: { type: LocalizedSchema, default: () => ({}) },
+      /** Missing translation: 'hide' the question in that language, or 'fallback' to the other language (shown with its own direction). */
+      missingTranslation: { type: String, enum: ['hide', 'fallback'], default: 'hide' },
+      /** Accordion: allow several answers open at once (false = opening one closes the others). */
+      allowMultipleOpen: { type: Boolean, default: false },
+    },
     reviews: {
       /** Q19: no real reviews yet — reviews stay hidden until enabled and genuinely collected. */
       enabled: { type: Boolean, default: false },

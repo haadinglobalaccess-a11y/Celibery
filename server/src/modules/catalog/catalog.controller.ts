@@ -7,6 +7,7 @@ import { Campaign, Category, NewsletterSubscription, Order, Page, Product, Revie
 import { availablePaymentMethods } from '../payments/payment.service';
 import * as svc from './catalog.service';
 import { productListQuery } from './catalog.schemas';
+import { lastPublishedChange } from '../faq/faq.service';
 
 export async function categories(_req: Request, res: Response) {
   return ok(res, await svc.listCategories());
@@ -191,6 +192,9 @@ export async function sitemap(_req: Request, res: Response) {
     ...prods.map((p) => ({ path: `/p/${p.slug}`, lastmod: p.updatedAt as Date })),
     ...pages.map((p) => ({ path: `/page/${p.slug}`, lastmod: p.updatedAt as Date })),
   ];
+  // The FAQ page is listed only once something is published on it.
+  const faqChanged = await lastPublishedChange();
+  if (faqChanged) urls.push({ path: '/faq', lastmod: faqChanged });
   const xml =
     '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' +
     urls

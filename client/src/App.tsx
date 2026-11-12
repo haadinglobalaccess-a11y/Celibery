@@ -8,6 +8,7 @@ import { ForgotPassword, Login, Register, ResetPassword } from './pages/AuthPage
 import CartPage from './pages/CartPage';
 import Checkout from './pages/Checkout';
 import { CampaignPage, PolicyPage } from './pages/ContentPages';
+import FaqPage from './pages/FaqPage';
 import Home from './pages/Home';
 import { CheckoutReturn, SandboxPay, TrackOrder } from './pages/OrderPages';
 import ProductPage from './pages/ProductPage';
@@ -27,6 +28,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to={`/${preferredLang()}`} replace />} />
+      <Route path="/faq" element={<Navigate to={`/${preferredLang()}/faq`} replace />} />
       <Route path="/products/:handle" element={<LegacyRedirect kind="product" />} />
       <Route path="/collections/:handle" element={<LegacyRedirect kind="collection" />} />
       <Route
@@ -56,6 +58,7 @@ export default function App() {
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="reset-password" element={<ResetPassword />} />
         <Route path="page/:slug" element={<PolicyPage />} />
+        <Route path="faq" element={<FaqPage />} />
         <Route path="campaign/:slug" element={<CampaignPage />} />
         <Route path="account" element={<AccountLayout />}>
           <Route index element={<AccountOrders />} />

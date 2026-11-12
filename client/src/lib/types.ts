@@ -124,6 +124,27 @@ export type HomeData = {
   campaigns: Campaign[];
   brandStory: { text: Localized; imageUrl: string };
   newsletterEnabled: boolean;
+  /** Admin → Website → FAQ management (published, homepage-selected questions). */
+  faq?: HomeFaq;
+};
+
+export type FaqTranslationPolicy = 'hide' | 'fallback';
+export type PublicFaq = { id: string; question: Localized; answer: Localized; categoryId: string | null; featured: boolean };
+export type PublicFaqCategory = { id: string; slug: string; name: Localized };
+export type HomeFaq = {
+  enabled: boolean;
+  title?: Localized;
+  subtitle?: Localized;
+  showCategoryFilters?: boolean;
+  missingTranslation?: FaqTranslationPolicy;
+  allowMultipleOpen?: boolean;
+  categories: PublicFaqCategory[];
+  items: PublicFaq[];
+};
+export type FaqPageData = {
+  settings: { title: Localized; subtitle: Localized; missingTranslation: FaqTranslationPolicy; allowMultipleOpen: boolean };
+  categories: PublicFaqCategory[];
+  items: PublicFaq[];
 };
 
 export type PublicSettings = {

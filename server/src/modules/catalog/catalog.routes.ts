@@ -4,6 +4,7 @@ import { requireCustomer } from '../../middleware/auth';
 import { newsletterLimiter, reviewLimiter, searchLimiter } from '../../middleware/security';
 import { validate } from '../../middleware/validate';
 import * as c from './catalog.controller';
+import { publicFaq } from '../faq/faq.routes';
 import { newsletterSchema, productListQuery, reviewSchema, slugParam } from './catalog.schemas';
 
 export const catalogRoutes = Router();
@@ -18,5 +19,6 @@ catalogRoutes.get('/products/:slug/reviews', validate(slugParam, 'params'), ah(c
 catalogRoutes.post('/products/:slug/reviews', requireCustomer, reviewLimiter, validate(slugParam, 'params'), validate(reviewSchema), ah(c.submitReview));
 catalogRoutes.get('/collections/:slug', validate(slugParam, 'params'), ah(c.collection));
 catalogRoutes.get('/campaigns/:slug', validate(slugParam, 'params'), ah(c.campaign));
+catalogRoutes.get('/faq', ah(publicFaq));
 catalogRoutes.get('/pages/:slug', validate(slugParam, 'params'), ah(c.page));
 catalogRoutes.post('/newsletter', newsletterLimiter, validate(newsletterSchema), ah(c.newsletter));

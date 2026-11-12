@@ -25,11 +25,12 @@ import { Returns } from './pages/Returns';
 import { AbandonedCheckoutDetail, AbandonedCheckouts } from './pages/AbandonedCheckouts';
 import { SettingsPage } from './pages/Settings';
 import { ActivityLog, Staff } from './pages/System';
+import { FaqManagement } from './pages/Faq';
 
 const MEDIA_PERMS = ['media:write', 'products:write', 'content:write'];
 const SETTINGS_PERMS = ['settings:write', 'business:write', 'payments:manage'];
 
-type NavKey = 'dashboard' | 'orders' | 'checkouts' | 'products' | 'categories' | 'inventory' | 'customers' | 'returns' | 'discounts' | 'reports' | 'staff' | 'settings' | 'content' | 'media' | 'activity';
+type NavKey = 'faq' | 'dashboard' | 'orders' | 'checkouts' | 'products' | 'categories' | 'inventory' | 'customers' | 'returns' | 'discounts' | 'reports' | 'staff' | 'settings' | 'content' | 'media' | 'activity';
 type NavItem = { key: NavKey; to: string; icon: string; perm: string[]; badge?: 'pending' | 'lowStock' };
 
 /** Spec §7 navigation order; existing website-management pages are kept in a second group. */
@@ -49,6 +50,8 @@ const NAV: NavItem[] = [
 ];
 const NAV_WEBSITE: NavItem[] = [
   { key: 'content', to: '/admin/content', icon: 'content', perm: ['content:write'] },
+  // /admin/faqs (not /admin/faq: the storefront route /:lang/faq would outrank /admin/* for that URL)
+  { key: 'faq', to: '/admin/faqs', icon: 'faq', perm: ['content:write'] },
   { key: 'media', to: '/admin/media', icon: 'media', perm: MEDIA_PERMS },
   { key: 'activity', to: '/admin/activity', icon: 'activity', perm: ['audit:read'] },
 ];
@@ -578,6 +581,7 @@ function Shell({ lang, setLang }: { lang: AdminLang; setLang: (l: AdminLang) => 
             <Route path="reports" element={guard('reports:read', en(<Reports />))} />
             <Route path="staff" element={guard('staff:manage', en(<Staff />))} />
             <Route path="media" element={guard(MEDIA_PERMS, en(<MediaLibraryPage />))} />
+            <Route path="faqs" element={guard('content:write', en(<FaqManagement />))} />
             <Route path="settings" element={guard(SETTINGS_PERMS, en(<SettingsPage />))} />
             <Route path="activity" element={guard('audit:read', en(<ActivityLog />))} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
