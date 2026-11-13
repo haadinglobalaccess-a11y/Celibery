@@ -64,6 +64,8 @@ const schema = z.object({
   RATE_LIMIT_STORE: z.enum(['mongo', 'memory']).default('mongo'),
   /** When true, staff accounts must enrol two-factor authentication before using the admin. */
   STAFF_MFA_REQUIRED: bool(false),
+  /** Open cash-on-delivery orders allowed per phone number (0 = no limit). Default 3; tests default to no limit. */
+  MAX_OPEN_COD_ORDERS_PER_PHONE: z.coerce.number().int().min(0).max(100).optional(),
 
   // Encryption at rest for credentials managed in Admin → Settings (lib/secrets.ts).
   // 32 random bytes, base64 or hex. Keep it OUT of the database and the repository.

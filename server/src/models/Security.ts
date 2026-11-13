@@ -17,6 +17,12 @@ const SessionSchema = new Schema(
     userAgent: { type: String, default: '', maxlength: 300 },
     expiresAt: { type: Date, required: true },
     revokedAt: { type: Date },
+    /**
+     * Last time the user re-proved their identity inside this session (password, plus a 2FA code
+     * when enabled). Sign-in time (createdAt) also counts. Used by requireRecentAuth for step-up
+     * authentication on high-impact admin operations. Optional: older sessions simply lack it.
+     */
+    reauthAt: { type: Date },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

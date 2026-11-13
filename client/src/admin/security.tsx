@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Logo } from '../components/Logo';
-import { ApiError, post } from '../lib/api';
+import { ApiError, post, setStepUpHandler } from '../lib/api';
+import { Modal } from './kit';
 import { useAuth } from '../state/auth';
 
 /**
@@ -169,5 +170,98 @@ export function MfaEnrollmentGate() {
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Step-up re-authentication prompt. Payment credentials and staff/role changes require a recent
+ * password (+2FA) proof; when the server answers REAUTH_REQUIRED, lib/api calls this handler,
+ * which asks for the password here and retries the original request once confirmed.
+ * Cancelling leaves the original error in place (nothing is changed on the server).
+ */
+export function ReauthHost() {
+  const { user } = useAuth();
+  const needsCode = Boolean(user?.mfa?.enabled);
+  const [pending, setPending] = useState<((ok: boolean) => void) | null>(null);
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  // The open prompt's resolver, so an unmount (sign-out) settles a waiting request instead of leaving it hanging.
+  const resolverRef = useRef<((ok: boolean) => void) | null>(null);
+  useEffect(() => {
+    setStepUpHandler(
+      () =>
+        new Promise<boolean>((resolve) => {
+          setPassword('');
+          setCode('');
+          setError('');
+          resolverRef.current = resolve;
+          setPending(() => resolve);
+        }),
+    );
+    return () => {
+      setStepUpHandler(null);
+      resolverRef.current?.(false);
+      resolverRef.current = null;
+    };
+  }, []);
+
+  const close = useCallback(
+    (ok: boolean) => {
+      pending?.(ok);
+      resolverRef.current = null;
+      setPending(null);
+      setPassword('');
+      setCode('');
+    },
+    [pending],
+  );
+
+  if (!pending) return null;
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      await post('/api/auth/reauth', needsCode ? { password, code } : { password });
+      close(true);
+    } catch (err) {
+      setError((err as ApiError).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Confirm it's you" onClose={() => close(false)}>
+      <form className="form-grid" onSubmit={submit} dir="ltr" lang="en" data-testid="reauth-prompt">
+        <p className="a-muted" style={{ margin: 0 }}>
+          Changing payment settings, staff accounts or roles needs your password{needsCode ? ' and a code from your authenticator app' : ''}. This
+          stays confirmed for 15 minutes.
+        </p>
+        {error ? <p className="alert alert--error" style={{ margin: 0 }}>{error}</p> : null}
+        <label className="field">
+          <span className="label">Password</span>
+          <input className="input" type="password" autoComplete="current-password" required autoFocus value={password} onChange={(e) => setPassword(e.target.value)} data-testid="reauth-password" />
+        </label>
+        {needsCode ? (
+          <label className="field">
+            <span className="label">Authenticator code (or a recovery code)</span>
+            <input className="input" autoComplete="one-time-code" required maxLength={32} value={code} onChange={(e) => setCode(e.target.value.trim())} data-testid="reauth-code" />
+          </label>
+        ) : null}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn--primary" disabled={busy} data-testid="reauth-submit">
+            {busy ? 'Checking…' : 'Confirm'}
+          </button>
+          <button type="button" className="btn" onClick={() => close(false)}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

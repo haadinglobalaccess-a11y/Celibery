@@ -16,8 +16,37 @@ export class ApiError extends Error {
 
 type Options = { method?: string; body?: unknown; signal?: AbortSignal };
 
+/**
+ * Step-up authentication: when the server answers REAUTH_REQUIRED (high-impact admin operations),
+ * the registered handler asks for the password (+2FA code), and the request is retried once.
+ * Only the admin registers a handler; elsewhere the error is passed through unchanged.
+ */
+type StepUpHandler = () => Promise<boolean>;
+let stepUpHandler: StepUpHandler | null = null;
+let stepUpPending: Promise<boolean> | null = null;
+export function setStepUpHandler(handler: StepUpHandler | null) {
+  stepUpHandler = handler;
+}
+function stepUp(): Promise<boolean> {
+  if (!stepUpHandler) return Promise.resolve(false);
+  // Several requests failing together share one prompt.
+  stepUpPending ??= stepUpHandler().finally(() => {
+    stepUpPending = null;
+  });
+  return stepUpPending;
+}
+
 /** JSON API client. Sends the session cookie and the CSRF header the server requires. */
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<{ data: T; meta?: Record<string, unknown> }> {
+  try {
+    return await request<T>(path, opts);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 403 && err.code === 'REAUTH_REQUIRED' && (await stepUp())) return request<T>(path, opts);
+    throw err;
+  }
+}
+
+async function request<T>(path: string, opts: Options): Promise<{ data: T; meta?: Record<string, unknown> }> {
   let res: Response;
   try {
     res = await fetch(BASE + path, {

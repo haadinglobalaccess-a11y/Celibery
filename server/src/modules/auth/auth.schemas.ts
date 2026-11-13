@@ -32,5 +32,7 @@ export const changePasswordSchema = z.object({ currentPassword: z.string().min(1
 const mfaCode = z.string().trim().min(6).max(20).regex(/^[0-9A-Za-z -]+$/);
 export const mfaVerifySchema = z.object({ mfaToken: z.string().min(20).max(1000), code: mfaCode });
 export const mfaPasswordSchema = z.object({ password: z.string().min(1).max(128) });
+/** Step-up: password, plus a 6-digit TOTP or a recovery code when 2FA is on. */
+export const reauthSchema = z.object({ password: z.string().min(1).max(128), code: z.string().trim().min(6).max(32).optional() });
 export const mfaCodeSchema = z.object({ code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code') });
 export const mfaDisableSchema = z.object({ password: z.string().min(1).max(128), code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code') });
