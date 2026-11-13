@@ -30,6 +30,18 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (e?.type === 'entity.too.large') {
     return res.status(413).json({ ok: false, error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body is too large' } });
   }
+  // Client errors raised by Express libraries in the standard http-errors shape (serve-static/send
+  // refusing "../" traversal, body-parser charset/encoding errors, …): keep their 4xx status and log
+  // one warning line. Before, each one was a 500 with an error-level stack trace, so a single crafted
+  // URL could flood error logs and alerts. Only `expose: true` errors qualify — never upstream API
+  // errors that happen to carry a status.
+  const httpErr = err as { expose?: boolean; status?: number; statusCode?: number };
+  const clientStatus = httpErr?.expose === true ? (httpErr.status ?? httpErr.statusCode) : undefined;
+  if (typeof clientStatus === 'number' && clientStatus >= 400 && clientStatus < 500) {
+    logger.warn('Client error', { path: req.path.slice(0, 200), method: req.method, status: clientStatus });
+    const code = clientStatus === 404 ? 'NOT_FOUND' : clientStatus === 403 ? 'FORBIDDEN' : clientStatus === 413 ? 'PAYLOAD_TOO_LARGE' : 'BAD_REQUEST';
+    return res.status(clientStatus).json({ ok: false, error: { code, message: 'The request could not be processed' } });
+  }
   logger.error('Unhandled error', { path: req.path, method: req.method, err: err instanceof Error ? err.stack : String(err) });
   return res.status(500).json({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.' } });
 }

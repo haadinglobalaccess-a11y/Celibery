@@ -20,6 +20,8 @@ export type AuthUser = {
   sid?: string;
   /** Staff: two-factor authentication is enabled on the account. */
   mfaEnabled?: boolean;
+  /** Epoch ms of the last proof of identity in this session (sign-in or step-up re-authentication). */
+  authAt?: number;
 };
 
 declare global {
@@ -94,8 +96,9 @@ export async function loadUser(req: Request, res: Response, next: NextFunction) 
       clearSession(res);
       return next();
     }
+    let authAt: number | undefined;
     if (payload.sid) {
-      const s = await Session.findOne({ _id: payload.sid, user: user._id }).select('revokedAt expiresAt mfa').lean();
+      const s = await Session.findOne({ _id: payload.sid, user: user._id }).select('revokedAt expiresAt mfa createdAt reauthAt').lean();
       if (!s || s.revokedAt || s.expiresAt <= new Date()) {
         securityEvent('auth.session_rejected', req, { reason: s ? 'revoked_or_expired' : 'unknown_session', userId: String(user._id) });
         clearSession(res);
@@ -106,6 +109,9 @@ export async function loadUser(req: Request, res: Response, next: NextFunction) 
         clearSession(res);
         return next();
       }
+      const signedIn = s.createdAt ? new Date(s.createdAt).getTime() : 0;
+      const reauth = s.reauthAt ? new Date(s.reauthAt).getTime() : 0;
+      authAt = Math.max(signedIn, reauth) || undefined;
     } else if (user.type === 'staff') {
       // Staff sessions issued before server-side sessions existed cannot be revoked: sign in again.
       clearSession(res);
@@ -129,6 +135,7 @@ export async function loadUser(req: Request, res: Response, next: NextFunction) 
       permissions,
       sid: payload.sid,
       mfaEnabled: Boolean(user.mfaEnabled),
+      authAt,
     };
     return next();
   } catch {
@@ -185,3 +192,26 @@ export const requireAnyPermission =
     if (!perms.some((p) => req.user!.permissions.has(p))) return deny(req, next, `missing_any:${perms.join('|')}`);
     next();
   };
+
+/** How long a sign-in or step-up re-authentication keeps high-impact admin operations unlocked. */
+export const REAUTH_WINDOW_MINUTES = 15;
+
+/**
+ * Step-up authentication for high-impact operations (payment credentials, staff and roles).
+ * A stolen or unattended staff session is not enough: unless the user signed in or re-entered
+ * their password (and 2FA code) within the last REAUTH_WINDOW_MINUTES, the request is refused
+ * with REAUTH_REQUIRED and the admin asks for the password, then retries.
+ */
+export function requireRecentAuth(req: Request, _res: Response, next: NextFunction) {
+  if (!req.user) return next(unauthorized());
+  const fresh = req.user.authAt !== undefined && Date.now() - req.user.authAt <= REAUTH_WINDOW_MINUTES * 60_000;
+  if (fresh) return next();
+  securityEvent('auth.reauth_required', req, { userId: req.user.id });
+  return next(new AppError(403, 'REAUTH_REQUIRED', 'Confirm your password to continue'));
+}
+
+/** requireRecentAuth for state-changing requests only; reading stays available. */
+export function requireRecentAuthForWrites(req: Request, res: Response, next: NextFunction) {
+  if (req.method === 'GET' || req.method === 'HEAD') return next();
+  return requireRecentAuth(req, res, next);
+}

@@ -1,0 +1,54 @@
+# CELIBERY CI: security and quality gates on every push and pull request to main.
+# Every job fails the pipeline on a genuine problem; none of them prints secret values.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security:
+    name: Secret scan and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # High-confidence patterns only (live keys, AWS keys, private keys, credentialed DB URIs).
+      - name: Secret scan
+        run: node scripts/secret-scan.mjs
+      # Fails on high or critical advisories. Moderate/low are reported but do not block.
+      - name: npm audit (high and critical block)
+        run: npm audit --audit-level=high
+
+  verify:
+    name: Typecheck, tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install (lockfile only)
+        run: npm ci
+      - name: Typecheck (server, client, api)
+        run: npm run typecheck
+      # API, security regression and unit suites against an in-memory MongoDB replica set.
+      - name: Server tests
+        run: npm test
+      - name: Production build
+        run: npm run build

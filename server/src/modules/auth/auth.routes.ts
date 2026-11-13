@@ -5,7 +5,7 @@ import { requireAuth } from '../../middleware/auth';
 import { authLimiter, loginAccountLimiter, mfaLimiter, resetEmailLimiter } from '../../middleware/security';
 import { validate } from '../../middleware/validate';
 import * as c from './auth.controller';
-import { changePasswordSchema, forgotSchema, loginSchema, mfaCodeSchema, mfaDisableSchema, mfaPasswordSchema, mfaVerifySchema, registerSchema, resetSchema } from './auth.schemas';
+import { changePasswordSchema, forgotSchema, loginSchema, mfaCodeSchema, mfaDisableSchema, mfaPasswordSchema, mfaVerifySchema, reauthSchema, registerSchema, resetSchema } from './auth.schemas';
 
 export const authRoutes = Router();
 
@@ -29,3 +29,5 @@ authRoutes.get('/mfa', staffSession, ah(c.mfaStatus));
 authRoutes.post('/mfa/setup', staffSession, authLimiter, validate(mfaPasswordSchema), ah(c.mfaSetup));
 authRoutes.post('/mfa/enable', staffSession, mfaLimiter, validate(mfaCodeSchema), ah(c.mfaEnable));
 authRoutes.post('/mfa/disable', staffSession, authLimiter, validate(mfaDisableSchema), ah(c.mfaDisable));
+/** Step-up re-authentication before high-impact admin operations (see requireRecentAuth). */
+authRoutes.post('/reauth', staffSession, authLimiter, validate(reauthSchema), ah(c.reauth));

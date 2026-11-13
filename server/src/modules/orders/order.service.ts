@@ -1,5 +1,5 @@
 import type { ClientSession, Types } from 'mongoose';
-import { env } from '../../config/env';
+import { env, isTest } from '../../config/env';
 import { withTx } from '../../db/tx';
 import { badRequest, conflict, notFound, unprocessable } from '../../lib/errors';
 import { logger } from '../../lib/logger';
@@ -12,6 +12,7 @@ import type { OrderEvent } from '../../integrations/notifications/templates';
 import { manualCourier } from '../../integrations/shipping';
 import {
   Discount,
+  DiscountRedemption,
   InventoryMovement,
   Order,
   ORDER_TRANSITIONS,
@@ -50,7 +51,7 @@ export type Quote = {
   issues: { productId?: string; code: string; message: string }[];
   subtotal: number;
   discountTotal: number;
-  discount: { code: string; id: string } | null;
+  discount: { code: string; id: string; perCustomerLimit?: number | null } | null;
   discountError: string | null;
   deliveryFee: number;
   codFee: number;
@@ -74,12 +75,47 @@ function mergeLines(items: CartLine[]) {
   return [...map.entries()].map(([productId, quantity]) => ({ productId, quantity }));
 }
 
+/** Last 9 digits of a Saudi mobile number (5XXXXXXXX), whatever format was typed (05…, +9665…, 9665…). */
+export const phoneKey = (phone?: string | null) => {
+  const digits = String(phone ?? '').replace(/\D/g, '');
+  return digits.length >= 9 ? digits.slice(-9) : '';
+};
+
+/** Identities one shopper can be recognised by: account, email and phone. */
+export function identityKeys(who: { id?: unknown; email?: string | null; phone?: string | null }) {
+  const keys: string[] = [];
+  if (who.id) keys.push(`c:${String(who.id)}`);
+  if (who.email) keys.push(`e:${String(who.email).trim().toLowerCase()}`);
+  const p = phoneKey(who.phone);
+  if (p) keys.push(`p:${p}`);
+  return keys;
+}
+
+/**
+ * Records one use of a per-customer-limited code for one identity, atomically: increments the
+ * counter only while it is below the limit; when the record is already at the limit the upsert
+ * collides with the unique index and the use is refused. Safe under parallel checkouts.
+ */
+async function claimRedemption(discountId: string, key: string, limit: number, session?: ClientSession) {
+  if (limit <= 0) return false;
+  try {
+    const r = await DiscountRedemption.updateOne({ discount: discountId, key, count: { $lt: limit } }, { $inc: { count: 1 } }, { upsert: true, session });
+    return r.modifiedCount === 1 || r.upsertedCount === 1;
+  } catch (e) {
+    if ((e as { code?: number }).code === 11000) return false;
+    throw e;
+  }
+}
+
+/** Open cash-on-delivery orders allowed per phone number (stops fake COD orders locking up stock). 0 = no limit. */
+export const maxOpenCodOrdersPerPhone = () => env.MAX_OPEN_COD_ORDERS_PER_PHONE ?? (isTest ? 0 : 3);
+
 /** Validates a discount code against the cart. Returns the discount (halalas) and per-line allocation. */
 async function evaluateDiscount(
   code: string,
   lines: QuoteLine[],
   subtotal: number,
-  customer: { id?: string; email?: string },
+  customer: { id?: string; email?: string; phone?: string },
 ): Promise<{ discount: DiscountDoc; amount: number; perLine: number[] } | { error: string }> {
   const d = await Discount.findOne({ code: code.toUpperCase() }).lean();
   const now = new Date();
@@ -88,10 +124,13 @@ async function evaluateDiscount(
   if (d.endsAt && d.endsAt < now) return { error: 'This discount code has expired' };
   if (d.usageLimit != null && d.usedCount >= d.usageLimit) return { error: 'This discount code has reached its usage limit' };
   if (d.minOrderTotal && subtotal < d.minOrderTotal) return { error: `Minimum order for this code is ${(d.minOrderTotal / 100).toFixed(2)} SAR` };
-  if (d.perCustomerLimit != null && (customer.id || customer.email)) {
+  if (d.perCustomerLimit != null && (customer.id || customer.email || phoneKey(customer.phone))) {
     const or: Record<string, unknown>[] = [];
     if (customer.id) or.push({ customer: customer.id });
     if (customer.email) or.push({ 'contact.email': customer.email.toLowerCase() });
+    // Same phone in any format (a guest cannot reuse a code just by typing a new email).
+    const p = phoneKey(customer.phone);
+    if (p) or.push({ 'contact.phone': { $regex: `${p}$` } });
     const used = await Order.countDocuments({ 'discount.id': d._id, status: { $ne: 'cancelled' }, $or: or });
     if (used >= d.perCustomerLimit) return { error: 'You have already used this discount code' };
   }
@@ -128,7 +167,7 @@ async function evaluateDiscount(
  */
 export async function quote(
   items: CartLine[],
-  opts: { discountCode?: string; paymentMethod?: PaymentMethod; customerId?: string; email?: string; city?: string } = {},
+  opts: { discountCode?: string; paymentMethod?: PaymentMethod; customerId?: string; email?: string; phone?: string; city?: string } = {},
 ): Promise<Quote> {
   const settings = await getSettings();
   const merged = mergeLines(items);
@@ -179,11 +218,11 @@ export async function quote(
   let discount: Quote['discount'] = null;
   let discountError: string | null = null;
   if (opts.discountCode) {
-    const r = await evaluateDiscount(opts.discountCode, purchasable, subtotal, { id: opts.customerId, email: opts.email });
+    const r = await evaluateDiscount(opts.discountCode, purchasable, subtotal, { id: opts.customerId, email: opts.email, phone: opts.phone });
     if ('error' in r) discountError = r.error;
     else {
       discountTotal = r.amount;
-      discount = { code: r.discount.code, id: String(r.discount._id) };
+      discount = { code: r.discount.code, id: String(r.discount._id), perCustomerLimit: r.discount.perCustomerLimit ?? null };
       purchasable.forEach((l, i) => (l.discount = r.perLine[i]));
     }
   }
@@ -241,7 +280,7 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
   }
 
   const settings = await getSettings();
-  const q = await quote(input.items, { discountCode: input.discountCode || undefined, paymentMethod: input.paymentMethod, customerId, email: input.contact.email, city: input.shippingAddress.city });
+  const q = await quote(input.items, { discountCode: input.discountCode || undefined, paymentMethod: input.paymentMethod, customerId, email: input.contact.email, phone: input.contact.phone, city: input.shippingAddress.city });
   // Any change (unavailable item, reduced stock) must be reviewed by the customer first.
   if (q.issues.length) throw unprocessable('CART_CHANGED', 'Some items in your cart changed. Please review your cart.', { issues: q.issues });
   if (input.discountCode && q.discountError) throw unprocessable('DISCOUNT_INVALID', q.discountError);
@@ -260,11 +299,24 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
   const isCod = input.paymentMethod === 'cod';
   const reservationMinutes = settings?.commerce?.reservationMinutes ?? 30;
 
+  // Fake cash-on-delivery orders reserve stock until staff cancel them: cap open COD orders per phone.
+  const codCap = maxOpenCodOrdersPerPhone();
+  const phone = phoneKey(input.contact.phone);
+  if (isCod && codCap > 0 && phone) {
+    const open = await Order.countDocuments({ paymentMethod: 'cod', status: { $in: ['pending', 'confirmed', 'processing'] }, 'contact.phone': { $regex: `${phone}$` } });
+    if (open >= codCap) {
+      throw unprocessable('TOO_MANY_OPEN_ORDERS', 'You already have several cash-on-delivery orders in progress. Please wait for them to arrive, choose another payment method, or contact us on WhatsApp.');
+    }
+  }
+
+  const redemptionKeys = identityKeys({ id: customerId, email: input.contact.email, phone: input.contact.phone });
   const applied: { productId: string; qty: number }[] = [];
+  const claimedKeys: string[] = [];
   let discountConsumed = false;
 
   const run = async (session?: ClientSession) => {
     applied.length = 0;
+    claimedKeys.length = 0;
     discountConsumed = false;
     const movements = [];
     for (const l of q.lines) {
@@ -285,6 +337,17 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
       );
       if (r.modifiedCount !== 1) throw unprocessable('DISCOUNT_INVALID', 'This discount code has reached its usage limit');
       discountConsumed = true;
+      // Per-customer limit, enforced again here atomically (the quote-time count alone let
+      // parallel checkouts by one shopper each see "not used yet").
+      const limit = q.discount.perCustomerLimit;
+      if (limit != null) {
+        for (const key of redemptionKeys) {
+          if (!(await claimRedemption(q.discount.id, key, limit, session))) {
+            throw unprocessable('DISCOUNT_INVALID', 'You have already used this discount code');
+          }
+          claimedKeys.push(key);
+        }
+      }
     }
     const [order] = await Order.create(
       [
@@ -347,6 +410,9 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
       if (!(await supportsTransactions())) {
         for (const a of applied) await Product.updateOne({ _id: a.productId }, { $inc: { stock: a.qty } });
         if (discountConsumed && q.discount) await Discount.updateOne({ _id: q.discount.id }, { $inc: { usedCount: -1 } });
+        if (claimedKeys.length && q.discount) {
+          await DiscountRedemption.updateMany({ discount: q.discount.id, key: { $in: claimedKeys }, count: { $gt: 0 } }, { $inc: { count: -1 } });
+        }
       }
     }
     const e = err as { code?: number; keyPattern?: Record<string, unknown> };
@@ -393,6 +459,9 @@ export async function releaseStock(orderId: Types.ObjectId | string, reason: str
     await writeMovements(movements, session);
     if (order.discount?.id) {
       await Discount.updateOne({ _id: order.discount.id, usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } }, { session });
+      // A cancelled or expired order gives the shopper's per-customer use back (matches the quote-time count).
+      const keys = identityKeys({ id: order.customer, email: order.contact?.email, phone: order.contact?.phone });
+      await DiscountRedemption.updateMany({ discount: order.discount.id, key: { $in: keys }, count: { $gt: 0 } }, { $inc: { count: -1 } }, { session });
     }
     return true;
   });

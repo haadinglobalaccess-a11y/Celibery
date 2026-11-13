@@ -14,7 +14,7 @@ import { AdminLangScope, readAdminLang, saveAdminLang, useAT, type AdminLang } f
 import { AIcon } from './icons';
 import { Modal } from './kit';
 import { MediaLibraryPage } from './media';
-import { MfaEnrollmentGate, MfaSettings } from './security';
+import { MfaEnrollmentGate, MfaSettings, ReauthHost } from './security';
 import { Categories, Customers, CustomerDetail, Discounts, Inventory } from './pages/Catalog';
 import { Content } from './pages/Content';
 import { OrderDetail, Orders } from './pages/Orders';
@@ -632,6 +632,7 @@ export default function AdminApp() {
     <I18nProvider lang={lang}>
       <AdminLangScope lang={lang}>
         <Shell lang={lang} setLang={setLang} />
+        <ReauthHost />
       </AdminLangScope>
     </I18nProvider>
   );

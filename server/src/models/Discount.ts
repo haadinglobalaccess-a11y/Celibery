@@ -27,3 +27,24 @@ const DiscountSchema = new Schema(
 
 export type DiscountDoc = InferSchemaType<typeof DiscountSchema> & { _id: Types.ObjectId };
 export const Discount: Model<DiscountDoc> = (models.Discount as Model<DiscountDoc>) || model<DiscountDoc>('Discount', DiscountSchema);
+
+/**
+ * Per-customer coupon usage, one record per (discount, identity). Identity keys are "c:<customerId>",
+ * "e:<email>" and "p:<last 9 phone digits>", so a limit holds across sign-in, guest checkout and
+ * re-typed contact details. The unique index plus a conditional increment make the limit hold even
+ * when several checkouts arrive at the same moment (finding: parallel checkouts reused a
+ * "1 per customer" code). Counts are decremented when an order releases its stock (cancel/expiry).
+ */
+const DiscountRedemptionSchema = new Schema(
+  {
+    discount: { type: Schema.Types.ObjectId, ref: 'Discount', required: true },
+    key: { type: String, required: true, maxlength: 220 },
+    count: { type: Number, required: true, default: 0, min: 0 },
+  },
+  { timestamps: true },
+);
+DiscountRedemptionSchema.index({ discount: 1, key: 1 }, { unique: true });
+
+export type DiscountRedemptionDoc = InferSchemaType<typeof DiscountRedemptionSchema> & { _id: Types.ObjectId };
+export const DiscountRedemption: Model<DiscountRedemptionDoc> =
+  (models.DiscountRedemption as Model<DiscountRedemptionDoc>) || model<DiscountRedemptionDoc>('DiscountRedemption', DiscountRedemptionSchema);

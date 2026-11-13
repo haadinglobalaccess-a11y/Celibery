@@ -5,7 +5,7 @@ import { ah, escapeRegex, ok } from '../../lib/http';
 import type { Request } from 'express';
 import type { Permission } from '../../lib/permissions';
 import { securityEvent } from '../../lib/security-log';
-import { requirePermission, revokeAllSessions } from '../../middleware/auth';
+import { requirePermission, requireRecentAuthForWrites, revokeAllSessions } from '../../middleware/auth';
 import { q, validate } from '../../middleware/validate';
 import { NewsletterSubscription, Order, Role, User } from '../../models';
 import { emailConfigured, sendStaffInviteEmail } from '../../integrations/notifications';
@@ -89,6 +89,8 @@ adminCustomerRoutes.patch(
 // ---- Staff & roles -----------------------------------------------------------------------
 export const adminStaffRoutes = Router();
 adminStaffRoutes.use(requirePermission('staff:manage'));
+// Creating staff, changing roles, reset links and 2FA resets need a recent password (+2FA) proof.
+adminStaffRoutes.use(requireRecentAuthForWrites);
 
 /**
  * Least privilege for staff management: nobody can grant a permission they do not hold

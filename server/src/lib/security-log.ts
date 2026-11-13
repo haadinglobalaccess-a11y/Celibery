@@ -19,6 +19,10 @@ export type SecurityEvent =
   | 'auth.password_reset'
   | 'auth.password_changed'
   | 'auth.session_rejected'
+  | 'auth.reauth_required'
+  | 'auth.reauth_success'
+  | 'auth.reauth_failed'
+  | 'auth.password_check_failed'
   | 'mfa.challenge_failed'
   | 'mfa.challenge_passed'
   | 'mfa.enabled'
@@ -42,7 +46,7 @@ export function maskEmail(email: string | undefined | null): string {
 }
 
 export function securityEvent(event: SecurityEvent, req: Request | null, meta: Record<string, unknown> = {}) {
-  const level = event.startsWith('auth.login_success') || event === 'auth.logout' || event === 'mfa.challenge_passed' ? 'info' : 'warn';
+  const level = event.startsWith('auth.login_success') || event === 'auth.logout' || event === 'mfa.challenge_passed' || event === 'auth.reauth_success' || event === 'auth.reauth_required' ? 'info' : 'warn';
   logger[level](`security:${event}`, {
     security: true,
     event,

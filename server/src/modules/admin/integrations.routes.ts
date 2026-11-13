@@ -5,7 +5,7 @@ import { audit } from '../../lib/audit';
 import { badRequest, notFound, serviceUnavailable, unprocessable } from '../../lib/errors';
 import { ah, ok } from '../../lib/http';
 import { fingerprint, maskSecret } from '../../lib/secrets';
-import { requirePermission } from '../../middleware/auth';
+import { requirePermission, requireRecentAuthForWrites } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { channelStatus, encryptFor, integration, invalidateIntegrations, keyRing, loadIntegrations, secretContext } from '../../integrations/credentials';
 import { EMAIL_RX, INTEGRATIONS, MODES, SINGLE_MODE_SLOT, isIntegrationKey, missingRequired, upgradeValues, validateFieldValue, verificationSubject, type IntegrationKey, type Mode } from '../../integrations/credentials/definitions';
@@ -33,6 +33,9 @@ import { limiter } from '../../middleware/security';
  */
 export const adminIntegrationRoutes = Router();
 adminIntegrationRoutes.use(requirePermission('payments:manage'));
+// Changing payment/messaging/storage credentials needs a recent password (+2FA) proof, so a
+// hijacked or unattended session cannot redirect payments to another merchant account.
+adminIntegrationRoutes.use(requireRecentAuthForWrites);
 
 const providerParam = z.object({ provider: z.string().refine(isIntegrationKey, 'Unknown integration') });
 const modeParam = providerParam.extend({ mode: z.enum(['test', 'live']) });

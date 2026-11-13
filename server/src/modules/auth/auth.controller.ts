@@ -86,8 +86,21 @@ export async function resetPassword(req: Request, res: Response) {
   return ok(res, { reset: true });
 }
 
+/** Runs an in-session password/code re-check and records failed attempts as security events. */
+async function recheck<T>(req: Request, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof svc.RecheckError) {
+      securityEvent('auth.password_check_failed', req, { userId: req.user?.id, path: req.path, reason: err.code, lockedNow: err.lockedNow });
+      if (err.lockedNow) securityEvent('auth.account_locked', req, { userId: req.user?.id, via: 'in_session_recheck' });
+    }
+    throw err;
+  }
+}
+
 export async function changePassword(req: Request, res: Response) {
-  const user = await svc.changePassword(req.user!.id, req.body.currentPassword, req.body.newPassword);
+  const user = await recheck(req, () => svc.changePassword(req.user!.id, req.body.currentPassword, req.body.newPassword, req.user!.sid));
   // Every other session ended; this browser gets a new one (it keeps the 2FA it already passed).
   await issueSession(res, user, { req, mfa: Boolean(user.mfaEnabled) });
   securityEvent('auth.password_changed', req);
@@ -102,7 +115,19 @@ export async function mfaStatus(req: Request, res: Response) {
 }
 
 export async function mfaSetup(req: Request, res: Response) {
-  return ok(res, await svc.startMfaSetup(req.user!.id, req.body.password));
+  return ok(res, await recheck(req, () => svc.startMfaSetup(req.user!.id, req.body.password, req.user!.sid)));
+}
+
+/** Step-up re-authentication (password + 2FA code when enabled) for high-impact admin operations. */
+export async function reauth(req: Request, res: Response) {
+  try {
+    const at = await recheck(req, () => svc.stepUp(req.user!.id, req.user!.sid, req.body.password, req.body.code));
+    securityEvent('auth.reauth_success', req, { userId: req.user!.id });
+    return ok(res, { reauthenticatedAt: at });
+  } catch (err) {
+    securityEvent('auth.reauth_failed', req, { userId: req.user?.id });
+    throw err;
+  }
 }
 
 export async function mfaEnable(req: Request, res: Response) {
@@ -114,7 +139,7 @@ export async function mfaEnable(req: Request, res: Response) {
 }
 
 export async function mfaDisable(req: Request, res: Response) {
-  await svc.disableMfa(req.user!.id, req.body.password, req.body.code);
+  await recheck(req, () => svc.disableMfa(req.user!.id, req.body.password, req.body.code, req.user!.sid));
   securityEvent('mfa.disabled', req);
   await audit(req, 'mfa_disable', 'staff', req.user!.id);
   return ok(res, { enabled: false });
