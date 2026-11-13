@@ -81,6 +81,14 @@ export const phoneKey = (phone?: string | null) => {
   return digits.length >= 9 ? digits.slice(-9) : '';
 };
 
+/**
+ * Every spelling of one Saudi mobile number that checkout accepts (saudiPhone:
+ * /^(\+?966|0)?5\d{8}$/ — 5XXXXXXXX, 05XXXXXXXX, 9665XXXXXXXX, +9665XXXXXXXX). Matching these exactly
+ * finds the same orders as the former suffix regex `${key}$`, but as index point lookups instead of
+ * a regex over every key (DATABASE_PERFORMANCE_REPORT.md).
+ */
+export const phoneVariants = (key: string) => (key ? [key, `0${key}`, `966${key}`, `+966${key}`] : []);
+
 /** Identities one shopper can be recognised by: account, email and phone. */
 export function identityKeys(who: { id?: unknown; email?: string | null; phone?: string | null }) {
   const keys: string[] = [];
@@ -130,7 +138,7 @@ async function evaluateDiscount(
     if (customer.email) or.push({ 'contact.email': customer.email.toLowerCase() });
     // Same phone in any format (a guest cannot reuse a code just by typing a new email).
     const p = phoneKey(customer.phone);
-    if (p) or.push({ 'contact.phone': { $regex: `${p}$` } });
+    if (p) or.push({ 'contact.phone': { $in: phoneVariants(p) } });
     const used = await Order.countDocuments({ 'discount.id': d._id, status: { $ne: 'cancelled' }, $or: or });
     if (used >= d.perCustomerLimit) return { error: 'You have already used this discount code' };
   }
@@ -303,7 +311,7 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
   const codCap = maxOpenCodOrdersPerPhone();
   const phone = phoneKey(input.contact.phone);
   if (isCod && codCap > 0 && phone) {
-    const open = await Order.countDocuments({ paymentMethod: 'cod', status: { $in: ['pending', 'confirmed', 'processing'] }, 'contact.phone': { $regex: `${phone}$` } });
+    const open = await Order.countDocuments({ paymentMethod: 'cod', status: { $in: ['pending', 'confirmed', 'processing'] }, 'contact.phone': { $in: phoneVariants(phone) } });
     if (open >= codCap) {
       throw unprocessable('TOO_MANY_OPEN_ORDERS', 'You already have several cash-on-delivery orders in progress. Please wait for them to arrive, choose another payment method, or contact us on WhatsApp.');
     }

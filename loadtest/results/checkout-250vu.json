@@ -1,0 +1,50 @@
+{
+  "script": "checkout",
+  "vus": 250,
+  "requests": 6900,
+  "rps": 69.7,
+  "p50": 18.4816,
+  "p90": 61.040990000000015,
+  "p95": 78.46548,
+  "p99": 129.70452300000002,
+  "max": 236.597,
+  "errorRate": 0,
+  "checksPassRate": 1,
+  "thresholds": {
+    "http_req_failed": {
+      "rate<0.01": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:checkout}": {
+      "p(95)<1500": {
+        "ok": true
+      },
+      "p(99)<3000": {
+        "ok": true
+      }
+    },
+    "checks{check:no duplicate order}": {
+      "rate==1": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:checkout-replay}": {
+      "p(95)<500": {
+        "ok": true
+      }
+    }
+  },
+  "byEndpoint": {
+    "checkout-replay": {
+      "p50": 11.89785,
+      "p95": 29.404889999999988,
+      "p99": 43.83924699999968
+    },
+    "checkout": {
+      "p50": 48.17115,
+      "p95": 115.99155499999992,
+      "p99": 150.05573299999972
+    }
+  }
+}

@@ -83,6 +83,10 @@ ProductSchema.index({ status: 1, category: 1, sortOrder: 1 });
 ProductSchema.index({ status: 1, price: 1 });
 ProductSchema.index({ status: 1, flagship: 1, flagshipOrder: 1 });
 ProductSchema.index({ status: 1, createdAt: -1 });
+// Default storefront sort ("featured") and the homepage Featured section: index-ordered, no in-memory
+// sort of the whole active catalogue (DATABASE_PERFORMANCE_REPORT.md).
+ProductSchema.index({ status: 1, featured: -1, sortOrder: 1, createdAt: -1, _id: 1 });
+ProductSchema.index({ status: 1, category: 1, featured: -1, sortOrder: 1, createdAt: -1, _id: 1 });
 ProductSchema.index({ 'attributes.capacityMah': 1 });
 ProductSchema.index({ 'attributes.powerW': 1 });
 ProductSchema.index({ 'attributes.connectors': 1 });

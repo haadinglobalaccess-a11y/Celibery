@@ -1,0 +1,62 @@
+{
+  "script": "admin",
+  "vus": 5,
+  "requests": 193,
+  "rps": 2.1,
+  "p50": 344.2931,
+  "p90": 579.9593,
+  "p95": 616.4064799999999,
+  "p99": 685.2115639999997,
+  "max": 806.6097,
+  "errorRate": 0,
+  "checksPassRate": 1,
+  "thresholds": {
+    "http_req_duration{name:admin-orders}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_failed": {
+      "rate<0.01": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:admin-orders-search}": {
+      "p(95)<1500": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:admin-overview}": {
+      "p(95)<1500": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:admin-products}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    }
+  },
+  "byEndpoint": {
+    "admin-overview": {
+      "p50": 549.9508,
+      "p95": 672.221355,
+      "p99": 758.3684770000001
+    },
+    "admin-products": {
+      "p50": 19.167,
+      "p95": 37.089704999999995,
+      "p99": 52.914018000000034
+    },
+    "admin-orders": {
+      "p50": 114.37870000000001,
+      "p95": 135.036955,
+      "p99": 147.87393300000002
+    },
+    "admin-orders-search": {
+      "p50": 405.6548,
+      "p95": 530.2430850000001,
+      "p99": 642.8253420000001
+    }
+  }
+}

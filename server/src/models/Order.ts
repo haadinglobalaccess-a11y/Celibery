@@ -125,6 +125,8 @@ OrderSchema.index({ createdAt: -1 });
 OrderSchema.index({ status: 1, createdAt: -1 });
 OrderSchema.index({ 'contact.email': 1 });
 OrderSchema.index({ 'contact.phone': 1 });
+// Admin overview: orders flagged for payment review. Partial — only those orders are indexed.
+OrderSchema.index({ 'history.status': 1 }, { partialFilterExpression: { 'history.status': 'payment_review' }, name: 'history_payment_review' });
 
 export type OrderDoc = InferSchemaType<typeof OrderSchema> & { _id: Types.ObjectId };
 export const Order: Model<OrderDoc> = (models.Order as Model<OrderDoc>) || model<OrderDoc>('Order', OrderSchema);

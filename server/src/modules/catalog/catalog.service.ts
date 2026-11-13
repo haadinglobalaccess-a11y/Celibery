@@ -6,6 +6,14 @@ import { Banner, Campaign, Category, Order, Product, ProductCollection, Review, 
 import type { ProductListQuery } from './catalog.schemas';
 import { availablePaymentMethods } from '../payments/payment.service';
 import { homepageFaq } from '../faq/faq.service';
+import { cached } from '../../lib/public-cache';
+
+/**
+ * Store settings for PUBLIC catalogue reads (display thresholds, delivery text, warranty), from the
+ * short-lived public cache (lib/public-cache.ts). Checkout, quotes and orders call getSettings()
+ * directly so prices, fees and payment rules are always read fresh.
+ */
+const cachedSettings = () => cached('settings', getSettings);
 
 export const PUBLIC_PRODUCT_FIELDS =
   'slug sku model name shortDescription category series images price compareAtPrice stock lowStockThreshold featured attributes tags isBundle dataSource createdAt';
@@ -32,7 +40,10 @@ export function toPublicProduct(p: LeanProduct, defaultLowStock = 5) {
   };
 }
 
-export async function listCategories() {
+/** Active categories with product counts (public cache). */
+export const listCategories = () => cached('categories', loadCategories);
+
+async function loadCategories() {
   const cats = await Category.find({ active: true }).sort({ sortOrder: 1 }).lean();
   const counts = await Product.aggregate<{ _id: Types.ObjectId; n: number }>([
     { $match: { status: 'active' } },
@@ -72,7 +83,10 @@ export async function categoryFacets(categoryId: Types.ObjectId, filters: string
   return out;
 }
 
-export async function getCategory(slug: string) {
+/** Category page header and filter facets (public cache; unknown slugs are never cached). */
+export const getCategory = (slug: string) => cached(`category:${slug}`, () => loadCategory(slug));
+
+async function loadCategory(slug: string) {
   const category = await Category.findOne({ slug, active: true }).lean();
   if (!category) throw notFound('Category');
   const facets = await categoryFacets(category._id, category.filters as string[]);
@@ -80,7 +94,7 @@ export async function getCategory(slug: string) {
 }
 
 export async function listProducts(q: ProductListQuery) {
-  const settings = await getSettings();
+  const settings = await cachedSettings();
   const filter: FilterQuery<ProductDoc> = { status: 'active' };
   let category = null;
   if (q.category) {
@@ -139,7 +153,7 @@ export async function listProducts(q: ProductListQuery) {
 }
 
 export async function getProduct(slug: string) {
-  const settings = await getSettings();
+  const settings = await cachedSettings();
   const p = await Product.findOne({ slug, status: 'active' })
     .select(PUBLIC_PRODUCT_FIELDS + ' description specs warrantyMonths bundleItems related seo')
     .populate('category', 'slug name')
@@ -189,7 +203,7 @@ export async function getProduct(slug: string) {
 
 /** Best sellers are computed from real paid/fulfilled orders; a curated collection is the fallback. */
 export async function bestSellers(limit = 8) {
-  const settings = await getSettings();
+  const settings = await cachedSettings();
   const low = settings?.commerce?.lowStockThreshold ?? 5;
   const since = new Date(Date.now() - 90 * 24 * 3600 * 1000);
   const top = await Order.aggregate<{ _id: Types.ObjectId; qty: number }>([
@@ -222,7 +236,7 @@ const activeWindow = () => {
 };
 
 export async function collectionWithProducts(slug: string) {
-  const settings = await getSettings();
+  const settings = await cachedSettings();
   const low = settings?.commerce?.lowStockThreshold ?? 5;
   const col = await ProductCollection.findOne({ slug, active: true }).lean();
   if (!col) throw notFound('Collection');
@@ -235,8 +249,15 @@ export async function collectionWithProducts(slug: string) {
 /** The Flagship section shows up to three products (its design has three campaign slots). */
 export const FLAGSHIP_SLOTS = 3;
 
-export async function homePayload() {
-  const settings = await getSettings();
+/**
+ * The homepage payload (public cache). It was the most expensive public request — about 20
+ * queries including a 90-day best-seller aggregation over all orders — and identical for every
+ * visitor. Admin edits invalidate it immediately; stock/best-seller drift is bounded by the TTL.
+ */
+export const homePayload = () => cached('home', loadHomePayload);
+
+async function loadHomePayload() {
+  const settings = await cachedSettings();
   const low = settings?.commerce?.lowStockThreshold ?? 5;
   const [heroBanners, lifestyleBanners, promoBanners, categories, featured, flagship, best, collections, campaigns] = await Promise.all([
     Banner.find({ placement: 'hero', active: true, ...activeWindow() }).sort({ sortOrder: 1, _id: 1 }).lean(),
@@ -316,7 +337,9 @@ export async function getCampaign(slug: string) {
 }
 
 /** Settings safe to expose publicly (no secrets, no internal-only values). */
-export async function publicSettings() {
+export const publicSettings = () => cached('public-settings', loadPublicSettings);
+
+async function loadPublicSettings() {
   const s = await getSettings();
   const paymentsConfigured = availablePaymentMethods(s);
   return {

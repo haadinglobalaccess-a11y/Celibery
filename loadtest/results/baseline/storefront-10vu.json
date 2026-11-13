@@ -1,0 +1,120 @@
+{
+  "script": "storefront",
+  "vus": 10,
+  "requests": 686,
+  "rps": 7.3,
+  "p50": 12.44335,
+  "p90": 282.05545,
+  "p95": 322.1459,
+  "p99": 353.536795,
+  "max": 568.0973,
+  "errorRate": 0,
+  "checksPassRate": 1,
+  "thresholds": {
+    "http_req_failed": {
+      "rate<0.01": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:quote}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:checkout-options}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:home}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:categories}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration": {
+      "p(95)<500": {
+        "ok": true
+      },
+      "p(99)<1500": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:settings}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:product}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:category}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:search}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:products}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    }
+  },
+  "byEndpoint": {
+    "search": {
+      "p50": 32.82285,
+      "p95": 72.31197499999999,
+      "p99": 81.26566999999999
+    },
+    "products": {
+      "p50": 18.0329,
+      "p95": 26.40037,
+      "p99": 34.33620400000001
+    },
+    "category": {
+      "p50": 8.9353,
+      "p95": 13.164749999999998,
+      "p99": 15.993446000000038
+    },
+    "quote": {
+      "p50": 13.6484,
+      "p95": 21.754504999999998,
+      "p99": 38.34377400000001
+    },
+    "checkout-options": {
+      "p50": 2.29155,
+      "p95": 4.36141,
+      "p99": 6.550029000000004
+    },
+    "home": {
+      "p50": 301.0526,
+      "p95": 355.38358,
+      "p99": 499.3957080000001
+    },
+    "categories": {
+      "p50": 7.2304,
+      "p95": 10.270109999999997,
+      "p99": 12.454410000000017
+    },
+    "settings": {
+      "p50": 2.6661,
+      "p95": 4.568009999999998,
+      "p99": 6.381648000000015
+    },
+    "product": {
+      "p50": 14.3467,
+      "p95": 23.463589999999996,
+      "p99": 35.676104000000024
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "script": "customer",
+  "vus": 50,
+  "requests": 1529,
+  "rps": 15.8,
+  "p50": 9.1271,
+  "p90": 26.583560000000006,
+  "p95": 3259.2214199999894,
+  "p99": 12392.076092000001,
+  "max": 15276.2322,
+  "errorRate": 0,
+  "checksPassRate": 1,
+  "thresholds": {
+    "http_req_duration{name:login}": {
+      "p(95)<1500": {
+        "ok": false
+      }
+    },
+    "http_req_duration{name:me}": {
+      "p(95)<300": {
+        "ok": false
+      }
+    },
+    "http_req_duration{name:my-orders}": {
+      "p(95)<500": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:track}": {
+      "p(95)<500": {
+        "ok": true
+      }
+    },
+    "http_req_failed": {
+      "rate<0.01": {
+        "ok": true
+      }
+    }
+  },
+  "byEndpoint": {
+    "my-orders": {
+      "p50": 8.8472,
+      "p95": 254.46641999998732,
+      "p99": 4909.950451999987
+    },
+    "track": {
+      "p50": 18.5737,
+      "p95": 30.10032,
+      "p99": 2457.159795999995
+    },
+    "login": {
+      "p50": 10631.929499999998,
+      "p95": 14682.952179999998,
+      "p99": 15239.665705
+    },
+    "me": {
+      "p50": 5.5433,
+      "p95": 1796.9320599999999,
+      "p99": 4925.000124
+    }
+  }
+}

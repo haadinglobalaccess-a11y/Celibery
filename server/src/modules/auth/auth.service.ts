@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import { bcryptCompare, bcryptHash } from '../../lib/password-hash';
 import jwt from 'jsonwebtoken';
 import { env, isTest, jwtSecret } from '../../config/env';
 import { AppError, badRequest, conflict, unauthorized } from '../../lib/errors';
@@ -15,7 +15,7 @@ const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 let dummyHash: string | undefined;
 
-export const hashPassword = (pw: string) => bcrypt.hash(pw, BCRYPT_ROUNDS);
+export const hashPassword = (pw: string) => bcryptHash(pw, BCRYPT_ROUNDS);
 
 export async function registerCustomer(input: { name: string; email: string; phone?: string; password: string; lang: 'ar' | 'en'; marketingOptIn?: boolean }) {
   const exists = await User.exists({ email: input.email });
@@ -59,14 +59,14 @@ export async function authenticate(emailAddr: string, pw: string) {
   // Same error for unknown email and wrong password (no account enumeration).
   const invalidMsg = 'Incorrect email or password';
   if (!user || !user.passwordHash) {
-    dummyHash ??= await bcrypt.hash('timing-equaliser', BCRYPT_ROUNDS);
-    await bcrypt.compare(pw, dummyHash); // keeps response time similar for unknown accounts
+    dummyHash ??= await bcryptHash('timing-equaliser', BCRYPT_ROUNDS);
+    await bcryptCompare(pw, dummyHash); // keeps response time similar for unknown accounts
     throw new LoginError('invalid', invalidMsg);
   }
   if (user.lockUntil && user.lockUntil > new Date()) {
     throw new LoginError('locked', 'Too many failed attempts. Try again in a few minutes.', { userId: String(user._id), type: user.type });
   }
-  const okPw = await bcrypt.compare(pw, user.passwordHash);
+  const okPw = await bcryptCompare(pw, user.passwordHash);
   if (!okPw) {
     const lockedNow = await recordFailure(user);
     throw new LoginError('invalid', invalidMsg, { userId: String(user._id), type: user.type, lockedNow });
@@ -220,7 +220,7 @@ export async function verifyCurrentPassword(userId: string, password: string, op
   if (user.lockUntil && user.lockUntil > new Date()) {
     throw new RecheckError('ACCOUNT_LOCKED', 'Too many failed attempts. Try again in a few minutes.');
   }
-  if (!(await bcrypt.compare(password, user.passwordHash))) {
+  if (!(await bcryptCompare(password, user.passwordHash))) {
     const lockedNow = await recordFailure(user);
     if (lockedNow) await revokeSession(opts.sid);
     throw new RecheckError('WRONG_PASSWORD', 'Current password is incorrect', lockedNow);

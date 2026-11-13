@@ -1,4 +1,4 @@
-import { Order, Product, User, getSettings } from '../../models';
+import { ORDER_STATUSES, Order, Product, User, getSettings } from '../../models';
 import { toCsv } from '../../lib/csv';
 
 /** Orders that count as revenue: paid online, or COD orders that are not cancelled/returned. */
@@ -33,7 +33,8 @@ export async function overview() {
   const { start, end } = range();
   const [totals, byStatus, trend, lowStock, recent, customers] = await Promise.all([
     Order.aggregate([{ $match: revenueMatch }, { $group: { _id: null, orders: { $sum: 1 }, revenue: { $sum: { $subtract: ['$total', { $ifNull: ['$refundedAmount', 0] }] } } } }]),
-    Order.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
+    // One index count per status (COUNT_SCAN on status_1) instead of grouping every order document.
+    Promise.all(ORDER_STATUSES.map(async (s) => ({ _id: s, n: await Order.countDocuments({ status: s }) }))).then((rows) => rows.filter((r) => r.n > 0)),
     Order.aggregate([
       { $match: { ...revenueMatch, createdAt: { $gte: start, $lte: end } } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Asia/Riyadh' } }, orders: { $sum: 1 }, revenue: { $sum: '$total' } } },

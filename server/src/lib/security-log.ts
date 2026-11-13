@@ -35,6 +35,7 @@ export type SecurityEvent =
   | 'rate_limit.store_unavailable'
   | 'webhook.bad_signature'
   | 'cron.bad_secret'
+  | 'metrics.bad_token'
   | 'staff.privilege_blocked';
 
 /** Masks the local part of an email address ("ab***@example.com") so logs stay useful but not a customer list. */

@@ -5,6 +5,7 @@ import { createApp } from '../server/src/app';
 import { assertProductionConfig } from '../server/src/config/env';
 import { connectDb } from '../server/src/db/connect';
 import { logger } from '../server/src/lib/logger';
+import { servesStaleWhenDbDown } from '../server/src/middleware/db-gate';
 
 assertProductionConfig();
 const app = createApp();
@@ -14,6 +15,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     await connectDb();
   } catch {
     logger.error('Database connection unavailable');
+    // A warm instance may still hold the last homepage/categories copy: let the app serve it
+    // (middleware/db-gate.ts answers everything else with 503).
+    const path = (req.url ?? '').split('?')[0].replace(/^\/api/, '');
+    if (servesStaleWhenDbDown({ method: req.method ?? '', path })) {
+      return (app as unknown as (req: IncomingMessage, res: ServerResponse) => void)(req, res);
+    }
     res.statusCode = 503;
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');

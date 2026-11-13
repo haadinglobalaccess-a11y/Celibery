@@ -1,0 +1,120 @@
+{
+  "script": "storefront",
+  "vus": 50,
+  "requests": 3640,
+  "rps": 37.3,
+  "p50": 2.6431,
+  "p90": 18.81194,
+  "p95": 25.40113499999999,
+  "p99": 35.83057300000003,
+  "max": 491.4288,
+  "errorRate": 0,
+  "checksPassRate": 1,
+  "thresholds": {
+    "http_req_duration{name:category}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration": {
+      "p(95)<500": {
+        "ok": true
+      },
+      "p(99)<1500": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:products}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:categories}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:quote}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:home}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_failed": {
+      "rate<0.01": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:checkout-options}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:search}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:settings}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:product}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    }
+  },
+  "byEndpoint": {
+    "checkout-options": {
+      "p50": 2.55045,
+      "p95": 5.673224999999988,
+      "p99": 8.887524000000006
+    },
+    "search": {
+      "p50": 27.4696,
+      "p95": 36.47542,
+      "p99": 43.643432
+    },
+    "settings": {
+      "p50": 1.0265,
+      "p95": 2.479075,
+      "p99": 4.92635
+    },
+    "product": {
+      "p50": 13.8022,
+      "p95": 18.8277,
+      "p99": 30.2077
+    },
+    "products": {
+      "p50": 15.9769,
+      "p95": 25.055549999999997,
+      "p99": 32.233425000000004
+    },
+    "category": {
+      "p50": 1.59755,
+      "p95": 3.796925,
+      "p99": 10.277175
+    },
+    "categories": {
+      "p50": 0.98505,
+      "p95": 2.0352,
+      "p99": 3.6167
+    },
+    "quote": {
+      "p50": 14.0705,
+      "p95": 23.291429999999995,
+      "p99": 42.57557199999999
+    },
+    "home": {
+      "p50": 2.57995,
+      "p95": 4.387449999999999,
+      "p99": 294.221
+    }
+  }
+}

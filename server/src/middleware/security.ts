@@ -48,6 +48,7 @@ const RATE_MESSAGE = { ok: false, error: { code: 'RATE_LIMITED', message: 'Too m
 type LimiterOpts = {
   keyGenerator?: Options['keyGenerator'];
   skipSuccessfulRequests?: boolean;
+  requestWasSuccessful?: Options['requestWasSuccessful'];
   /** Per-instance counter even when the shared store is on (see apiLimiter). */
   local?: boolean;
 };
@@ -68,6 +69,7 @@ export const limiter = (windowMs: number, limit: number, name = `w${windowMs}l${
     store: env.RATE_LIMIT_STORE === 'mongo' && !opts.local ? new MongoRateLimitStore(`rl:${name}`) : undefined,
     keyGenerator: opts.keyGenerator,
     skipSuccessfulRequests: opts.skipSuccessfulRequests,
+    ...(opts.requestWasSuccessful ? { requestWasSuccessful: opts.requestWasSuccessful } : {}),
     // The IP comes from req.ip, which honours exactly TRUST_PROXY_HOPS proxies (app.ts).
     validate: { trustProxy: false, xForwardedForHeader: false },
     handler: (req, res, _next, options) => {
@@ -91,7 +93,13 @@ export const apiLimiter = limiter(60_000, 300, 'api', { local: true });
 /** Login / registration / reset per IP. */
 export const authLimiter = limiter(15 * 60_000, 20, 'auth');
 /** Failed sign-ins per account across all IPs (successful sign-ins do not count). */
-export const loginAccountLimiter = limiter(15 * 60_000, 10, 'login-account', { keyGenerator: byEmail, skipSuccessfulRequests: true });
+export const loginAccountLimiter = limiter(15 * 60_000, 10, 'login-account', {
+  keyGenerator: byEmail,
+  skipSuccessfulRequests: true,
+  // A sign-in refused because the server is busy (503 SIGN_IN_BUSY) is not a failed password attempt:
+  // overload must never lock a customer out of their account.
+  requestWasSuccessful: (_req, res) => res.statusCode < 400 || res.statusCode === 503,
+});
 /** Password-reset emails per address: stops mail-bombing a victim's inbox. */
 export const resetEmailLimiter = limiter(60 * 60_000, 5, 'reset-email', { keyGenerator: byEmail });
 /** Two-factor code attempts per IP. */

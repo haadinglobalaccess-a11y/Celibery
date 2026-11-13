@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { devFallbacksAllowed, env } from '../../config/env';
 import { logger } from '../../lib/logger';
 import { buildKeyRing, decryptSecret, encryptSecret, fingerprint, type KeyRing } from '../../lib/secrets';
@@ -150,6 +151,8 @@ function resolveRecord(provider: IntegrationKey, doc: any): ResolvedIntegration 
 
 export async function loadIntegrations(force = false): Promise<void> {
   if (!force && snapshot && Date.now() - snapshot.at < CACHE_MS) return;
+  // Database unreachable: keep the last snapshot (or env values) instead of waiting on a query.
+  if (mongoose.connection.readyState !== 1) return;
   if (inflight) return inflight;
   inflight = (async () => {
     try {

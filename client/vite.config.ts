@@ -29,8 +29,32 @@ function cspPlugin(mode: string): Plugin {
   };
 }
 
+/**
+ * `vite preview` (the Railway storefront service) sends `Cache-Control: no-cache` for everything, so
+ * every visit re-validated every bundle (verified 13 Nov 2026). Files under /assets/ carry a content
+ * hash in their name and never change: browsers and CDNs may keep them for a year. Everything else
+ * (index.html, brand images) keeps no-cache so a deploy is picked up immediately.
+ */
+function immutableAssetsPlugin(): Plugin {
+  return {
+    name: 'celibery-immutable-assets',
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.startsWith('/assets/')) {
+          const setHeader = res.setHeader.bind(res);
+          // sirv sets its own Cache-Control afterwards: keep ours for hashed assets.
+          res.setHeader = (name: string, value: number | string | readonly string[]) =>
+            name.toLowerCase() === 'cache-control' ? res : setHeader(name, value);
+          setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), cspPlugin(mode)],
+  plugins: [react(), cspPlugin(mode), immutableAssetsPlugin()],
   envDir: '..',
   preview: {
     allowedHosts: ['celiberyclient-production.up.railway.app'],

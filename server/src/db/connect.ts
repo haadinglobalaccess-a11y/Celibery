@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { env, isProd } from '../config/env';
+import { logger } from '../lib/logger';
 
 // Query-selector injection (e.g. {"$gt": ""}) is prevented at the edge: every request body,
 // query and route parameter is parsed by a zod schema that only admits primitive values
@@ -19,8 +20,21 @@ export async function connectDb(uri = env.MONGODB_URI): Promise<typeof mongoose>
     delete (globalThis as { __celiberyTx?: boolean }).__celiberyTx;
   }
   if (!cache.promise) {
+    watchConnection();
     cache.promise = mongoose
-      .connect(uri, { dbName: env.MONGODB_DB_NAME, serverSelectionTimeoutMS: 10_000, maxPoolSize: 10 })
+      .connect(uri, {
+        dbName: env.MONGODB_DB_NAME,
+        serverSelectionTimeoutMS: 10_000,
+        // Per instance. Size it so (max instances × pool) stays under the cluster's connection limit
+        // (PRODUCTION_CAPACITY_REPORT.md). Idle connections are closed so scaled-down or frozen
+        // serverless instances do not hold Atlas connections open.
+        maxPoolSize: env.MONGODB_MAX_POOL_SIZE,
+        minPoolSize: env.MONGODB_MIN_POOL_SIZE,
+        maxIdleTimeMS: 60_000,
+        // A request waiting for a free pooled connection fails after 10 s instead of hanging until
+        // the platform timeout (Vercel: 30 s) — the client sees a clean 5xx and can retry.
+        waitQueueTimeoutMS: 10_000,
+      })
       .then(async connection => {
         if (isProd && !(await supportsTransactions())) {
           await mongoose.disconnect();
@@ -34,6 +48,21 @@ export async function connectDb(uri = env.MONGODB_URI): Promise<typeof mongoose>
       });
   }
   return cache.promise;
+}
+
+/**
+ * Logs connection-state changes once per process (database outages and failovers show up in the
+ * host's log stream). The driver reconnects by itself; requests during an outage get a 503 from
+ * /api/health and a DATABASE_UNAVAILABLE / server error from the API, never a hang.
+ */
+let watching = false;
+function watchConnection() {
+  if (watching) return;
+  watching = true;
+  const c = mongoose.connection;
+  c.on('disconnected', () => logger.warn('MongoDB disconnected'));
+  c.on('reconnected', () => logger.info('MongoDB reconnected'));
+  c.on('error', (err) => logger.error('MongoDB connection error', { err: String((err as Error)?.message ?? err) }));
 }
 
 export async function disconnectDb() {

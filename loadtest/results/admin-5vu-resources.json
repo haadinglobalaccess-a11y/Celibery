@@ -1,0 +1,26 @@
+{
+  "label": "admin-5vu",
+  "samples": 44,
+  "apiCpuPctOfOneCore": {
+    "avg": 1.8,
+    "max": 6.1
+  },
+  "mongodCpuPctOfOneCore": 82.5,
+  "apiRssMB": {
+    "avg": 357,
+    "max": 362
+  },
+  "apiHeapMB": {
+    "max": 117
+  },
+  "eventLoopDelayP99Ms": {
+    "max": 35.4
+  },
+  "inFlightMax": 2,
+  "mongoPool": {
+    "createdTotal": 46,
+    "checkedOutMax": 2,
+    "waitingMax": 0
+  },
+  "dbConnectionsMax": 27
+}

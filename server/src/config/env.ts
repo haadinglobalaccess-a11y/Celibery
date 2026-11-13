@@ -99,6 +99,28 @@ const schema = z.object({
   CSP_CONNECT_SRC: z.string().default(''),
   /** Endpoint that receives CSP violation reports. */
   CSP_REPORT_URI: z.string().default(''),
+
+  // ---- Scalability & operations (SCALABILITY_REMEDIATION_REPORT.md) -------------------------
+  /** MongoDB connection pool per instance. Keep (instances × pool) below the cluster's connection limit. */
+  MONGODB_MAX_POOL_SIZE: z.coerce.number().int().min(1).max(200).default(10),
+  MONGODB_MIN_POOL_SIZE: z.coerce.number().int().min(0).max(50).default(0),
+  /**
+   * Seconds a public, anonymous payload (homepage, categories, public settings) may be reused by one
+   * instance. Admin changes invalidate it on every instance within ~1 s. 0 turns the cache off.
+   * Unset: 30 s (0 in the test suite).
+   */
+  PUBLIC_CACHE_TTL_SECONDS: z.coerce.number().int().min(0).max(300).optional(),
+  /** Bearer token for GET /api/health/metrics (process, pool and latency metrics). Empty = endpoint disabled. */
+  METRICS_TOKEN: z.string().default(''),
+  /** Requests slower than this are logged as `slow_request` (0 = off). */
+  SLOW_REQUEST_MS: z.coerce.number().int().min(0).default(1500),
+  /**
+   * Worker threads for bcrypt (sign-in, registration, password change) so a sign-in burst does not
+   * stall the event loop. 0 = hash on the main thread. Unset: 2 (0 on Vercel, one request per instance).
+   */
+  PASSWORD_HASH_THREADS: z.coerce.number().int().min(0).max(16).optional(),
+  /** Password operations allowed to wait per instance before new sign-ins get 503 SIGN_IN_BUSY. */
+  PASSWORD_HASH_MAX_QUEUE: z.coerce.number().int().min(1).max(10_000).default(64),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -108,7 +130,11 @@ if (!parsed.success) {
   throw new Error('Invalid environment configuration');
 }
 
-export const env = parsed.data;
+export const env = {
+  ...parsed.data,
+  PUBLIC_CACHE_TTL_SECONDS: parsed.data.PUBLIC_CACHE_TTL_SECONDS ?? (parsed.data.NODE_ENV === 'test' ? 0 : 30),
+  PASSWORD_HASH_THREADS: parsed.data.PASSWORD_HASH_THREADS ?? (process.env.VERCEL ? 0 : 2),
+};
 export const isProd = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
 

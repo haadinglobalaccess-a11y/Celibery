@@ -1,0 +1,120 @@
+{
+  "script": "storefront",
+  "vus": 1000,
+  "requests": 40310,
+  "rps": 337.8,
+  "p50": 327.14875,
+  "p90": 3591.36907,
+  "p95": 4011.75494,
+  "p99": 4748.697864,
+  "max": 6255.9194,
+  "errorRate": 0,
+  "checksPassRate": 1,
+  "thresholds": {
+    "http_req_duration{name:category}": {
+      "p(95)<800": {
+        "ok": false
+      }
+    },
+    "http_req_duration{name:quote}": {
+      "p(95)<800": {
+        "ok": false
+      }
+    },
+    "http_req_duration": {
+      "p(95)<500": {
+        "ok": false
+      },
+      "p(99)<1500": {
+        "ok": false
+      }
+    },
+    "http_req_duration{name:product}": {
+      "p(95)<800": {
+        "ok": false
+      }
+    },
+    "http_req_duration{name:home}": {
+      "p(95)<800": {
+        "ok": false
+      }
+    },
+    "http_req_duration{name:checkout-options}": {
+      "p(95)<800": {
+        "ok": false
+      }
+    },
+    "http_req_duration{name:products}": {
+      "p(95)<800": {
+        "ok": false
+      }
+    },
+    "http_req_failed": {
+      "rate<0.01": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:categories}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:search}": {
+      "p(95)<800": {
+        "ok": false
+      }
+    },
+    "http_req_duration{name:settings}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    }
+  },
+  "byEndpoint": {
+    "settings": {
+      "p50": 71.5641,
+      "p95": 652.1357149999998,
+      "p99": 731.5553550000004
+    },
+    "quote": {
+      "p50": 2507.8716,
+      "p95": 3881.7700400000003,
+      "p99": 4249.342016
+    },
+    "product": {
+      "p50": 2773.0459,
+      "p95": 4179.7579399999995,
+      "p99": 4692.176736000002
+    },
+    "category": {
+      "p50": 45.30915,
+      "p95": 1099.0459649999996,
+      "p99": 2241.882427000004
+    },
+    "checkout-options": {
+      "p50": 854.9908499999999,
+      "p95": 1396.98729,
+      "p99": 1636.2383680000003
+    },
+    "products": {
+      "p50": 3272.4592,
+      "p95": 4670.302729999999,
+      "p99": 4875.347246
+    },
+    "home": {
+      "p50": 116.04975,
+      "p95": 3711.450224999997,
+      "p99": 5557.961749000008
+    },
+    "categories": {
+      "p50": 54.3883,
+      "p95": 303.8746749999996,
+      "p99": 2029.6597270000002
+    },
+    "search": {
+      "p50": 1920.0969,
+      "p95": 3176.09423,
+      "p99": 3454.035012
+    }
+  }
+}

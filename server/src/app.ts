@@ -25,10 +25,37 @@ import { catalogRoutes } from './modules/catalog/catalog.routes';
 import { orderRoutes } from './modules/orders/order.routes';
 import { draftRoutes } from './modules/checkout-drafts/draft.routes';
 import { paymentRoutes } from './modules/payments/payment.routes';
+import { metricsSnapshot, requestMetrics } from './lib/metrics';
+import { bumpPublicCacheVersion } from './lib/public-cache';
+import { databaseGate } from './middleware/db-gate';
+import type { NextFunction, Request, Response } from 'express';
+
+/**
+ * Any successful admin change (product, price, banner, settings, FAQ…) invalidates the public
+ * cache on every instance BEFORE the success response is sent, so the storefront never shows the
+ * previous version after the admin's save completes (lib/public-cache.ts).
+ */
+function invalidatePublicCacheOnAdminWrite(req: Request, res: Response, next: NextFunction) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  let bumped = false;
+  const json = res.json.bind(res);
+  res.json = ((body: unknown) => {
+    if (res.statusCode >= 400) return json(body);
+    bumped = true;
+    void bumpPublicCacheVersion().finally(() => json(body));
+    return res;
+  }) as Response['json'];
+  // Responses that do not go through res.json (e.g. res.send / redirects): bump afterwards.
+  res.on('finish', () => {
+    if (!bumped && res.statusCode < 400) void bumpPublicCacheVersion();
+  });
+  next();
+}
 
 export function createApp(opts: { serveClient?: string } = {}): Express {
   const app = express();
   app.disable('x-powered-by');
+  app.use(requestMetrics);
   // Exactly the number of proxies in front of the app (TRUST_PROXY_HOPS): req.ip is then the real
   // client address and a forged X-Forwarded-For cannot dodge per-IP rate limits.
   app.set('trust proxy', env.TRUST_PROXY_HOPS);
@@ -85,12 +112,25 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   }
   app.use(cookieParser());
 
+  // Readiness (load balancers / deploy health checks): 503 while the database is unreachable.
   app.get('/api/health', (_req, res) => ok(res, { status: databaseReady() ? 'ok' : 'unavailable', time: new Date().toISOString() }, databaseReady() ? 200 : 503));
-  app.get('/sitemap.xml', ah(sitemap));
-  app.get('/robots.txt', ah(robots));
-  app.get('/llms.txt', ah(llms));
+  // Liveness: the process is up and serving, whatever the database state (restart only if this fails).
+  app.get('/api/health/live', (_req, res) => ok(res, { status: 'ok' }));
+  // Operational metrics for monitoring/alerting. Disabled (404) unless METRICS_TOKEN is set.
+  app.get('/api/health/metrics', (req, res, next) => {
+    if (!env.METRICS_TOKEN) return next();
+    if (!safeEqual(req.get('authorization') ?? '', `Bearer ${env.METRICS_TOKEN}`)) {
+      securityEvent('metrics.bad_token', req);
+      return next(forbidden());
+    }
+    return ok(res, metricsSnapshot());
+  });
+  app.get('/sitemap.xml', databaseGate, ah(sitemap));
+  app.get('/robots.txt', databaseGate, ah(robots));
+  app.get('/llms.txt', databaseGate, ah(llms));
 
-  app.use('/api', apiLimiter, csrfGuard, rejectOperatorKeys, integrationsMiddleware, loadUser);
+  // databaseGate first: during a database outage requests fail fast (or serve cached public pages).
+  app.use('/api', databaseGate, apiLimiter, csrfGuard, rejectOperatorKeys, integrationsMiddleware, loadUser);
 
   // Scheduled job (Vercel Cron sends Authorization: Bearer <CRON_SECRET>).
   app.get(
@@ -123,13 +163,23 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   app.use('/api', draftRoutes);
   app.use('/api', orderRoutes);
   app.use('/api/me', accountRoutes);
-  app.use('/api/admin', adminRoutes);
+  app.use('/api/admin', invalidatePublicCacheOnAdminWrite, adminRoutes);
   app.use('/api', notFoundHandler);
 
   // Optional: serve the built storefront (single-server deployments and E2E tests).
   if (opts.serveClient && fs.existsSync(opts.serveClient)) {
     const dir = opts.serveClient;
-    app.use(express.static(dir, { index: false, maxAge: '1h' }));
+    // Hashed bundles (/assets/*) never change: cache for a year. index.html and unhashed files are
+    // revalidated, so a deploy is picked up at once (a cached index.html could reference bundles that
+    // a new deploy removed).
+    app.use(
+      express.static(dir, {
+        index: false,
+        setHeaders: (res, file) => {
+          res.setHeader('Cache-Control', /[\\/]assets[\\/]/.test(file) ? 'public, max-age=31536000, immutable' : 'no-cache');
+        },
+      }),
+    );
     app.get('*', (_req, res) => res.sendFile(path.join(dir, 'index.html')));
   }
 

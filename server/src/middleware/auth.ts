@@ -89,6 +89,8 @@ export async function revokeAllSessions(userId: unknown, exceptSid?: string) {
 export async function loadUser(req: Request, res: Response, next: NextFunction) {
   const token = req.cookies?.[SESSION_COOKIE];
   if (!token || typeof token !== 'string') return next();
+  // Database outage (middleware/db-gate.ts): public cached pages only, served anonymously.
+  if (res.locals.dbDown) return next();
   try {
     const payload = jwt.verify(token, jwtSecret(), { algorithms: ['HS256'] }) as TokenPayload;
     const user = await User.findById(payload.sub).select('type name email active tokenVersion role mfaEnabled').lean();

@@ -11,6 +11,8 @@ export function notFoundHandler(req: Request, res: Response) {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
   if (err instanceof AppError) {
+    // Temporary conditions (sign-in overload, database outage): tell clients and proxies when to retry.
+    if (err.code === 'SIGN_IN_BUSY' || err.code === 'DATABASE_UNAVAILABLE') res.setHeader('Retry-After', '5');
     return res.status(err.status).json({ ok: false, error: { code: err.code, message: err.message, details: err.details } });
   }
   if (err instanceof mongoose.Error.ValidationError) {

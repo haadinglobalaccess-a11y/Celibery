@@ -1,0 +1,26 @@
+{
+  "label": "checkout-100vu",
+  "samples": 44,
+  "apiCpuPctOfOneCore": {
+    "avg": 25.5,
+    "max": 54.3
+  },
+  "mongodCpuPctOfOneCore": 32.2,
+  "apiRssMB": {
+    "avg": 179,
+    "max": 197
+  },
+  "apiHeapMB": {
+    "max": 67
+  },
+  "eventLoopDelayP99Ms": {
+    "max": 35
+  },
+  "inFlightMax": 4,
+  "mongoPool": {
+    "createdTotal": 41,
+    "checkedOutMax": 5,
+    "waitingMax": 0
+  },
+  "dbConnectionsMax": 25
+}

@@ -1,0 +1,26 @@
+{
+  "label": "storefront-50vu",
+  "samples": 44,
+  "apiCpuPctOfOneCore": {
+    "avg": 14.1,
+    "max": 22.4
+  },
+  "mongodCpuPctOfOneCore": 15,
+  "apiRssMB": {
+    "avg": 140,
+    "max": 148
+  },
+  "apiHeapMB": {
+    "max": 52
+  },
+  "eventLoopDelayP99Ms": {
+    "max": 36.3
+  },
+  "inFlightMax": 3,
+  "mongoPool": {
+    "createdTotal": 12,
+    "checkedOutMax": 3,
+    "waitingMax": 0
+  },
+  "dbConnectionsMax": 20
+}

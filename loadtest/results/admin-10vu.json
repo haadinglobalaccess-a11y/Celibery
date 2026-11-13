@@ -1,0 +1,62 @@
+{
+  "script": "admin",
+  "vus": 10,
+  "requests": 381,
+  "rps": 4,
+  "p50": 327.9185,
+  "p90": 627.6787,
+  "p95": 696.9787,
+  "p99": 768.7719599999998,
+  "max": 870.8001,
+  "errorRate": 0,
+  "checksPassRate": 1,
+  "thresholds": {
+    "http_req_duration{name:admin-overview}": {
+      "p(95)<1500": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:admin-products}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_failed": {
+      "rate<0.01": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:admin-orders}": {
+      "p(95)<800": {
+        "ok": true
+      }
+    },
+    "http_req_duration{name:admin-orders-search}": {
+      "p(95)<1500": {
+        "ok": true
+      }
+    }
+  },
+  "byEndpoint": {
+    "admin-overview": {
+      "p50": 590.5703,
+      "p95": 756.52278,
+      "p99": 870.03776
+    },
+    "admin-products": {
+      "p50": 18.2007,
+      "p95": 26.24263999999998,
+      "p99": 208.26688400000006
+    },
+    "admin-orders-search": {
+      "p50": 456.9419,
+      "p95": 704.2876899999999,
+      "p99": 729.424432
+    },
+    "admin-orders": {
+      "p50": 129.991,
+      "p95": 194.10161,
+      "p99": 303.6681380000001
+    }
+  }
+}
