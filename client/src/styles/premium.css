@@ -580,7 +580,7 @@ html[lang='ar'] .cine__scroll {
 .service__item .icon {
   width: 22px;
   height: 22px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* ---------- Category bento ---------- */
@@ -1423,7 +1423,7 @@ main#main {
 }
 .card__series {
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .card__series + .ltr::before {
   content: '·';

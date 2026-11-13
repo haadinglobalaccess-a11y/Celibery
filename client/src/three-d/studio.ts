@@ -248,7 +248,7 @@ void main(){
 /** Parses #rgb/#rrggbb (Admin → Brand accent) into linear-ish 0..1 floats. */
 export function accentRgb(css: string): Vec3 {
   const m = css.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
-  if (!m) return [0.15, 0.39, 0.92];
+  if (!m) return [0, 0.694, 0.753]; // CELIBERY turquoise #00B1C0
   const h = m[1].length === 3 ? m[1].split('').map((c) => c + c).join('') : m[1];
   const n = parseInt(h, 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];

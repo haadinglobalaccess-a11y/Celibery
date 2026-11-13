@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" role="img" aria-label="Product photo coming soon">
-<rect width="500" height="500" fill="#F3F3F4"/>
+<rect width="500" height="500" fill="#FFFFFF"/>
 <g opacity=".85"><rect x="140" y="200" width="220" height="90" rx="26" fill="none" stroke="#111" stroke-width="14"/><rect x="170" y="235" width="30" height="20" rx="4" fill="#111"/><rect x="215" y="235" width="30" height="20" rx="4" fill="#111"/><rect x="260" y="235" width="30" height="20" rx="4" fill="#111"/><path d="M360 245 h40" stroke="#111" stroke-width="14" stroke-linecap="round"/></g>
-<text x="250" y="440" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#8A8A90">Photo coming soon · الصورة قريباً</text>
+<text x="250" y="440" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#8A9398">Photo coming soon · الصورة قريباً</text>
 </svg>

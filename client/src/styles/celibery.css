@@ -7,25 +7,26 @@
    ===================================================================== */
 
 :root {
-  --cx-ink: #0b0b0c;
-  --cx-ink-2: #1d1d1f;
-  --cx-paper: #ffffff;
-  --cx-cloud: #f5f5f7;
-  --cx-cloud-2: #ececf0;
-  --cx-line: rgb(11 11 12 / 0.09);
-  --cx-muted: #6e6e73;
-  --cx-night: #111111; /* client-confirmed CELIBERY near-black for premium sections (Q1/Q2) */
-  --cx-night-2: #121214;
+  /* cx-* aliases resolve to the brand tokens in tokens.css */
+  --cx-ink: var(--ink);
+  --cx-ink-2: var(--ink-2);
+  --cx-paper: var(--paper);
+  --cx-cloud: var(--surface);
+  --cx-cloud-2: var(--surface-2);
+  --cx-line: rgb(17 17 17 / 0.09);
+  --cx-muted: var(--muted);
+  --cx-night: var(--brand-midnight); /* client-confirmed CELIBERY near-black for premium sections (Q1/Q2) */
+  --cx-night-2: var(--dark-2);
   --cx-night-line: rgb(255 255 255 / 0.1);
-  --cx-night-muted: #a1a1a6;
+  --cx-night-muted: var(--on-dark-muted);
   --cx-ease: cubic-bezier(0.22, 0.7, 0.2, 1);
   --cx-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
   --cx-r-xl: 32px;
   --cx-r-lg: 24px;
   --cx-r-md: 16px;
   --cx-pad: clamp(72px, 8.5vw, 136px);
-  --cx-stage: radial-gradient(110% 85% at 50% 12%, #ffffff 0%, #f6f6f8 46%, #eaeaee 100%);
-  --cx-stage-dark: radial-gradient(110% 85% at 50% 12%, #2a2a2f 0%, #18181b 50%, #0f0f11 100%);
+  --cx-stage: radial-gradient(110% 85% at 50% 12%, #ffffff 0%, #f5f7f8 46%, #e8edef 100%);
+  --cx-stage-dark: radial-gradient(110% 85% at 50% 12%, #2a3237 0%, #171c1f 50%, #0d1012 100%);
   /* Matte behind full-bleed product artwork — matches the deep navy of the CELIBERY campaign art. */
   --cx-art-matte: #070a14;
   --cx-r-art: 20px;
@@ -47,7 +48,7 @@
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: 18px;
 }
 .cx-eyebrow::before {
@@ -437,7 +438,7 @@ html[lang='ar'] .cx-card__title {
   line-height: 1.55;
 }
 .cx-card__title a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .cx-card__foot {
   display: flex;
@@ -587,27 +588,27 @@ html[lang='ar'] .cx-card__title {
    01 · Category universe
    ===================================================================== */
 .cx-tone-obsidian {
-  --tone-bg: radial-gradient(90% 120% at 80% 30%, color-mix(in srgb, var(--accent) 34%, transparent), transparent 62%), linear-gradient(160deg, #17171b, #070708 70%);
+  --tone-bg: radial-gradient(90% 120% at 80% 30%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 60%), linear-gradient(160deg, #1a1f22, #0d1012 70%);
   --tone-ink: #fff;
 }
 .cx-tone-porcelain {
-  --tone-bg: radial-gradient(80% 100% at 75% 35%, #ffffff, transparent 70%), linear-gradient(180deg, #f6f5f3, #ecebe7);
-  --tone-ink: #0b0b0c;
+  --tone-bg: radial-gradient(80% 100% at 75% 35%, #ffffff, transparent 70%), linear-gradient(180deg, #f5f7f8, #e9eef0);
+  --tone-ink: #111111;
 }
 .cx-tone-graphite {
-  --tone-bg: radial-gradient(90% 110% at 78% 40%, #3a3b42, transparent 65%), linear-gradient(160deg, #26272c, #141518);
+  --tone-bg: radial-gradient(90% 110% at 78% 40%, #333d43, transparent 65%), linear-gradient(160deg, #242b30, #111518);
   --tone-ink: #fff;
 }
 .cx-tone-mist {
-  --tone-bg: radial-gradient(80% 100% at 75% 35%, #ffffff, transparent 70%), linear-gradient(180deg, #edf1f6, #dfe6ee);
-  --tone-ink: #0b0b0c;
+  --tone-bg: radial-gradient(80% 100% at 75% 35%, #ffffff, transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, #f5f7f8), color-mix(in srgb, var(--accent) 16%, #e9eef0));
+  --tone-ink: #111111;
 }
 .cx-tone-sand {
-  --tone-bg: radial-gradient(80% 100% at 75% 35%, #fffdf9, transparent 70%), linear-gradient(180deg, #f2ece3, #e6ddcf);
-  --tone-ink: #1a1612;
+  --tone-bg: radial-gradient(80% 100% at 75% 35%, #ffffff, transparent 70%), linear-gradient(180deg, #f3f5f6, #e4e9ec);
+  --tone-ink: #111111;
 }
 .cx-tone-midnight {
-  --tone-bg: radial-gradient(90% 120% at 80% 30%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%), linear-gradient(160deg, #111a2e, #070b16 70%);
+  --tone-bg: radial-gradient(90% 120% at 80% 30%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%), linear-gradient(160deg, #182024, #0b0e10 70%);
   --tone-ink: #fff;
 }
 
@@ -1406,7 +1407,7 @@ html[dir='rtl'] .cx-why__item::before {
   font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.14em;
-  color: var(--accent);
+  color: var(--accent-text);
   padding-top: 0.6em;
 }
 .cx-why__item h3 {
@@ -4098,4 +4099,168 @@ html[dir='rtl'] .drawer.drawer--3d {
 }
 .cx-richtext > h3 + * {
   margin-top: 0.4em;
+}
+
+/* =====================================================================
+   CELIBERY brand layer (logo-derived turquoise identity)
+   Loaded last on purpose: aligns shared pieces with tokens.css.
+   ===================================================================== */
+
+/* Logo: the supplied wordmark, sized by height so its 4.5:1 ratio is kept. */
+.logo--brand {
+  letter-spacing: 0;
+  line-height: 0;
+}
+.logo--brand img {
+  height: 28px;
+  width: auto;
+}
+@media (max-width: 959px) {
+  .header .logo--brand img {
+    height: 22px;
+  }
+}
+.cx-footer .logo--brand img,
+.footer .logo--brand img {
+  height: 34px;
+}
+
+/* Text selection and caret carry the brand accent quietly. */
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, #fff);
+  color: var(--ink);
+}
+input,
+textarea {
+  caret-color: var(--accent-text);
+}
+
+/* Focus rings on dark surfaces use the raw turquoise (≈7:1 on #111). */
+.is-dark :focus-visible,
+.cine :focus-visible,
+.cx-footer :focus-visible,
+.footer :focus-visible {
+  outline-color: var(--accent);
+}
+
+/* Offer tags: turquoise fill with near-black text (white on turquoise fails AA). */
+.cx-tag--accent {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+/* Sample-data notice: compact, on-brand, and smaller so it covers less of the page.
+   Still always visible while demo products exist (data-honesty requirement). */
+.sample-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(300px, calc(100vw - 104px));
+  padding: 7px 12px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--brand-graphite) 94%, transparent);
+  color: var(--on-dark);
+  box-shadow: 0 10px 28px -14px rgb(0 0 0 / 0.5);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.sample-banner::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f5b740;
+}
+
+/* Mega menu: the panel is always light, so its text must not inherit the
+   white header text used while the header overlays the dark hero. */
+.header .mega {
+  color: var(--ink);
+}
+.header .mega__cat strong {
+  color: var(--ink);
+}
+.header .mega__cat:hover strong,
+.header .mega__cat:focus-visible strong {
+  color: var(--accent-text);
+}
+.header .mega__cat:focus-visible {
+  background: var(--cx-cloud);
+  outline-offset: 0;
+}
+
+/* Phones: the sample notice becomes a slim in-flow strip above the header,
+   so it never covers headings, prices or the sticky buy bar. */
+@media (max-width: 959px) {
+  .sample-banner,
+  body:has(.sticky-buy) .sample-banner {
+    position: static;
+    display: flex;
+    justify-content: center;
+    max-width: none;
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 6px 16px;
+    background: var(--brand-graphite);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    text-align: center;
+  }
+}
+
+/* =====================================================================
+   Product imagery surfaces (13 Nov 2026 visual pass)
+   One rule for every light image stage — card, product gallery, bag line:
+   the brand Cloud surface, with cut-out art (white-background product
+   photography and the branded placeholder drawings) multiplied onto it,
+   so the product sits on one seamless tile instead of a frame-in-a-frame.
+   Full-bleed campaign artwork (data-kind="art") keeps its own matte.
+   Visual values only: no transition, animation or transform is changed.
+   ===================================================================== */
+.cx-art[data-kind='cutout'] {
+  background: var(--surface);
+}
+.cx-art[data-kind='cutout'] > img {
+  mix-blend-mode: multiply;
+}
+
+/* Product page gallery: a flat, light stage (UGREEN-grade product presentation),
+   hairline edge only. The focus ring rule in immersive.css is more specific and still applies. */
+.cx-pdp .gallery__main {
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--cx-line);
+}
+/* The re-keyed frame plays the gallery turn animation, which makes it its own compositing group —
+   so the existing multiply on the <img> has nothing to blend with. Blending the frame itself onto the
+   (isolated) stage makes white-background photography sit seamlessly on the Cloud surface. */
+.cx-pdp .gallery__frame {
+  mix-blend-mode: multiply;
+}
+.cx-pdp .gallery__main.is-zoom .gallery__frame {
+  mix-blend-mode: normal;
+}
+
+/* Bag lines: the same Cloud stage as cards and the gallery. */
+.cx-bagline__media {
+  background: var(--surface);
+}
+.cx-bagline__media img {
+  mix-blend-mode: multiply;
+}
+
+/* Scrolled header: a near-opaque white bar. At 62% white it blended with the near-black
+   spotlight sections into a muddy grey band. Blur and the existing transition stay as they are. */
+@supports (backdrop-filter: blur(1px)) {
+  @media (min-width: 960px) {
+    .header.is-scrolled {
+      background: rgb(255 255 255 / 0.92);
+    }
+  }
 }

@@ -26,14 +26,14 @@ Last updated: 3 November 2026 (premium production-readiness upgrade — see `doc
 | ID | Client requirement (answer) | Implementation | Status | Evidence / test | Still needed |
 |---|---|---|---|---|---|
 | Q1 | Hybrid theme: light shopping pages, dark premium sections (Agree) | Light category/product/cart/checkout; dark hero, bundles editorial, "Why CELIBERY", brand story, footer | PASS | Preview screenshots AR/EN, desktop + mobile | Client sign-off on design |
-| Q2 | Near-black + white base with ONE brand accent (Agree) | `--accent` token, overridable in Admin → Settings → Brand; all premium effects derive from it | BLOCKED | Token wiring reviewed; placeholder `#2563EB` shown | Client's accent colour |
+| Q2 | Near-black + white base with ONE brand accent (Agree) | Accent = CELIBERY turquoise **#00B1C0**, measured from the client's logo file (median of opaque pixels #02B1C0). Tokens in `client/src/styles/tokens.css`; `--accent-ink` (#111) for text on the accent and `--accent-text` (darkened) for accent-coloured text on light surfaces, for WCAG contrast. Admin → Settings → Brand still overrides; the old placeholder #2563EB is treated as unset (13 Nov 2026) | PASS | Rendered AR/EN at 375/390/1440 px against the e2e stack | Client sign-off on the applied colour |
 | Q3 | Keep list from cellebry/UGREEN (Agree) | Dark hero, service strip, use-case tabs, wishlist, SAR prices with discounts, mega menu, series, lifestyle banners | PASS | All rendered in preview (series/lifestyle need client data — see Q15/Q16) | — |
 | Q4 | Feel: premium, Saudi, trustworthy (Agree) | Cinematic hero, editorial sections, Arabic-first, trust/service strip, no invented claims | PASS | Preview screenshots | Client sign-off (subjective) |
 | Q5 | Mega menu (Agree) | Animated mega menu with categories, sample products per category, bundles panel | PASS | Hover screenshot (`docs/screenshots/mega-menu-en.jpg`) | — |
 | Q6 | Balanced animation, site stays fast (Agree) | Motion system (`styles/motion.css`): scroll reveals, staggered lists, masked headline reveal, page transitions, route progress bar, card hover/zoom/second-image swap, add-to-cart feedback + animated cart panel, gallery zoom/crossfade, marquee, ambient background. Transform/opacity only, IntersectionObserver (no scroll loops), CSS-only parallax as progressive enhancement, full `prefers-reduced-motion` support | PASS | Preview: zero console errors; reduced-motion run shows 0 elements left hidden/transformed | Real-device performance check (Lighthouse) after deploy |
 | Q7 | One hero video (client: "AI would be better, or explain what kind of video") | Hero video/poster can now be **uploaded or linked** (direct .mp4/.webm, YouTube, Vimeo), with separate mobile video/poster, headline, button label/destination and on/off — Admin → Website content → Homepage. Banners also accept video. Else hero banners; else animated product stage. Brief in `docs/HERO-VIDEO-BRIEF.md` | BLOCKED | Fallback stage verified in preview; admin media fields rendered in Chromium (3 Nov) | Video (or approval to produce one) |
-| Q8 | We propose a font pair (Agree) | IBM Plex Sans Arabic + Plus Jakarta Sans via Google Fonts | BLOCKED | Not loadable in sandbox (fonts host blocked); fallback fonts rendered correctly | Client approval of the pair; optionally self-host |
-| Q9 | Logo: client sends logo, we recreate as vector | Single `<Logo>` component used everywhere; typographic wordmark until uploaded | BLOCKED | — | Logo file, then vector recreation |
+| Q8 | We propose a font pair (Agree) | Manrope (Latin, variable 400–800) + IBM Plex Sans Arabic via Google Fonts, both SIL OFL (13 Nov 2026; was Plus Jakarta Sans) | PARTIAL | Rendered in Edge against the e2e stack | Client approval of the pair; optionally self-host |
+| Q9 | Logo: client sends logo, we recreate as vector | Client PNG (`docs/brand/celibery-logo-original.png`) cropped and served as WebP from `client/public/brand/`; `<Logo>` uses it unless Admin → Brand has an upload; favicon is a turquoise bolt (13 Nov 2026) | PARTIAL | Header, drawer and footer rendered AR/EN | True vector (SVG) recreation of the wordmark still to do |
 | Q10 | Arabic default, English one tap away (Agree) | `/` → `/ar`; header switch keeps page, query and cart | PASS | Preview: `/` → `/ar`, `dir=rtl`; switch to `/en` same path | — |
 | Q11 | Western digits on Arabic site (Agree) | `ar-SA-u-nu-latn` number/date formats | PASS | Arabic screenshots show `149.00 ر.س` | — |
 | Q12 | Native Saudi Arabic copy, we draft for approval (Agree) | All Arabic strings are drafts in `client/src/i18n/strings.ts` (incl. new strings added this session) | BLOCKED | — | Native review |
@@ -69,21 +69,21 @@ Last updated: 3 November 2026 (premium production-readiness upgrade — see `doc
 
 | Status | Count |
 |---|---|
-| PASS | 12 |
-| PARTIAL | 3 |
+| PASS | 13 |
+| PARTIAL | 5 |
 | FAIL | 0 |
 | MISSING | 0 |
-| BLOCKED | 21 |
+| BLOCKED | 18 |
 | NOT VERIFIED | 3 |
 | **Total** | **39** |
 
-**A. Technical completion** — requirements that do not depend on client input (39 − 21 BLOCKED = 18):
-- strict (PASS only): 12 / 18 = **66.7 %**
-- weighted (PARTIAL = 0.5): (12 + 1.5) / 18 = **75.0 %**
+**A. Technical completion** — requirements that do not depend on client input (39 − 18 BLOCKED = 21):
+- strict (PASS only): 13 / 21 = **61.9 %**
+- weighted (PARTIAL = 0.5): (13 + 2.5) / 21 = **73.8 %**
 
 **B. Overall client-requirement completion** — all 39:
-- strict: 12 / 39 = **30.8 %**
-- weighted: 13.5 / 39 = **34.6 %**
+- strict: 13 / 39 = **33.3 %**
+- weighted: 15.5 / 39 = **39.7 %**
 
 The low overall figure reflects missing client inputs and the fact that no server-side behaviour could be executed in this session, not missing code. Running the existing test suites on a machine with npm access would move Q18, Q25 and Q26 out of NOT VERIFIED (or reveal defects).
 

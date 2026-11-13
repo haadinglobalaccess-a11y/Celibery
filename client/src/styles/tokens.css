@@ -1,36 +1,68 @@
 /* =====================================================================
-   CELIBERY design tokens
-   Q1 hybrid theme · Q2 near-black + white base with ONE configurable accent
-   (--accent is overridden at runtime from Admin → Settings → Brand).
+   CELIBERY design tokens — single source of truth for the storefront.
+   Q1 hybrid theme · Q2 near-black + white base with ONE brand accent.
+
+   Brand accent: CELIBERY turquoise, measured from the client's logo file
+   (docs/brand/celibery-logo-original.png — median of all opaque pixels
+   = #02B1C0, dominant bin #00B0C0 → #00B1C0).
+   Admin → Settings → Brand can still override --accent at runtime;
+   state/settings.tsx then recomputes --accent-ink for contrast.
+
+   Contrast notes (WCAG 2.2):
+   - #00B1C0 on white is 2.6:1 → never use raw accent for text on light
+     surfaces; use --accent-text (≈5.2:1).
+   - Text ON an accent fill uses --accent-ink (#111111, ≈8:1).
+   - Raw accent on #111111 is ≈7.2:1 → fine for text in dark sections.
    ===================================================================== */
 :root {
-  /* Colour */
-  --ink: #111111;          /* near-black from the current CELIBERY site */
-  --ink-2: #2a2a2e;
-  --paper: #ffffff;
-  --surface: #f6f6f7;
-  --surface-2: #eeeef0;
-  --line: #e4e4e7;
-  --muted: #6b6b73;
-  --muted-2: #9a9aa2;
-  --dark: #0b0b0c;          /* premium dark sections */
-  --dark-2: #161618;
-  --dark-line: #2b2b30;
-  --on-dark: #f4f4f5;
-  --on-dark-muted: #a1a1aa;
-  --accent: #2563eb;        /* placeholder until the client confirms its brand accent */
-  --accent-ink: #ffffff;
-  --success: #15803d;
-  --success-bg: #ecfdf3;
-  --warning: #b45309;
-  --warning-bg: #fffbeb;
-  --danger: #b91c1c;
-  --danger-bg: #fef2f2;
-  --saudi-green: #006c35;
+  /* ---- Brand palette ---- */
+  --brand-turquoise: #00b1c0;
+  --brand-midnight: #111111;   /* Midnight Black — client-confirmed near-black */
+  --brand-graphite: #242b30;   /* Graphite — elevated dark surfaces */
+  --brand-white: #ffffff;
+  --brand-cloud: #f5f7f8;      /* Cloud Grey — light shopping surfaces */
+  --brand-steel: #707a80;      /* Steel Grey — icons, rules, decorative text */
+  --brand-ice: #d9f8fa;        /* Soft Ice Cyan — quiet accent washes */
 
-  /* Typography (Q8 proposed pair) */
-  --font-ar: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
-  --font-en: 'Plus Jakarta Sans', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* ---- Semantic colour (names kept for every existing stylesheet) ---- */
+  --ink: var(--brand-midnight);
+  --ink-2: #1c2226;
+  --paper: var(--brand-white);
+  --surface: var(--brand-cloud);
+  --surface-2: #eaeef0;
+  --line: #e1e6e9;
+  --muted: #5f686d;            /* steel, deepened to pass AA on white and cloud */
+  --muted-2: #8a9398;
+  --dark: #0d1012;             /* premium dark sections */
+  --dark-2: #171c1f;
+  --dark-3: var(--brand-graphite);
+  --dark-line: #2c3439;
+  --on-dark: #f3f6f7;
+  --on-dark-muted: #a3adb2;
+
+  --accent: var(--brand-turquoise);
+  --accent-ink: #111111;                                        /* text on an accent fill */
+  --accent-text: color-mix(in srgb, var(--accent) 68%, #000);   /* accent-coloured text on light */
+  --accent-hover: color-mix(in srgb, var(--accent) 86%, #000);
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, #fff);   /* ≈ Soft Ice Cyan wash */
+  --accent-line: color-mix(in srgb, var(--accent) 40%, transparent);
+
+  --success: #12795a;
+  --success-bg: #e8f7f1;
+  --warning: #9a5b07;
+  --warning-bg: #fff7e6;
+  --danger: #b4232c;
+  --danger-bg: #fdf0f1;
+  --saudi-green: #006c35;      /* campaign colour only (National Day) */
+
+  /* ---- Typography (Q8 proposed pair: Manrope + IBM Plex Sans Arabic) ---- */
+  --font-ar: 'IBM Plex Sans Arabic', 'Manrope', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  --font-en: 'Manrope', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-heavy: 800;
   --fs-xs: 0.75rem;
   --fs-sm: 0.875rem;
   --fs-md: 1rem;
@@ -39,8 +71,11 @@
   --fs-2xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
   --fs-3xl: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
   --fs-hero: clamp(2.25rem, 1.4rem + 4vw, 4.5rem);
+  --lh-tight: 1.1;
+  --lh-body: 1.6;
+  --lh-ar: 1.8;                /* Arabic needs taller lines to avoid clipped marks */
 
-  /* Spacing scale (4px base) */
+  /* ---- Spacing (4px base) ---- */
   --s-1: 0.25rem;
   --s-2: 0.5rem;
   --s-3: 0.75rem;
@@ -53,30 +88,55 @@
   --s-16: 4rem;
   --s-20: 5rem;
 
-  /* Shape & depth */
+  /* ---- Shape & depth ---- */
+  --r-xs: 6px;
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 18px;
   --r-xl: 28px;
   --r-pill: 999px;
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
-  --shadow-md: 0 6px 24px rgb(0 0 0 / 0.08);
-  --shadow-lg: 0 18px 48px rgb(0 0 0 / 0.14);
+  --border: 1px solid var(--line);
+  --shadow-sm: 0 1px 2px rgb(17 17 17 / 0.06);
+  --shadow-md: 0 8px 24px -8px rgb(17 17 17 / 0.12);
+  --shadow-lg: 0 24px 56px -20px rgb(17 17 17 / 0.22);
 
-  /* Layout */
+  /* ---- Controls ---- */
+  --btn-h-sm: 36px;
+  --btn-h: 48px;
+  --btn-h-lg: 56px;
+  --icon-sm: 16px;
+  --icon: 20px;
+  --icon-lg: 24px;
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent);
+  --disabled-opacity: 0.45;
+
+  /* ---- Layout ---- */
   --container: 1280px;
+  --container-wide: 1440px;
   --header-h: 68px;
   --tap: 44px; /* minimum tap target (mobile-first) */
 
-  /* Motion (Q6 balanced) */
+  /* ---- Motion (Q6 balanced) ---- */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-fast: 150ms;
   --dur: 280ms;
   --dur-slow: 600ms;
 }
 
-/* Breakpoints used across the stylesheets:
-   sm ≥ 640px · md ≥ 960px · lg ≥ 1200px */
+/* Breakpoints used across the stylesheets (CSS custom properties cannot be
+   used inside media queries, so these are documented, not tokenised):
+   sm ≥ 640px · md ≥ 960px · lg ≥ 1200px · xl ≥ 1440px */
+
+/* Inside dark sections, the raw accent already has strong contrast. */
+.is-dark,
+.cine,
+.dark,
+.footer,
+.cx-footer,
+.cx-head--dark {
+  --accent-text: var(--accent);
+}
 
 @media (prefers-reduced-motion: reduce) {
   :root {

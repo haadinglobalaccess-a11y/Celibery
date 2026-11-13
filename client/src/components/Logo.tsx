@@ -2,8 +2,12 @@ import { useSettings } from '../state/settings';
 
 /**
  * Single logo component used everywhere so the mark is always identical.
- * Q9: the client will supply its logo; until an image is uploaded in Admin → Settings → Brand,
- * a typographic wordmark is shown. Upload light (logoUrl) and dark (logoDarkUrl) versions.
+ *
+ * Source of truth, in order:
+ *  1. A logo uploaded in Admin → Settings → Brand (logoUrl / logoDarkUrl) — the admin always wins.
+ *  2. The client-supplied CELIBERY mark (turquoise wordmark with lightning-cut E's), cropped and
+ *     optimised from docs/brand/celibery-logo-original.png into /public/brand. The turquoise reads on
+ *     both the white header and the near-black hero/footer, so one colourway serves light and dark.
  */
 export function Logo({ onDark = false }: { onDark?: boolean }) {
   const s = useSettings();
@@ -16,8 +20,16 @@ export function Logo({ onDark = false }: { onDark?: boolean }) {
     );
   }
   return (
-    <span className="logo" aria-label="CELIBERY International">
-      CELIBERY <small>INTERNATIONAL</small>
+    <span className="logo logo--brand">
+      <img
+        src="/brand/celibery-logo-480.webp"
+        srcSet="/brand/celibery-logo-480.webp 480w, /brand/celibery-logo-960.webp 960w"
+        sizes="(min-width: 960px) 160px, 128px"
+        width={480}
+        height={107}
+        alt="CELIBERY International"
+        decoding="async"
+      />
     </span>
   );
 }

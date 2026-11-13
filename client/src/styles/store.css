@@ -421,7 +421,7 @@ html[lang='en'] .hero h1 {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: var(--s-2);
 }
 html[lang='ar'] .eyebrow {
@@ -670,7 +670,7 @@ html[lang='ar'] .eyebrow {
   width: 30px;
   height: 30px;
   margin-bottom: var(--s-4);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .why-item h3 {
   font-size: var(--fs-lg);

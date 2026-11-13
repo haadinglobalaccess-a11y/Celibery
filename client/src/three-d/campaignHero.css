@@ -315,14 +315,10 @@ html[lang='ar'] .campaign-copy .cine__title {
 .campaign-copy .cine__title { font-size: clamp(2.4rem, 3.8vw, 4.2rem); font-weight: 550; line-height: 1.08; letter-spacing: -.035em; text-transform: none; max-width: 620px; }
 @media (max-width: 639px) { .campaign-copy .cine__title { font-size: clamp(2.2rem, 8vw, 3rem); font-weight: 550; line-height: 1.12; } }
 
-/* UGREEN green hover for hero CTA */
-.campaign-copy .cine__ctas a:hover { background: #00a651 !important; color: #fff !important; border-color: #00a651 !important; }
-
-/* Final CELIBERY transparent CTA with cyan hover */
+/* Hero CTA: transparent outline on the dark hero, CELIBERY turquoise fill on hover/focus.
+   Text on the accent fill uses --accent-ink (near-black) — white on turquoise fails contrast. */
 .campaign-copy .cine__ctas a { background: transparent !important; color: #fff !important; border: 1px solid rgba(255,255,255,.85) !important; transition: all 250ms ease !important; }
-.campaign-copy .cine__ctas a:hover { background: #02B1C0 !important; color: #fff !important; border-color: #02B1C0 !important; }
-
-/* Exact sampled CELIBERY logo color */
-.campaign-copy .cine__ctas a:hover { background-color: rgb(2,177,192) !important; border-color: rgb(2,177,192) !important; color: #fff !important; }
+.campaign-copy .cine__ctas a:hover,
+.campaign-copy .cine__ctas a:focus-visible { background: var(--accent) !important; color: var(--accent-ink) !important; border-color: var(--accent) !important; }
 
 

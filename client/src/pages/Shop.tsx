@@ -138,7 +138,7 @@ function CategoryNav({ current }: { current?: string }) {
   );
 }
 
-const TONES = ['obsidian', 'porcelain', 'graphite', 'mist', 'sand', 'midnight'];
+const LIGHT_TONES = ['porcelain', 'mist', 'sand'];
 const DARK = new Set(['obsidian', 'graphite', 'midnight']);
 
 export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionSlug?: string }) {
@@ -224,7 +224,9 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
 
   const sc = storeCopy(lang);
   const catIndex = mode === 'category' ? (home?.categories.findIndex((x) => x.slug === slug) ?? -1) : -1;
-  const tone = mode === 'category' ? TONES[Math.max(0, catIndex) % TONES.length] : mode === 'search' ? 'porcelain' : 'obsidian';
+  // Q1 hybrid theme: shopping pages stay light. Listing headers use only the light category tones;
+  // dark tones remain for the homepage's premium sections.
+  const tone = mode === 'category' ? LIGHT_TONES[Math.max(0, catIndex) % LIGHT_TONES.length] : mode === 'search' ? 'porcelain' : 'mist';
   const description = mode === 'category' ? L(cat.data?.category.description, lang) : mode === 'collection' ? L(col.data?.description, lang) : '';
   const visual = mode === 'category' ? cat.data?.category.image?.url || (slug ? placeholderFor(slug) : '') : mode === 'collection' ? col.data?.image?.url || '' : '';
   const eyebrow = mode === 'category' ? sc.categoryEyebrow : mode === 'collection' ? sc.collectionPageEyebrow : mode === 'search' ? sc.searchEyebrow : sc.shopEyebrow;
