@@ -1518,7 +1518,9 @@ html[dir='rtl'] .auth-box {
   --glow-x: 0%;
 }
 @media (max-width: 639px) {
+  /* The card is bordered, so it keeps the page gutter instead of running edge to edge. */
   .auth-box {
+    width: calc(100% - 2 * var(--s-4));
     padding: var(--s-6) var(--s-5);
     margin-block: var(--s-6) var(--s-12);
   }
