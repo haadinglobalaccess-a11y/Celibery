@@ -1,11 +1,12 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation, useParams } from 'react-router-dom';
 import { OrderDetails } from '../components/OrderDetails';
+import { Icon } from '../components/Icon';
 import { ProductCard } from '../components/ProductCard';
 import { EmptyState, ErrorState, Field, NotFound, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { ApiError, del, patch, post, put } from '../lib/api';
-import { formatDate, formatPrice, L } from '../lib/format';
+import { formatDate, formatPrice, L, listSep } from '../lib/format';
 import { useApi } from '../lib/hooks';
 import { useSeo } from '../lib/useSeo';
 import type { Address, OrderView, ProductCardData } from '../lib/types';
@@ -19,7 +20,17 @@ export function AccountLayout() {
   const { t, p } = useI18n();
   const { user, ready, logout } = useAuth();
   const loc = useLocation();
+  const navRef = useRef<HTMLElement | null>(null);
   useSeo(t.account.title, undefined, { noindex: true });
+  // Phones show the sections as a swipeable tab row: keep the current tab in view (horizontal only).
+  useEffect(() => {
+    const nav = navRef.current;
+    const active = nav?.querySelector<HTMLElement>('a.active');
+    if (!nav || !active || nav.scrollWidth <= nav.clientWidth) return;
+    const navBox = nav.getBoundingClientRect();
+    const box = active.getBoundingClientRect();
+    nav.scrollBy({ left: box.left + box.width / 2 - (navBox.left + navBox.width / 2) });
+  }, [loc.pathname, ready]);
   if (!ready) return <Spinner />;
   if (user?.type !== 'customer') return <Navigate to={p(`/login?next=${encodeURIComponent(loc.pathname.replace(/^\/(ar|en)/, ''))}`)} replace />;
   return (
@@ -29,14 +40,15 @@ export function AccountLayout() {
         <p className="muted">{user.name}</p>
       </div>
       <div className="account">
-        <nav aria-label={t.account.title}>
+        <nav aria-label={t.account.title} ref={navRef}>
           <NavLink end to={p('/account')}>
             {t.account.orders}
           </NavLink>
           <NavLink to={p('/account/addresses')}>{t.account.addresses}</NavLink>
           <NavLink to={p('/wishlist')}>{t.nav.wishlist}</NavLink>
           <NavLink to={p('/account/profile')}>{t.account.profile}</NavLink>
-          <button className="btn btn--ghost" onClick={() => void logout()} style={{ justifyContent: 'flex-start' }}>
+          <button className="btn btn--ghost account__signout" onClick={() => void logout()}>
+            <Icon name="logout" className="icon" />
             {t.auth.logout}
           </button>
         </nav>
@@ -104,7 +116,7 @@ export function AccountOrderDetail() {
 const emptyAddr: Address = { label: '', fullName: '', phone: '', city: '', district: '', street: '', buildingNumber: '', postalCode: '', shortAddress: '', notes: '', isDefault: false };
 
 export function AccountAddresses() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const toast = useToast();
   const { data, error, loading, reload } = useApi<Address[]>('/api/me/addresses');
   const [editing, setEditing] = useState<Address | null>(null);
@@ -161,13 +173,13 @@ export function AccountAddresses() {
         </button>
       )}
       {err && !editing ? <p className="alert alert--error">{err}</p> : null}
-      {!data.length && !editing ? <p className="muted">{t.account.noAddresses}</p> : null}
+      {!data.length && !editing ? <p className="muted account__empty">{t.account.noAddresses}</p> : null}
       {data.map((a) => (
         <div key={a._id} className="order-card">
           <div>
             <strong>{a.fullName}</strong> {a.isDefault ? <span className="badge">{t.account.default}</span> : null}
             <div className="muted" style={{ fontSize: 13 }}>
-              {[a.street, a.buildingNumber, a.district, a.city, a.postalCode].filter(Boolean).join('، ')} · <span className="ltr">{a.phone}</span>
+              {[a.street, a.buildingNumber, a.district, a.city, a.postalCode].filter(Boolean).join(listSep(lang))} · <span className="ltr">{a.phone}</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

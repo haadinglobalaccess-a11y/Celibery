@@ -195,13 +195,17 @@ export function Header() {
                 </Link>
               ))}
               <Link to={p('/bundles')}>{t.nav.bundles}</Link>
-              <Link to={p('/track')}>{t.nav.track}</Link>
-              <Link to={p('/wishlist')}>
+              <Link to={p('/track')} className="mnav__util mnav__util--first">
+                {t.nav.track}
+              </Link>
+              <Link to={p('/wishlist')} className="mnav__util">
                 {t.nav.wishlist}
                 {wish.ids.size ? <span className="badge">{wish.ids.size}</span> : null}
               </Link>
-              <Link to={user?.type === 'customer' ? p('/account') : p('/login')}>{user ? t.nav.account : t.nav.login}</Link>
-              <Link to={switchHref}>
+              <Link to={user?.type === 'customer' ? p('/account') : p('/login')} className="mnav__util">
+                {user ? t.nav.account : t.nav.login}
+              </Link>
+              <Link to={switchHref} className="mnav__util mnav__lang">
                 <span>
                   <Icon name="globe" className="icon" /> {t.nav.language}
                 </span>

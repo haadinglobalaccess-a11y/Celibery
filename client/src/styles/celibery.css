@@ -173,7 +173,7 @@ html[dir='rtl'] .cx-uni:hover .cx-arrow {
 .cx-btn--solid {
   background: var(--cx-ink);
   color: #fff;
-  box-shadow: 0 14px 30px -18px rgb(0 0 0 / 0.6);
+  box-shadow: 0 10px 22px -16px rgb(0 0 0 / 0.45);
 }
 .cx-btn--solid:not(:disabled):hover {
   background: var(--accent);
@@ -4321,4 +4321,220 @@ textarea {
       background: rgb(255 255 255 / 0.92);
     }
   }
+}
+
+/* =====================================================================
+   Refinement pass 2 (16 Nov 2026) — menus, account, empty states, product story
+   Visual values only. Behaviour, markup contracts and motion timing are unchanged.
+   ===================================================================== */
+
+/* ---- Mobile menu: shopping first, account utilities second ---- */
+/* A sliver of the page stays visible, so the menu reads as a sheet over the store. */
+@media (max-width: 479px) {
+  .drawer.drawer--start {
+    width: min(420px, calc(100vw - 44px));
+  }
+}
+.drawer .mnav > a:not(.mnav__util) {
+  min-height: 54px;
+  font-size: 1.0625rem;
+  font-weight: 650;
+}
+/* Quiet chevron on each shopping destination (mirrors in Arabic). */
+.drawer .mnav > a:not(.mnav__util)::after {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 4px;
+  border-block-start: 1.5px solid currentColor;
+  border-inline-end: 1.5px solid currentColor;
+  rotate: 45deg;
+  opacity: 0.3;
+  transition: opacity 200ms var(--cx-ease), translate 200ms var(--cx-ease);
+}
+html[dir='rtl'] .drawer .mnav > a:not(.mnav__util)::after {
+  rotate: -45deg;
+}
+.drawer .mnav > a:not(.mnav__util):active::after {
+  opacity: 0.8;
+}
+.drawer .mnav > .mnav__util {
+  min-height: 46px;
+  border-bottom: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--cx-muted);
+}
+.drawer .mnav > .mnav__util--first {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 0;
+}
+.drawer .mnav > .mnav__lang {
+  width: auto;
+  min-height: 44px;
+  margin-top: 14px;
+  padding-inline: 16px;
+  border: 1px solid var(--cx-line);
+  border-radius: 999px;
+  color: var(--cx-ink);
+  font-weight: 600;
+}
+.drawer .mnav > .mnav__lang .icon {
+  width: 18px;
+  height: 18px;
+}
+.drawer .mnav .badge {
+  min-width: 22px;
+  height: 22px;
+  padding-inline: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-grid;
+  place-items: center;
+}
+
+/* ---- Empty states: a calm brand tile instead of the extruded black block ----
+   The gentle float animation is kept; only the surface and depth change. */
+.state--3d .d-icon {
+  --face: var(--cx-cloud);
+  --side: transparent;
+  --glyph: var(--cx-ink);
+  --s: 64px;
+}
+.state--3d .d-icon__back,
+.state--3d .d-icon__side {
+  display: none;
+}
+.state--3d .d-icon__face {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--cx-line);
+}
+.state--3d .d-icon .icon {
+  width: 44%;
+  height: 44%;
+  filter: none;
+}
+.state--3d h2 {
+  margin: 4px 0 0;
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+html[lang='ar'] .state--3d h2 {
+  letter-spacing: 0;
+}
+.state--3d p {
+  max-width: 40ch;
+  margin: 0;
+  line-height: 1.6;
+}
+.state--3d .btn {
+  margin-top: 10px;
+}
+
+/* ---- Account area ---- */
+.account nav {
+  scrollbar-width: none;
+}
+.account nav::-webkit-scrollbar {
+  display: none;
+}
+#main .account nav a {
+  min-height: 44px;
+  border-radius: 999px;
+  color: var(--cx-muted);
+  font-weight: 600;
+  box-shadow: none;
+  background: transparent;
+  transition: background 200ms var(--cx-ease), color 200ms var(--cx-ease);
+}
+#main .account nav a:hover {
+  background: var(--cx-cloud);
+  color: var(--cx-ink);
+}
+#main .account nav a.active {
+  background: var(--cx-ink);
+  color: #fff;
+  box-shadow: none;
+}
+#main .account .account__signout {
+  gap: 10px;
+  min-height: 44px;
+  padding-inline: var(--s-4);
+  justify-content: flex-start;
+  border-radius: 999px;
+  color: var(--cx-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+#main .account .account__signout .icon {
+  width: 18px;
+  height: 18px;
+}
+#main .account .account__signout:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+@media (min-width: 960px) {
+  .account nav {
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+    align-self: start;
+    gap: 4px;
+    padding: 10px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px var(--cx-line);
+  }
+  #main .account nav a {
+    border-radius: 14px;
+  }
+  #main .account .account__signout {
+    margin-top: 6px;
+    padding-top: 0;
+    border-radius: 14px;
+    position: relative;
+  }
+  #main .account .account__signout::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    inset-inline: 12px;
+    border-top: 1px solid var(--cx-line);
+  }
+}
+@media (max-width: 959px) {
+  /* Tabs bleed to the screen edge so the scroll affordance is obvious. */
+  .account nav {
+    margin-inline: calc(var(--s-4) * -1);
+    padding-inline: var(--s-4);
+    padding-bottom: 4px;
+  }
+  #main .account nav a:not(.active) {
+    background: var(--cx-cloud);
+    color: var(--cx-ink);
+  }
+}
+.account__empty {
+  margin: 16px 0 0;
+  padding: 28px 24px;
+  border-radius: 20px;
+  border: 1px dashed var(--cx-line);
+  background: var(--cx-cloud);
+  text-align: center;
+}
+
+/* ---- Product story below the purchase area ---- */
+/* Facts: long values (two connectors, long colour names) stay on one balanced line or two. */
+.cx-facts__item dd {
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.cx-pdp__section .cx-display {
+  font-size: clamp(1.875rem, 1.3rem + 2.2vw, 3rem);
 }

@@ -6,7 +6,7 @@ import { ProductReviews } from '../components/ProductReviews';
 import { RichText } from '../components/RichText';
 import { Crumbs, ErrorState, NotFound, Price, Quantity, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
-import { connectorLabel, formatInt, L } from '../lib/format';
+import { connectorLabel, formatInt, L, listSep } from '../lib/format';
 import { useApi } from '../lib/hooks';
 import { absoluteUrl, useSeo } from '../lib/useSeo';
 import type { ProductDetail } from '../lib/types';
@@ -84,7 +84,7 @@ export default function ProductPage() {
   const attrs: [string, string][] = [];
   if (data.attributes?.capacityMah) attrs.push([t.shop.capacity, formatInt(data.attributes.capacityMah, lang)]);
   if (data.attributes?.powerW) attrs.push([t.shop.power, `${data.attributes.powerW}W`]);
-  if (data.attributes?.connectors?.length) attrs.push([t.shop.connector, data.attributes.connectors.map((c) => connectorLabel(c, lang)).join('، ')]);
+  if (data.attributes?.connectors?.length) attrs.push([t.shop.connector, data.attributes.connectors.map((c) => connectorLabel(c, lang)).join(listSep(lang))]);
   if (data.attributes?.color) attrs.push([t.shop.color, L(data.attributes.color.name, lang)]);
 
   const c = storeCopy(lang);
