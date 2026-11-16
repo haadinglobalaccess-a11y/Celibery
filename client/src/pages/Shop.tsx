@@ -6,9 +6,10 @@ import { Crumbs, EmptyState, ErrorState, NotFound } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { api, qs } from '../lib/api';
 import { connectorLabel, formatInt, L, placeholderFor } from '../lib/format';
+import { cloudinaryAt, responsiveImg } from '../lib/media';
 import { useApi, useCached } from '../lib/hooks';
 import { useSeo } from '../lib/useSeo';
-import type { Category, Collection, Facets, HomeData, ProductCardData } from '../lib/types';
+import type { Category, Collection, Facets, ProductCardData } from '../lib/types';
 import { storeCopy } from '../storefront/copy';
 
 type Mode = 'all' | 'category' | 'search' | 'collection';
@@ -110,14 +111,17 @@ function FiltersPanel({ facets, params, set }: { facets: Facets; params: URLSear
 }
 
 /**
- * Category navigation above listings: "All" plus every category, each with its image. Uses the
- * category list the store layout has already loaded (cached /api/home) — nothing hard-coded.
+ * Category navigation above listings: "All" plus every category, each with its image. Uses the small
+ * category list (/api/categories, ~1 KB) rather than the whole homepage payload, and keeps its row
+ * reserved while loading so the products below never jump when it appears (layout shift).
  */
 function CategoryNav({ current }: { current?: string }) {
   const { t, lang, p } = useI18n();
   const c = storeCopy(lang);
-  const { data } = useCached<HomeData>('/api/home');
-  if (!data?.categories.length) return null;
+  const { data: categories, error } = useCached<Category[]>('/api/categories');
+  if (error || (categories && !categories.length)) return null;
+  if (!categories) return <div className="cx-catnav cx-catnav--pending" aria-hidden="true" />;
+  const data = { categories };
   return (
     <nav className="cx-catnav" aria-label={t.home.categories}>
       <Link to={p('/shop')} className="cx-catnav__item" aria-current={!current ? 'page' : undefined}>
@@ -129,7 +133,7 @@ function CategoryNav({ current }: { current?: string }) {
       {data.categories.map((cat) => (
         <Link key={cat._id} to={p(`/c/${cat.slug}`)} className="cx-catnav__item" aria-current={cat.slug === current ? 'page' : undefined}>
           <span className="cx-catnav__media" aria-hidden="true">
-            <img src={cat.image?.url || placeholderFor(cat.slug)} alt="" loading="lazy" />
+            <img src={cloudinaryAt(cat.image?.url, 160) || placeholderFor(cat.slug)} alt="" loading="lazy" decoding="async" width={40} height={40} />
           </span>
           <span>{L(cat.name, lang)}</span>
         </Link>
@@ -146,7 +150,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
   const { slug } = useParams();
   const [params, setParams] = useSearchParams();
   const [drawer, setDrawer] = useState(false);
-  const { data: home } = useCached<HomeData>('/api/home');
+  const { data: categoryList } = useCached<Category[]>('/api/categories');
   const colSlug = collectionSlug ?? (mode === 'collection' ? slug : undefined);
   const q = params.get('q') ?? '';
 
@@ -223,7 +227,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
   const activeFilters = ['minPrice', 'maxPrice', 'capacity', 'power', 'connector', 'color', 'inStock'].some((k) => params.get(k));
 
   const sc = storeCopy(lang);
-  const catIndex = mode === 'category' ? (home?.categories.findIndex((x) => x.slug === slug) ?? -1) : -1;
+  const catIndex = mode === 'category' ? (categoryList?.findIndex((x) => x.slug === slug) ?? -1) : -1;
   // Q1 hybrid theme: shopping pages stay light. Listing headers use only the light category tones;
   // dark tones remain for the homepage's premium sections.
   const tone = mode === 'category' ? LIGHT_TONES[Math.max(0, catIndex) % LIGHT_TONES.length] : mode === 'search' ? 'porcelain' : 'mist';
@@ -246,7 +250,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
           {visual ? (
             <div className="cx-listhead__visual" aria-hidden="true">
               <span className="cx-listhead__halo" />
-              <img src={visual} alt="" decoding="async" />
+              <img {...responsiveImg(visual, '(max-width: 959px) 70vw, 36vw', [480, 800, 1200])} alt="" decoding="async" fetchPriority="high" />
             </div>
           ) : null}
         </div>

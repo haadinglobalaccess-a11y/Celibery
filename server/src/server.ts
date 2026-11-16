@@ -4,6 +4,7 @@ import { connectDb, disconnectDb } from './db/connect';
 import { startScheduler } from './jobs';
 import { logger } from './lib/logger';
 import { createApp } from './app';
+import { startPublicCacheWarmup } from './modules/catalog/catalog.service';
 
 /** Long-running server entry (local development, Railway, a VPS or a container). Vercel uses api/index.ts. */
 async function main() {
@@ -22,6 +23,8 @@ async function main() {
 
   // No Vercel Cron here: run the scheduled jobs in-process unless an external cron calls /api/cron/*.
   const stopScheduler = env.DISABLE_INTERNAL_SCHEDULER || env.NODE_ENV === 'test' ? () => undefined : startScheduler();
+  // Homepage, settings and category list stay computed, so no visitor waits for a cold computation.
+  const stopWarmup = env.NODE_ENV === 'test' ? () => undefined : startPublicCacheWarmup();
 
   // Hosts send SIGTERM before replacing the process on every deploy: finish in-flight requests
   // (a checkout may be mid-transaction) before closing the database connection.
@@ -31,6 +34,7 @@ async function main() {
     closing = true;
     logger.info(`Received ${signal}, shutting down`);
     stopScheduler();
+    stopWarmup();
     const force = setTimeout(() => process.exit(1), 10_000);
     force.unref();
     server.close(() => {

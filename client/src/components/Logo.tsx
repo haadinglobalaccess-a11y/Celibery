@@ -1,3 +1,4 @@
+import { cloudinaryAt } from '../lib/media';
 import { useSettings } from '../state/settings';
 
 /**
@@ -15,7 +16,7 @@ export function Logo({ onDark = false }: { onDark?: boolean }) {
   if (src) {
     return (
       <span className="logo">
-        <img src={src} alt="CELIBERY International" />
+        <img src={cloudinaryAt(src, 480)} alt="CELIBERY International" decoding="async" />
       </span>
     );
   }

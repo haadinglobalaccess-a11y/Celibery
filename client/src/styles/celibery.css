@@ -4538,3 +4538,9 @@ html[lang='ar'] .state--3d h2 {
 .cx-pdp__section .cx-display {
   font-size: clamp(1.875rem, 1.3rem + 2.2vw, 3rem);
 }
+
+/* Category row placeholder while /api/categories loads: same box as the loaded row (one 52px chip
+   row inside 2px padding), so the listing below does not move when the chips appear. */
+.cx-catnav--pending {
+  min-height: 56px;
+}

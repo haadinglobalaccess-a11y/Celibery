@@ -48,11 +48,17 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
 
 async function request<T>(path: string, opts: Options): Promise<{ data: T; meta?: Record<string, unknown> }> {
   let res: Response;
+  const method = opts.method ?? 'GET';
+  // GET/HEAD carry no body and are exempt from the server's CSRF check (middleware/security.ts), so
+  // they are sent as CORS "simple" requests: no custom headers means no OPTIONS preflight round trip
+  // before every catalogue read when the API is on another origin (measured 16 Nov 2026: ~0.9 s each).
+  // Every state-changing request still sends X-Requested-With, so CSRF protection is unchanged.
+  const readOnly = (method === 'GET' || method === 'HEAD') && opts.body === undefined;
   try {
     res = await fetch(BASE + path, {
-      method: opts.method ?? 'GET',
+      method,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'celibery' },
+      headers: readOnly ? undefined : { 'Content-Type': 'application/json', 'X-Requested-With': 'celibery' },
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
       signal: opts.signal,
     });

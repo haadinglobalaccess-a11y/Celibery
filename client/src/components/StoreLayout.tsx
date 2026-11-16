@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { I18nProvider, useI18n } from '../i18n/I18n';
 import { useCached } from '../lib/hooks';
@@ -6,6 +6,7 @@ import { useLuxuryHeadings } from '../lib/motion';
 import type { HomeData } from '../lib/types';
 import { Footer, WhatsAppFab } from './Footer';
 import { Header } from './Header';
+import { Spinner } from './ui';
 
 function Shell() {
   useLuxuryHeadings();
@@ -28,7 +29,10 @@ function Shell() {
       <main id="main" tabIndex={-1}>
         {/* Keyed by path so each page plays the entrance transition */}
         <div key={pathname} className="page">
-          <Outlet />
+          {/* Secondary pages are lazy chunks: header and footer stay while one loads. */}
+          <Suspense fallback={<Spinner />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
       <Footer />

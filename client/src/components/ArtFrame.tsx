@@ -25,7 +25,9 @@ export function ProductImage({
   onLoad?: (img: HTMLImageElement) => void;
 }) {
   const fallback = placeholderFor(category);
-  const srcSet = image && image.url === src ? srcSetFor(image) : undefined;
+  // Recorded variants when the upload has them; otherwise Cloudinary sizes of the same URL (callers that
+  // pass only `src` — bag lines, gallery thumbnails, bundle contents — used to download the original).
+  const srcSet = image && image.url === src ? srcSetFor(image) : src ? srcSetFor({ url: src }) : undefined;
   return (
     <img
       src={src || fallback}

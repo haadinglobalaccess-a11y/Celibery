@@ -6,7 +6,7 @@ import { PayLogos, Price } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { post } from '../lib/api';
 import { formatPrice, L, placeholderFor } from '../lib/format';
-import { BackgroundVideo, useMediaQuery } from '../lib/media';
+import { BackgroundVideo, cloudinarySrcSet, responsiveImg, useMediaQuery } from '../lib/media';
 import { prefersReducedMotion } from '../lib/motion';
 import type { Category, HomeData, ProductCardData } from '../lib/types';
 import { useSettings } from '../state/settings';
@@ -193,8 +193,8 @@ export function CampaignGallery({ data }: { data: HomeData }) {
           {data.campaigns.map((cp) => (
             <Link key={cp._id} to={p(`/campaign/${cp.slug}`)} className="cx-campaign" data-fx="split" style={cp.accentColor ? ({ '--cx-campaign': cp.accentColor } as CSSProperties) : undefined}>
               <picture className="cx-campaign__media">
-                {cp.heroMobileImageUrl ? <source media="(max-width: 639px)" srcSet={cp.heroMobileImageUrl} /> : null}
-                <img src={cp.heroImageUrl || '/placeholders/lifestyle.svg'} alt="" loading="lazy" decoding="async" />
+                {cp.heroMobileImageUrl ? <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(cp.heroMobileImageUrl, [480, 800, 1200]) || cp.heroMobileImageUrl} sizes="100vw" /> : null}
+                <img {...responsiveImg(cp.heroImageUrl || '/placeholders/lifestyle.svg', '(max-width: 959px) 100vw, 50vw')} alt="" loading="lazy" decoding="async" />
               </picture>
               <span className="cx-campaign__body">
                 <strong>{L(cp.title, lang)}</strong>
@@ -212,8 +212,8 @@ export function CampaignGallery({ data }: { data: HomeData }) {
                   <BackgroundVideo className="cx-campaign__video" src={bannerVideo(b, isPhone)} poster={b.posterUrl || L(b.imageUrl, lang)} reduced={prefersReducedMotion()} />
                 ) : (
                   <picture>
-                    {L(b.mobileImageUrl, lang) ? <source media="(max-width: 639px)" srcSet={L(b.mobileImageUrl, lang)} /> : null}
-                    <img src={L(b.imageUrl, lang) || '/placeholders/lifestyle.svg'} alt="" loading="lazy" decoding="async" />
+                    {L(b.mobileImageUrl, lang) ? <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(L(b.mobileImageUrl, lang), [480, 800, 1200]) || L(b.mobileImageUrl, lang)} sizes="100vw" /> : null}
+                    <img {...responsiveImg(L(b.imageUrl, lang) || '/placeholders/lifestyle.svg', '(max-width: 959px) 100vw, 50vw')} alt="" loading="lazy" decoding="async" />
                   </picture>
                 )}
               </span>
@@ -516,7 +516,7 @@ export function BrandStory({ data }: { data: HomeData }) {
           </p>
         </div>
         <figure className="cx-story__media" data-fx="split">
-          <img src={data.brandStory.imageUrl || '/placeholders/lifestyle.svg'} alt="" loading="lazy" decoding="async" />
+          <img {...responsiveImg(data.brandStory.imageUrl || '/placeholders/lifestyle.svg', '(max-width: 959px) 100vw, 50vw')} alt="" loading="lazy" decoding="async" />
         </figure>
       </div>
     </section>

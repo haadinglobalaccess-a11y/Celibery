@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
 import { L } from '../lib/format';
+import { cloudinaryAt } from '../lib/media';
 import { useCached } from '../lib/hooks';
 import type { HomeData } from '../lib/types';
 import { useSettings, whatsappLink } from '../state/settings';
@@ -224,12 +225,12 @@ export function Footer() {
           {b?.sbcVerified ? (
             b.sbcVerificationUrl ? (
               <a href={b.sbcVerificationUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {b.sbcBadgeImageUrl ? <img src={b.sbcBadgeImageUrl} alt="" height={32} style={{ height: 32, width: 'auto' }} /> : null}
+                {b.sbcBadgeImageUrl ? <img src={cloudinaryAt(b.sbcBadgeImageUrl, 200)} alt="" height={32} style={{ height: 32, width: 'auto' }} /> : null}
                 {t.footer.sbc}
               </a>
             ) : (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {b.sbcBadgeImageUrl ? <img src={b.sbcBadgeImageUrl} alt="" height={32} style={{ height: 32, width: 'auto' }} /> : null}
+                {b.sbcBadgeImageUrl ? <img src={cloudinaryAt(b.sbcBadgeImageUrl, 200)} alt="" height={32} style={{ height: 32, width: 'auto' }} /> : null}
                 {t.footer.sbc}
               </span>
             )

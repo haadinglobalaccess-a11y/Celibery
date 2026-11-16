@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
 import { formatPrice, L, placeholderFor } from '../lib/format';
+import { cloudinaryAt } from '../lib/media';
 import { prefersReducedMotion } from '../lib/motion';
 import { useCart } from '../state/cart';
 import { Icon } from './Icon';
@@ -72,7 +73,7 @@ export function CartPeek() {
         </button>
       </div>
       <div className="cart-peek__item">
-        <img src={item.snapshot.image || placeholderFor()} alt="" width={64} height={64} />
+        <img src={cloudinaryAt(item.snapshot.image, 160) || placeholderFor()} alt="" width={64} height={64} />
         <div>
           <div className="cart-peek__name">{name}</div>
           <div className="muted">

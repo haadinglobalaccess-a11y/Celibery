@@ -25,13 +25,21 @@ const VERSION_ID = 'public-cache';
 const VERSION_CHECK_MS = 1_000;
 /** Oldest copy that may be shown while the database is unreachable. */
 const STALE_MAX_MS = 15 * 60_000;
+/**
+ * Stale-while-revalidate window. Once an entry passes its TTL (and the admin version is unchanged),
+ * the next visitor still gets it instantly while ONE background recomputation refreshes it. Without
+ * this, a low-traffic store found almost every entry expired, so almost every visitor waited for the
+ * full ~20-query homepage computation (measured 16 Nov 2026: 5.9–7 s for /api/home on a cold entry).
+ * An admin change bumps the version, which never takes this path: it always recomputes before answering.
+ */
+const REVALIDATE_WINDOW_MS = 2 * 60_000;
 
 type Entry = { at: number; version: number; value: unknown };
 const store = new Map<string, Entry>();
 const inflight = new Map<string, Promise<unknown>>();
 let versionMemo: { at: number; value: number } | null = null;
 let versionInflight: Promise<number> | null = null;
-const stats = { hits: 0, misses: 0, errors: 0, stale: 0 };
+const stats = { hits: 0, misses: 0, errors: 0, stale: 0, revalidated: 0 };
 
 const counters = () => mongoose.connection.db!.collection<{ _id: string; seq: number }>('counters');
 
@@ -89,23 +97,72 @@ export async function cached<T>(key: string, load: () => Promise<T>, ttlMs = pub
     return load(); // cannot prove freshness: do not serve from cache
   }
   const hit = store.get(key);
-  if (hit && hit.version === version && Date.now() - hit.at < ttlMs) {
-    stats.hits++;
-    return hit.value as T;
+  if (hit && hit.version === version) {
+    const age = Date.now() - hit.at;
+    if (age < ttlMs) {
+      stats.hits++;
+      return hit.value as T;
+    }
+    if (age < ttlMs + REVALIDATE_WINDOW_MS) {
+      // Same admin version, just past its TTL: answer now, refresh once in the background.
+      stats.revalidated++;
+      if (!inflight.has(key)) {
+        compute(key, load, version).catch((err) => {
+          stats.errors++;
+          logger.warn('Public cache background refresh failed', { key, err: String((err as Error)?.message ?? err) });
+        });
+      }
+      return hit.value as T;
+    }
   }
   const running = inflight.get(key);
   if (running) return running as Promise<T>;
   stats.misses++;
+  return compute(key, load, version);
+}
+
+function compute<T>(key: string, load: () => Promise<T>, version: number): Promise<T> {
   const p = load()
     .then((value) => {
-      store.set(key, { at: Date.now(), version, value });
-      // Bounded: public keys are few (homepage, categories, one entry per category); guard anyway.
+      // A newer admin version may have been stored meanwhile: never overwrite it with older data.
+      const current = store.get(key);
+      if (!current || current.version <= version) store.set(key, { at: Date.now(), version, value });
+      // Bounded: public keys are few (homepage, categories, one entry per category/listing); guard anyway.
       if (store.size > 500) store.delete(store.keys().next().value as string);
       return value;
     })
     .finally(() => inflight.delete(key));
   inflight.set(key, p);
   return p;
+}
+
+/**
+ * Keeps the always-needed public payloads computed (homepage, public settings, category list) so the
+ * first visitor after a quiet period or a deploy does not pay for the computation. Long-running servers
+ * only (server.ts); each refresh goes through `cached`, so it shares in-flight work with visitors.
+ */
+export function keepWarm(entries: { key: string; load: () => Promise<unknown> }[], everyMs = 60_000) {
+  if (publicCacheTtlMs() <= 0) return () => {};
+  const tick = () => {
+    if (mongoose.connection.readyState !== 1) return;
+    for (const { key, load } of entries) {
+      // Force a refresh when the entry is older than half its TTL; otherwise this is a cheap hit.
+      const e = store.get(key);
+      if (e && Date.now() - e.at < publicCacheTtlMs() / 2) continue;
+      if (inflight.has(key)) continue;
+      currentVersion()
+        .then((v) => compute(key, load, v))
+        .catch((err) => logger.warn('Public cache warm-up failed', { key, err: String((err as Error)?.message ?? err) }));
+    }
+  };
+  const first = setTimeout(tick, 2_000);
+  const timer = setInterval(tick, everyMs);
+  first.unref();
+  timer.unref();
+  return () => {
+    clearTimeout(first);
+    clearInterval(timer);
+  };
 }
 
 export const publicCacheStats = () => ({ ...stats, entries: store.size });

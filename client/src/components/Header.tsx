@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
 import { formatPrice, L, placeholderFor } from '../lib/format';
+import { cloudinaryAt } from '../lib/media';
 import { useCached } from '../lib/hooks';
 import { useScrolled } from '../lib/motion';
 import type { HomeData } from '../lib/types';
@@ -153,7 +154,7 @@ export function Header() {
             <div className="container mega__grid">
               {categories.map((c, i) => (
                 <Link key={c._id} to={p(`/c/${c.slug}`)} className="mega__cat" style={{ '--i': i } as CSSProperties}>
-                  <img src={c.image?.url || placeholderFor(c.slug)} alt="" loading="lazy" />
+                  <img src={cloudinaryAt(c.image?.url, 320) || placeholderFor(c.slug)} alt="" loading="lazy" decoding="async" />
                   <span>
                     <strong>{L(c.name, lang)}</strong>
                     <ul>
@@ -222,7 +223,10 @@ export function Header() {
 function Announcement({ fallback }: { fallback: string }) {
   const { lang, p } = useI18n();
   const settings = useSettings();
-  const a = settings?.announcement;
+  // Until the store's settings are known (first visit: no device snapshot yet) nothing is shown, so a
+  // bar the Admin has switched off never appears and then collapses, moving the page (layout shift).
+  if (!settings) return null;
+  const a = settings.announcement;
   if (a && a.enabled === false) return null;
   const text = (a && L(a.text, lang)) || fallback;
   if (!text) return null;
