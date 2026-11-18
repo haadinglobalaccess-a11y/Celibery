@@ -78,7 +78,13 @@ export function Summary({ quote, children, showCode = true }: { quote: Quote | n
           {quote.discountTotal ? (
             <div className="sum-row" style={{ color: 'var(--success)' }}>
               <span>
-                {t.cart.discount} <span className="ltr">({quote.discount?.code})</span>
+                {quote.discount?.automatic && L(quote.discount.title, lang) ? (
+                  <span data-testid="applied-offer">{L(quote.discount.title, lang)}</span>
+                ) : (
+                  <>
+                    {t.cart.discount} <span className="ltr">({quote.discount?.code})</span>
+                  </>
+                )}
               </span>
               <span>−{money(quote.discountTotal)}</span>
             </div>

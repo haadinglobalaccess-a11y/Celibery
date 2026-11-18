@@ -250,6 +250,8 @@ type ProductForm = {
   warrantyMonths: string;
   isBundle: boolean;
   bundleItems: { product: string; quantity: number }[];
+  availableFrom: string;
+  availableUntil: string;
   related: string[];
   sortOrder: string;
   seoTitle: Localized;
@@ -286,6 +288,8 @@ const blank: ProductForm = {
   warrantyMonths: '',
   isBundle: false,
   bundleItems: [],
+  availableFrom: '',
+  availableUntil: '',
   related: [],
   sortOrder: '0',
   seoTitle: { ar: '', en: '' },
@@ -326,6 +330,8 @@ function fromApi(p: any): ProductForm {
     warrantyMonths: p.warrantyMonths == null ? '' : String(p.warrantyMonths),
     isBundle: Boolean(p.isBundle),
     bundleItems: (p.bundleItems ?? []).map((b: { product: string; quantity: number }) => ({ product: String(b.product), quantity: b.quantity })),
+    availableFrom: p.availableFrom ? new Date(p.availableFrom).toISOString().slice(0, 16) : '',
+    availableUntil: p.availableUntil ? new Date(p.availableUntil).toISOString().slice(0, 16) : '',
     related: (p.related ?? []).map(String),
     sortOrder: String(p.sortOrder ?? 0),
     seoTitle: p.seo?.title ?? blank.seoTitle,
@@ -368,6 +374,8 @@ function toApi(f: ProductForm, isNew: boolean) {
     warrantyMonths: num(f.warrantyMonths),
     isBundle: f.isBundle,
     bundleItems: f.isBundle ? f.bundleItems : [],
+    availableFrom: f.isBundle && f.availableFrom ? new Date(f.availableFrom).toISOString() : null,
+    availableUntil: f.isBundle && f.availableUntil ? new Date(f.availableUntil).toISOString() : null,
     related: f.related,
     sortOrder: Number(f.sortOrder || 0),
     seo: { title: f.seoTitle, description: f.seoDescription },
@@ -514,6 +522,31 @@ export function ProductEdit() {
                 onChange={(ids) => up({ bundleItems: ids.map((pid) => f.bundleItems.find((b) => b.product === pid) ?? { product: pid, quantity: 1 }) })}
               />
             ) : null}
+            {f.isBundle && f.bundleItems.length ? (
+              <div className="form-grid" data-testid="bundle-quantities">
+                <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+                  Quantity of each product in one bundle. Stock follows these products: each sale takes them out of stock, cancellations and returns put them back. The product page shows their combined price and the saving.
+                </p>
+                {f.bundleItems.map((b, i) => (
+                  <F key={b.product} label={`Item ${i + 1} quantity`}>
+                    <input
+                      className="input"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={b.quantity}
+                      onChange={(e) => up({ bundleItems: f.bundleItems.map((x) => (x.product === b.product ? { ...x, quantity: Math.max(1, Math.min(20, Number(e.target.value) || 1)) } : x)) })}
+                    />
+                  </F>
+                ))}
+                <F label="Available from (optional)">
+                  <input className="input" type="datetime-local" value={f.availableFrom} onChange={(e) => up({ availableFrom: e.target.value })} />
+                </F>
+                <F label="Available until (optional)">
+                  <input className="input" type="datetime-local" value={f.availableUntil} onChange={(e) => up({ availableUntil: e.target.value })} />
+                </F>
+              </div>
+            ) : null}
             <ProductPicker label="Related products (optional — defaults to the same category)" value={f.related} onChange={(ids) => up({ related: ids })} />
           </Card>
           <Card title="SEO (optional)">
@@ -577,6 +610,10 @@ export function ProductEdit() {
                 <F label="Initial stock">
                   <input className="input" type="number" min={0} value={f.stock} onChange={(e) => up({ stock: e.target.value })} />
                 </F>
+              ) : f.isBundle && f.bundleItems.length ? (
+                <p>
+                  Complete bundles available: <strong>{f.stock}</strong> — follows the stock of the products it contains (adjust those in Inventory).
+                </p>
               ) : (
                 <p>
                   In stock: <strong>{f.stock}</strong> — <Link to={`/admin/inventory?q=${encodeURIComponent(f.sku)}`}>adjust in Inventory</Link>

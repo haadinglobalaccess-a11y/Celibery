@@ -556,7 +556,11 @@ type Discount = {
   categories: string[];
   products: string[];
   active: boolean;
+  automatic?: boolean;
+  title?: Localized;
+  eligibility?: 'all' | 'signed_in' | 'new_customers';
 };
+const ELIGIBILITY: Record<NonNullable<Discount['eligibility']>, string> = { all: 'Everyone', signed_in: 'Signed-in customers', new_customers: 'First order only' };
 
 export function Discounts({ canWrite }: { canWrite: boolean }) {
   const { data, error, loading, reload } = useApi<Discount[]>('/api/admin/discounts');
@@ -567,7 +571,7 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
   if (error) return <ErrorState message={error.message} onRetry={reload} />;
   if (loading || !data) return <Spinner />;
   const open = (d?: Discount) => {
-    const base: Discount = d ?? { code: '', description: { ar: '', en: '' }, type: 'percent', value: 10, minOrderTotal: 0, categories: [], products: [], active: true };
+    const base: Discount = d ?? { code: '', description: { ar: '', en: '' }, type: 'percent', value: 10, minOrderTotal: 0, categories: [], products: [], active: true, automatic: false, title: { ar: '', en: '' }, eligibility: 'all' };
     setErr(null);
     setEdit({
       ...base,
@@ -596,11 +600,14 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
       categories: edit.categories,
       products: edit.products,
       active: edit.active,
+      automatic: Boolean(edit.automatic),
+      title: { ar: edit.title?.ar ?? '', en: edit.title?.en ?? '' },
+      eligibility: edit.eligibility ?? 'all',
     };
     try {
       if (edit._id) await put(`/api/admin/discounts/${edit._id}`, body);
       else await post('/api/admin/discounts', body);
-      toast('Discount saved');
+      toast(edit.automatic ? 'Offer saved' : 'Discount saved');
       setEdit(null);
       reload();
     } catch (ex) {
@@ -610,13 +617,21 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
   const dateIn = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 16) : '');
   return (
     <>
-      <AHead title="Discount codes">
+      <AHead title="Offers & discount codes">
         {canWrite ? (
-          <button className="btn btn--primary btn--sm" onClick={() => open()}>
-            + New code
-          </button>
+          <>
+            <button className="btn btn--primary btn--sm" onClick={() => (open(), setEdit((x) => (x ? { ...x, automatic: true, code: `OFFER-${Date.now().toString(36).toUpperCase()}` } : x)))} data-testid="new-offer">
+              + New offer
+            </button>
+            <button className="btn btn--outline btn--sm" onClick={() => open()}>
+              + New code
+            </button>
+          </>
         ) : null}
       </AHead>
+      <p className="muted" style={{ fontSize: 13, marginTop: -8 }}>
+        <strong>Offers</strong> apply automatically in the cart when the conditions are met; <strong>codes</strong> must be entered by the customer. Promotions never stack: the one worth more to the customer is applied, always calculated on the server from SAR prices.
+      </p>
       <div className="a-card table-wrap discounts-table-card">
         <table className="table discounts-table">
           <thead>
@@ -634,7 +649,14 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
             {data.map((d) => (
               <tr key={d._id}>
                 <td>
-                  <strong>{d.code}</strong>
+                  {d.automatic ? (
+                    <>
+                      <span className="badge badge--success">offer</span> <strong>{d.title?.en || d.title?.ar || d.code}</strong>
+                    </>
+                  ) : (
+                    <strong>{d.code}</strong>
+                  )}
+                  {d.eligibility && d.eligibility !== 'all' ? <div className="muted" style={{ fontSize: 12 }}>{ELIGIBILITY[d.eligibility]}</div> : null}
                 </td>
                 <td>{d.type === 'percent' ? `${d.value}%` : sar(d.value)}</td>
                 <td>
@@ -677,13 +699,24 @@ export function Discounts({ canWrite }: { canWrite: boolean }) {
         {!data.length ? <p className="muted">No discount codes yet.</p> : null}
       </div>
       {edit ? (
-        <Modal title={edit._id ? `Edit ${edit.code}` : 'New discount code'} onClose={() => setEdit(null)} wide>
-          <form className="form-grid form-grid--2 discounts-form" onSubmit={save}>
+        <Modal title={edit._id ? `Edit ${edit.automatic ? 'offer' : edit.code}` : edit.automatic ? 'New offer' : 'New discount code'} onClose={() => setEdit(null)} wide>
+          <form className="form-grid form-grid--2 discounts-form" onSubmit={save} data-testid="discount-form">
             <div className="span-2">
               <ErrorBox error={err} />
             </div>
-            <F label="Code">
+            <label className="check span-2">
+              <input type="checkbox" checked={Boolean(edit.automatic)} onChange={(e) => setEdit({ ...edit, automatic: e.target.checked })} data-testid="offer-automatic" /> Automatic offer — applied in the cart without a code
+            </label>
+            {edit.automatic ? <LocInput label="Offer title (shown to customers)" value={edit.title} onChange={(v) => setEdit({ ...edit, title: v })} required /> : null}
+            <F label={edit.automatic ? 'Internal reference' : 'Code'} hint={edit.automatic ? 'Not shown to customers' : undefined}>
               <input className="input" required value={edit.code} onChange={(e) => setEdit({ ...edit, code: e.target.value.toUpperCase() })} />
+            </F>
+            <F label="Who can use it">
+              <select className="select" value={edit.eligibility ?? 'all'} onChange={(e) => setEdit({ ...edit, eligibility: e.target.value as Discount['eligibility'] })}>
+                {(Object.keys(ELIGIBILITY) as NonNullable<Discount['eligibility']>[]).map((k) => (
+                  <option key={k} value={k}>{ELIGIBILITY[k]}</option>
+                ))}
+              </select>
             </F>
             <F label="Type">
               <select className="select" value={edit.type} onChange={(e) => setEdit({ ...edit, type: e.target.value as Discount['type'] })}>

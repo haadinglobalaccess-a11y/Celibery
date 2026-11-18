@@ -1,0 +1,254 @@
+/* ==========================================================================
+   Phase 5 — reviews (distribution, photos, status), offer badge, bundle value.
+   Brand tokens from tokens.css; every rule is scoped to these new classes.
+   ========================================================================== */
+
+/* ---------- Rating distribution ---------- */
+.rv-dist {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-width: 340px;
+}
+.rv-dist__row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+.rv-dist__row:hover:not(:disabled),
+.rv-dist__row.is-on {
+  background: var(--brand-cloud);
+}
+.rv-dist__row:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.rv-dist__row:focus-visible {
+  outline: 2px solid var(--brand-turquoise);
+  outline-offset: 1px;
+}
+.rv-dist__label,
+.rv-dist__n {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.rv-dist__n {
+  text-align: end;
+  color: var(--cx-muted, #5b6470);
+}
+.rv-dist__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgb(17 17 17 / 0.08);
+  overflow: hidden;
+}
+.rv-dist__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-turquoise);
+  transition: width 400ms ease;
+}
+
+/* ---------- Review card extras ---------- */
+.rv-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.rv-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgb(0 177 192 / 0.12);
+  color: #00737d;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.rv-report {
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--cx-muted, #5b6470);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.rv-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.rv-photos img {
+  display: block;
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgb(17 17 17 / 0.08);
+  background: var(--brand-cloud);
+}
+.rv-photo {
+  position: relative;
+  display: inline-flex;
+}
+.rv-photo button {
+  position: absolute;
+  inset-block-start: -6px;
+  inset-inline-end: -6px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--brand-midnight);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rv-photo--add {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border: 1.5px dashed rgb(17 17 17 / 0.25);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand-midnight);
+  text-align: center;
+  cursor: pointer;
+}
+
+/* ---------- The customer's own review ---------- */
+.rv-own {
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--brand-cloud);
+  border: 1px solid rgb(0 177 192 / 0.25);
+}
+.rv-own__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.rv-own__title {
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+.rv-own__note {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+}
+.rv-own__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.rv-status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #fff;
+  color: var(--brand-graphite);
+  border: 1px solid rgb(17 17 17 / 0.12);
+}
+.rv-status--approved {
+  background: rgb(0 177 192 / 0.12);
+  color: #00737d;
+  border-color: transparent;
+}
+.rv-status--rejected,
+.rv-status--hidden {
+  background: #fff4f2;
+  color: #a1260f;
+  border-color: transparent;
+}
+
+/* ---------- Offer badge (product page) ---------- */
+.cx-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--brand-midnight);
+  color: #fff;
+}
+.cx-offer__value {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--brand-turquoise);
+  color: var(--brand-midnight);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+.cx-offer__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.cx-offer__terms {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 0.75);
+}
+
+/* ---------- Bundle value ---------- */
+.cx-bundle-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 10px;
+  font-size: 0.875rem;
+  color: var(--cx-muted, #5b6470);
+}
+.cx-bundle-value s {
+  color: var(--cx-muted, #5b6470);
+}
+.cx-bundle-value strong {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgb(0 177 192 / 0.14);
+  color: #00737d;
+  font-size: 0.8125rem;
+}
+.cx-bundle-note {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  color: var(--cx-muted, #5b6470);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-dist__bar span {
+    transition: none;
+  }
+}

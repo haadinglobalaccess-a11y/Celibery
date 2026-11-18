@@ -27,6 +27,7 @@ import {
 } from '../../models';
 import type { CheckoutInput } from './order.schemas';
 import { codEligibility, deliveryFeeFor, resolveDelivery } from './delivery-rules';
+import { aggregateTargets, liveBundleState, syncBundleStock, windowOpen, type Component } from '../catalog/bundles';
 
 type CartLine = { productId: string; quantity: number };
 
@@ -44,6 +45,8 @@ export type QuoteLine = {
   available: boolean;
   maxQuantity: number;
   warrantyMonths: number;
+  /** Bundles: the products one bundle contains (stock is taken from these). */
+  components?: Component[];
 };
 
 export type Quote = {
@@ -51,7 +54,8 @@ export type Quote = {
   issues: { productId?: string; code: string; message: string }[];
   subtotal: number;
   discountTotal: number;
-  discount: { code: string; id: string; perCustomerLimit?: number | null } | null;
+  /** Applied promotion: a code the customer entered, or an automatic offer (never both). */
+  discount: { code: string; id: string; perCustomerLimit?: number | null; automatic?: boolean; title?: { ar: string; en: string } } | null;
   discountError: string | null;
   /** Machine-readable reason for discountError (the storefront words it in the page language). */
   discountErrorCode: DiscountErrorCode | null;
@@ -122,7 +126,7 @@ async function claimRedemption(discountId: string, key: string, limit: number, s
 /** Open cash-on-delivery orders allowed per phone number (stops fake COD orders locking up stock). 0 = no limit. */
 export const maxOpenCodOrdersPerPhone = () => env.MAX_OPEN_COD_ORDERS_PER_PHONE ?? (isTest ? 0 : 3);
 
-export type DiscountErrorCode = 'invalid' | 'not_active' | 'expired' | 'usage_limit' | 'min_order' | 'already_used' | 'not_applicable';
+export type DiscountErrorCode = 'invalid' | 'not_active' | 'expired' | 'usage_limit' | 'min_order' | 'already_used' | 'not_applicable' | 'better_offer' | 'sign_in_required' | 'new_customers_only';
 type DiscountRejection = { error: string; code: DiscountErrorCode; minOrder?: number };
 
 /** Validates a discount code against the cart. Returns the discount (halalas) and per-line allocation. */
@@ -133,11 +137,32 @@ async function evaluateDiscount(
   customer: { id?: string; email?: string; phone?: string },
 ): Promise<{ discount: DiscountDoc; amount: number; perLine: number[] } | DiscountRejection> {
   const d = await Discount.findOne({ code: code.toUpperCase() }).lean();
-  const now = new Date();
   if (!d || !d.active) return { error: 'This discount code is not valid', code: 'invalid' };
+  return evaluateDoc(d as DiscountDoc, lines, subtotal, customer);
+}
+
+/** Validates one promotion (code or automatic offer) against the cart. */
+async function evaluateDoc(
+  d: DiscountDoc,
+  lines: QuoteLine[],
+  subtotal: number,
+  customer: { id?: string; email?: string; phone?: string },
+): Promise<{ discount: DiscountDoc; amount: number; perLine: number[] } | DiscountRejection> {
+  const now = new Date();
+  if (!d.active) return { error: 'This discount code is not valid', code: 'invalid' };
   if (d.startsAt && d.startsAt > now) return { error: 'This discount code is not active yet', code: 'not_active' };
   if (d.endsAt && d.endsAt < now) return { error: 'This discount code has expired', code: 'expired' };
   if (d.usageLimit != null && d.usedCount >= d.usageLimit) return { error: 'This discount code has reached its usage limit', code: 'usage_limit' };
+  // Customer eligibility (re-checked at checkout, where contact details are always known).
+  if (d.eligibility === 'signed_in' && !customer.id) return { error: 'This offer is for signed-in customers', code: 'sign_in_required' };
+  if (d.eligibility === 'new_customers' && (customer.id || customer.email || phoneKey(customer.phone))) {
+    const or: Record<string, unknown>[] = [];
+    if (customer.id) or.push({ customer: customer.id });
+    if (customer.email) or.push({ 'contact.email': customer.email.toLowerCase() });
+    const ph = phoneKey(customer.phone);
+    if (ph) or.push({ 'contact.phone': { $in: phoneVariants(ph) } });
+    if (await Order.exists({ status: { $ne: 'cancelled' }, $or: or })) return { error: 'This offer is for first orders only', code: 'new_customers_only' };
+  }
   if (d.minOrderTotal && subtotal < d.minOrderTotal) return { error: `Minimum order for this code is ${(d.minOrderTotal / 100).toFixed(2)} SAR`, code: 'min_order', minOrder: d.minOrderTotal };
   if (d.perCustomerLimit != null && (customer.id || customer.email || phoneKey(customer.phone))) {
     const or: Record<string, unknown>[] = [];
@@ -188,9 +213,11 @@ export async function quote(
   const merged = mergeLines(items);
   const maxQty = settings?.commerce?.maxQuantityPerItem ?? 10;
   const products = await Product.find({ _id: { $in: merged.map((m) => m.productId) } })
-    .select('slug sku model name images price stock status warrantyMonths')
+    .select('slug sku model name images price stock status warrantyMonths isBundle bundleItems availableFrom availableUntil')
     .lean();
   const byId = new Map(products.map((p) => [String(p._id), p]));
+  // Bundles with contents: availability comes from the contained products' live stock.
+  const bundles = await liveBundleState(products);
   const issues: Quote['issues'] = [];
   const lines: QuoteLine[] = [];
   const defaultWarranty = settings?.commerce?.warrantyEnabled ? (settings?.commerce?.warrantyMonths ?? 0) : 0;
@@ -201,9 +228,15 @@ export async function quote(
       issues.push({ productId: m.productId, code: 'UNAVAILABLE', message: 'This product is no longer available' });
       continue;
     }
-    const limit = Math.min(maxQty, p.stock);
+    const bundle = bundles.get(String(p._id));
+    if ((bundle && bundle.problem) || !windowOpen(p)) {
+      issues.push({ productId: m.productId, code: 'UNAVAILABLE', message: 'This bundle is not available right now' });
+      continue;
+    }
+    const stock = bundle ? bundle.units : p.stock;
+    const limit = Math.min(maxQty, stock);
     let qty = m.quantity;
-    if (p.stock <= 0) {
+    if (stock <= 0) {
       issues.push({ productId: m.productId, code: 'OUT_OF_STOCK', message: 'Out of stock' });
     } else if (qty > limit) {
       issues.push({ productId: m.productId, code: 'QUANTITY_LIMITED', message: `Only ${limit} available` });
@@ -220,10 +253,22 @@ export async function quote(
       quantity: qty,
       lineTotal: p.price * qty,
       discount: 0,
-      available: p.stock > 0,
+      available: stock > 0,
       maxQuantity: Math.max(0, limit),
       warrantyMonths: settings?.commerce?.warrantyEnabled ? (p.warrantyMonths ?? defaultWarranty) : 0,
+      ...(bundle ? { components: bundle.components } : {}),
     });
+  }
+
+  // A bundle and its items bought separately share the same stock: check the combined need.
+  if (lines.some((l) => l.components?.length)) {
+    const need = aggregateTargets(lines.filter((l) => l.available).map((l) => ({ product: l.productId, quantity: l.quantity, components: l.components })));
+    const stocks = new Map((await Product.find({ _id: { $in: [...need.keys()] } }).select('stock').lean()).map((x) => [String(x._id), x.stock]));
+    for (const [pid, qty] of need) {
+      if (qty <= (stocks.get(pid) ?? 0)) continue;
+      const line = lines.find((l) => l.available && (l.productId === pid || l.components?.some((c) => c.product === pid)));
+      if (line && !issues.some((i) => i.productId === line.productId)) issues.push({ productId: line.productId, code: 'QUANTITY_LIMITED', message: 'Not enough stock for this combination of items' });
+    }
   }
 
   const purchasable = lines.filter((l) => l.available);
@@ -234,17 +279,36 @@ export async function quote(
   let discountError: string | null = null;
   let discountErrorCode: DiscountErrorCode | null = null;
   let discountMinOrder: number | null = null;
+  // Promotions never stack: the best valid automatic offer and the entered code compete, and only
+  // the one worth more to the customer is applied. Everything is evaluated here, from the database.
+  const who = { id: opts.customerId, email: opts.email, phone: opts.phone };
+  type Applied = { discount: DiscountDoc; amount: number; perLine: number[]; automatic: boolean };
+  let best: Applied | null = null;
+  if (purchasable.length) {
+    const offers = await Discount.find({ active: true, automatic: true }).lean();
+    for (const d of offers) {
+      const r = await evaluateDoc(d as DiscountDoc, purchasable, subtotal, who);
+      if (!('error' in r) && r.amount > 0 && (!best || r.amount > best.amount)) best = { ...r, automatic: true };
+    }
+  }
   if (opts.discountCode) {
-    const r = await evaluateDiscount(opts.discountCode, purchasable, subtotal, { id: opts.customerId, email: opts.email, phone: opts.phone });
+    const r = await evaluateDiscount(opts.discountCode, purchasable, subtotal, who);
     if ('error' in r) {
       discountError = r.error;
       discountErrorCode = r.code;
       discountMinOrder = r.minOrder ?? null;
+    } else if (!best || r.amount >= best.amount) {
+      best = { ...r, automatic: false };
     } else {
-      discountTotal = r.amount;
-      discount = { code: r.discount.code, id: String(r.discount._id), perCustomerLimit: r.discount.perCustomerLimit ?? null };
-      purchasable.forEach((l, i) => (l.discount = r.perLine[i]));
+      discountError = 'A better offer is already applied to your order';
+      discountErrorCode = 'better_offer';
     }
+  }
+  if (best) {
+    const b = best;
+    discountTotal = b.amount;
+    discount = { code: b.discount.code, id: String(b.discount._id), perCustomerLimit: b.discount.perCustomerLimit ?? null, automatic: b.automatic, title: { ar: b.discount.title?.ar ?? '', en: b.discount.title?.en ?? '' } };
+    purchasable.forEach((l, i) => (l.discount = b.perLine[i]));
   }
 
   // Delivery zone for the city (Admin → Settings → Shipping); store-wide rules when none applies.
@@ -305,7 +369,7 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
   const q = await quote(input.items, { discountCode: input.discountCode || undefined, paymentMethod: input.paymentMethod, customerId, email: input.contact.email, phone: input.contact.phone, city: input.shippingAddress.city });
   // Any change (unavailable item, reduced stock) must be reviewed by the customer first.
   if (q.issues.length) throw unprocessable('CART_CHANGED', 'Some items in your cart changed. Please review your cart.', { issues: q.issues });
-  if (input.discountCode && q.discountError) throw unprocessable('DISCOUNT_INVALID', q.discountError);
+  if (input.discountCode && q.discountError && q.discountErrorCode !== 'better_offer') throw unprocessable('DISCOUNT_INVALID', q.discountError);
   if (q.shippingUnavailableReason === 'city') throw unprocessable('SHIPPING_CITY_UNAVAILABLE', 'We do not deliver to this city yet. Please choose another delivery address or contact us.');
   if (!q.shippingAvailable) throw unprocessable('SHIPPING_PAUSED', 'Delivery is temporarily unavailable. Please try again later.');
   if (input.paymentMethod === 'cod' && !q.codAvailable) throw unprocessable('COD_UNAVAILABLE', 'Cash on delivery is not available for this order');
@@ -341,15 +405,16 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
     claimedKeys.length = 0;
     discountConsumed = false;
     const movements = [];
-    for (const l of q.lines) {
+    // Bundles reserve the products they contain (aggregated with the same items bought separately).
+    for (const [productId, qty] of aggregateTargets(q.lines.map((l) => ({ product: l.productId, quantity: l.quantity, components: l.components })))) {
       const updated = await Product.findOneAndUpdate(
-        { _id: l.productId, status: 'active', stock: { $gte: l.quantity } },
-        { $inc: { stock: -l.quantity } },
+        { _id: productId, status: 'active', stock: { $gte: qty } },
+        { $inc: { stock: -qty } },
         { new: true, session, projection: { stock: 1 } },
       ).lean();
-      if (!updated) throw conflict('OUT_OF_STOCK', 'Some items just went out of stock. Please review your cart.', { productId: l.productId });
-      applied.push({ productId: l.productId, qty: l.quantity });
-      movements.push({ product: l.productId, type: 'order_reserve', delta: -l.quantity, stockAfter: updated.stock, reason: orderNumber });
+      if (!updated) throw conflict('OUT_OF_STOCK', 'Some items just went out of stock. Please review your cart.', { productId });
+      applied.push({ productId, qty });
+      movements.push({ product: productId, type: 'order_reserve', delta: -qty, stockAfter: updated.stock, reason: orderNumber });
     }
     if (q.discount) {
       const r = await Discount.updateOne(
@@ -393,6 +458,7 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
             lineTotal: l.lineTotal,
             discount: l.discount,
             warrantyMonths: l.warrantyMonths,
+            ...(l.components?.length ? { components: l.components } : {}),
           })),
           currency: q.currency,
           subtotal: q.subtotal,
@@ -445,6 +511,9 @@ export async function createOrder(input: CheckoutInput, customerId?: string) {
     throw err;
   }
 
+  // Bundles' displayed availability follows their items.
+  void syncBundleStock(applied.map((a) => a.productId)).catch(() => undefined);
+
   if (customerId && input.saveAddress) {
     await User.updateOne(
       { _id: customerId, 'addresses.10': { $exists: false } },
@@ -470,13 +539,17 @@ export function orderLink(order: { orderNumber: string; lang?: string | null }, 
 
 /** Returns reserved stock to inventory exactly once (guarded by stockReleased). */
 export async function releaseStock(orderId: Types.ObjectId | string, reason: string, userId?: string) {
-  return withTx(async (session) => {
+  const touched: string[] = [];
+  const done = await withTx(async (session) => {
+    touched.length = 0;
     const order = await Order.findOneAndUpdate({ _id: orderId, stockReleased: false }, { $set: { stockReleased: true } }, { new: true, session });
     if (!order) return false;
     const movements = [];
-    for (const it of order.items) {
-      const p = await Product.findOneAndUpdate({ _id: it.product }, { $inc: { stock: it.quantity } }, { new: true, session, projection: { stock: 1 } }).lean();
-      if (p) movements.push({ product: it.product, type: 'order_release', delta: it.quantity, stockAfter: p.stock, reason, order: order._id, user: userId });
+    // Bundles give back the products they contain.
+    for (const [product, qty] of aggregateTargets(order.items)) {
+      const p = await Product.findOneAndUpdate({ _id: product }, { $inc: { stock: qty } }, { new: true, session, projection: { stock: 1 } }).lean();
+      if (p) movements.push({ product, type: 'order_release', delta: qty, stockAfter: p.stock, reason, order: order._id, user: userId });
+      touched.push(product);
     }
     await writeMovements(movements, session);
     if (order.discount?.id) {
@@ -487,6 +560,8 @@ export async function releaseStock(orderId: Types.ObjectId | string, reason: str
     }
     return true;
   });
+  if (done && touched.length) await syncBundleStock(touched).catch(() => undefined);
+  return done;
 }
 
 const eventFor: Partial<Record<OrderStatus, OrderEvent>> = {
@@ -541,11 +616,13 @@ export async function transitionOrder(
   if (to === 'cancelled' && from !== 'shipped') await releaseStock(saved._id, `Cancelled ${saved.orderNumber}`, opts.by);
   if (to === 'returned' && opts.restock !== false) {
     const movements = [];
-    for (const it of saved.items) {
-      const p = await Product.findOneAndUpdate({ _id: it.product }, { $inc: { stock: it.quantity } }, { new: true, projection: { stock: 1 } }).lean();
-      if (p) movements.push({ product: it.product, type: 'return_restock', delta: it.quantity, stockAfter: p.stock, reason: `Returned ${saved.orderNumber}`, order: saved._id, user: opts.by });
+    const targets = aggregateTargets(saved.items);
+    for (const [product, qty] of targets) {
+      const p = await Product.findOneAndUpdate({ _id: product }, { $inc: { stock: qty } }, { new: true, projection: { stock: 1 } }).lean();
+      if (p) movements.push({ product, type: 'return_restock', delta: qty, stockAfter: p.stock, reason: `Returned ${saved.orderNumber}`, order: saved._id, user: opts.by });
     }
     await writeMovements(movements);
+    await syncBundleStock([...targets.keys()]).catch(() => undefined);
   }
 
   const ev = eventFor[to];

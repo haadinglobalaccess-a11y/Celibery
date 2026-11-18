@@ -1,3 +1,4 @@
+import { aggregateTargets, syncBundleStock } from '../catalog/bundles';
 import { Types } from 'mongoose';
 import { badRequest, conflict, notFound, unprocessable } from '../../lib/errors';
 import { formatSar } from '../../lib/money';
@@ -155,11 +156,16 @@ export async function receiveReturn(id: string, opts: { restock: boolean; note: 
   const r = await move(id, 'received', { restocked: opts.restock }, { note: opts.note, by: opts.by });
   if (opts.restock) {
     const movements = [];
-    for (const it of r.items) {
-      const p = await Product.findOneAndUpdate({ _id: it.product }, { $inc: { stock: it.quantity } }, { new: true, projection: { stock: 1 } }).lean();
-      if (p) movements.push({ product: it.product, type: 'return_restock', delta: it.quantity, stockAfter: p.stock, reason: `Return ${r.returnNumber}`, order: r.order, user: opts.by });
+    // A returned bundle puts back the products it contains (component snapshot from the order line).
+    const ord = await Order.findById(r.order).select('items.product items.components').lean();
+    const withComponents = r.items.map((it) => ({ product: it.product, quantity: it.quantity, components: ord?.items.find((x) => String(x.product) === String(it.product))?.components }));
+    const targets = aggregateTargets(withComponents);
+    for (const [product, qty] of targets) {
+      const p = await Product.findOneAndUpdate({ _id: product }, { $inc: { stock: qty } }, { new: true, projection: { stock: 1 } }).lean();
+      if (p) movements.push({ product, type: 'return_restock', delta: qty, stockAfter: p.stock, reason: `Return ${r.returnNumber}`, order: r.order, user: opts.by });
     }
     if (movements.length) await InventoryMovement.insertMany(movements);
+    await syncBundleStock([...targets.keys()]).catch(() => undefined);
   }
   const order = await orderOf(r);
   const back = await ReturnRequest.find({ order: r.order, status: { $in: ['received', 'refunded'] } }).lean();

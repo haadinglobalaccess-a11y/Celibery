@@ -66,6 +66,9 @@ const ProductSchema = new Schema(
     warrantyMonths: { type: Number, min: 0 },
     isBundle: { type: Boolean, default: false },
     bundleItems: { type: [BundleItemSchema], default: [] },
+    /** Optional sale window (scheduled bundles): outside it the listing cannot be bought. */
+    availableFrom: { type: Date },
+    availableUntil: { type: Date },
     related: { type: [{ type: Schema.Types.ObjectId, ref: 'Product' }], default: [] },
     sortOrder: { type: Number, default: 0 },
     /**

@@ -6,7 +6,7 @@ import { canonicalMime, imageDimensions, mediaKey, sniffMedia, EXT_FOR_MIME } fr
 import { validateUploadParts, type PartInput } from '../../lib/media-rules';
 import { randomToken } from '../../lib/tokens';
 import { storage, storageStatus } from '../../integrations/storage';
-import { Banner, Campaign, Category, HomeVideo, MediaAsset, Order, Product, ProductCollection, Settings } from '../../models';
+import { Banner, Campaign, Category, HomeVideo, MediaAsset, Order, Product, ProductCollection, Review, Settings } from '../../models';
 
 export type UploadInput = {
   kind: 'image' | 'video';
@@ -176,7 +176,7 @@ export async function findMediaUsage(asset: { _id: unknown; url: string; posterU
   const urls = [asset.url, asset.posterUrl ?? '', ...(asset.variants ?? []).map((v) => v.url)].filter(Boolean);
   const inUrls = { $in: urls };
   const out: MediaUsage = [];
-  const [products, categories, collections, banners, campaigns, settings, orders, homeVideos] = await Promise.all([
+  const [products, categories, collections, banners, campaigns, settings, orders, homeVideos, reviews] = await Promise.all([
     Product.find({ $or: [{ 'images.url': inUrls }, { 'images.mediaId': asset._id }, { 'images.variants.url': inUrls }, { 'packagingImages.url': inUrls }, { 'packagingImages.mediaId': asset._id }, { 'packagingImages.variants.url': inUrls }] }).select('sku name').limit(50).lean(),
     Category.find({ $or: [{ 'image.url': inUrls }, { 'image.mediaId': asset._id }] }).select('slug').lean(),
     ProductCollection.find({ $or: [{ 'image.url': inUrls }, { 'image.mediaId': asset._id }] }).select('slug').lean(),
@@ -189,6 +189,7 @@ export async function findMediaUsage(asset: { _id: unknown; url: string; posterU
     Settings.findOne({ key: 'store' }).lean(),
     Order.countDocuments({ 'items.image': inUrls }),
     HomeVideo.find({ $or: [{ media: asset._id }, { posterMedia: asset._id }, { url: inUrls }, { posterUrl: inUrls }] }).select('title archived').lean(),
+    Review.find({ $or: [{ 'images.mediaId': asset._id }, { 'images.url': inUrls }] }).select('_id').limit(20).lean(),
   ]);
   products.forEach((p) => out.push({ type: 'product', id: String(p._id), label: p.sku, field: 'images', live: true }));
   categories.forEach((c) => out.push({ type: 'category', id: String(c._id), label: c.slug, field: 'image', live: true }));
@@ -207,6 +208,7 @@ export async function findMediaUsage(asset: { _id: unknown; url: string; posterU
     ['business.sbcBadgeImageUrl', s?.business && (s.business as Record<string, unknown>).sbcBadgeImageUrl],
   ];
   for (const [field, value] of settingFields) if (typeof value === 'string' && urls.includes(value)) out.push({ type: 'settings', id: 'store', label: field, field, live: true });
+  reviews.forEach((r) => out.push({ type: 'review', id: String(r._id), label: 'Customer review photo', field: 'images', live: true }));
   // Archived homepage videos still count: restoring one must not find its file gone.
   homeVideos.forEach((v) => out.push({ type: 'home_video', id: String(v._id), label: `Homepage video ${v.title?.en || v.title?.ar || ''}${v.archived ? ' (archived)' : ''}`.trim(), field: 'video', live: true }));
   if (orders) out.push({ type: 'orders', id: '', label: `${orders} past order(s) show this image`, field: 'items.image', live: false });

@@ -111,6 +111,12 @@ export function discountErrorText(q: Pick<Quote, 'discountError' | 'discountErro
       return d.alreadyUsed;
     case 'not_applicable':
       return d.notApplicable;
+    case 'better_offer':
+      return d.betterOffer;
+    case 'sign_in_required':
+      return d.signIn;
+    case 'new_customers_only':
+      return d.firstOrder;
     case 'invalid':
       return d.invalid;
   }

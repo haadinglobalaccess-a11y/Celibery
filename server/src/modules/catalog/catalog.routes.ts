@@ -15,8 +15,6 @@ catalogRoutes.get('/categories', ah(c.categories));
 catalogRoutes.get('/categories/:slug', validate(slugParam, 'params'), ah(c.category));
 catalogRoutes.get('/products', searchLimiter, validate(productListQuery, 'query'), ah(c.products));
 catalogRoutes.get('/products/:slug', validate(slugParam, 'params'), ah(c.product));
-catalogRoutes.get('/products/:slug/reviews', validate(slugParam, 'params'), ah(c.productReviews));
-catalogRoutes.post('/products/:slug/reviews', requireCustomer, reviewLimiter, validate(slugParam, 'params'), validate(reviewSchema), ah(c.submitReview));
 catalogRoutes.get('/collections/:slug', validate(slugParam, 'params'), ah(c.collection));
 catalogRoutes.get('/campaigns/:slug', validate(slugParam, 'params'), ah(c.campaign));
 catalogRoutes.get('/faq', ah(publicFaq));
