@@ -41,11 +41,22 @@ const ReviewSchema = new Schema(
     body: { type: String, default: '', maxlength: 2000 },
     lang: { type: String, enum: ['ar', 'en'], default: 'ar' },
     displayName: { type: String, default: '', maxlength: 60 },
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending', index: true },
+    /** pending → approved | rejected; approved ↔ hidden (unpublished by staff). Only "approved" is public. */
+    status: { type: String, enum: ['pending', 'approved', 'rejected', 'hidden'], default: 'pending', index: true },
+    /** Customer photos (uploaded through the media pipeline, owner-checked, max 3). Shown once approved. */
+    images: { type: [new Schema({ url: { type: String, required: true }, mediaId: { type: Schema.Types.ObjectId, ref: 'MediaAsset' } }, { _id: false })], default: [] },
+    editedAt: { type: Date },
+    moderatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    moderatedAt: { type: Date },
+    moderationNote: { type: String, default: '', maxlength: 300 },
+    /** Reports from signed-in customers (one per customer). */
+    reports: { type: [new Schema({ user: { type: Schema.Types.ObjectId, ref: 'User' }, reason: { type: String, maxlength: 300, default: '' }, at: { type: Date, default: () => new Date() } }, { _id: false })], default: [] },
+    reportCount: { type: Number, default: 0, index: true },
   },
   { timestamps: true },
 );
 ReviewSchema.index({ product: 1, customer: 1 }, { unique: true });
+ReviewSchema.index({ product: 1, status: 1, createdAt: -1 });
 export type ReviewDoc = InferSchemaType<typeof ReviewSchema> & { _id: Types.ObjectId };
 export const Review: Model<ReviewDoc> = (models.Review as Model<ReviewDoc>) || model<ReviewDoc>('Review', ReviewSchema);
 

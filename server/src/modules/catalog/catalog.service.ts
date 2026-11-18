@@ -2,7 +2,7 @@ import type { FilterQuery, Types } from 'mongoose';
 import { escapeRegex } from '../../lib/http';
 import { notFound } from '../../lib/errors';
 import { cleanLocLine, cleanLocRich } from '../../lib/text';
-import { Banner, Campaign, Category, Order, Product, ProductCollection, Review, getSettings, type ProductDoc } from '../../models';
+import { Banner, Campaign, Category, Discount, Order, Product, ProductCollection, Review, getSettings, type ProductDoc } from '../../models';
 import { DEFAULT_PRODUCT_TRUST } from '../../models/Settings';
 import type { ProductListQuery } from './catalog.schemas';
 import { availablePaymentMethods } from '../payments/payment.service';
@@ -171,7 +171,7 @@ export const getProduct = (slug: string) => cached(`product:${slug}`, () => load
 async function loadProduct(slug: string) {
   const settings = await cachedSettings();
   const p = await Product.findOne({ slug, status: 'active' })
-    .select(PUBLIC_PRODUCT_FIELDS + ' description specs warrantyMonths bundleItems related seo packagingImages')
+    .select(PUBLIC_PRODUCT_FIELDS + ' description specs warrantyMonths bundleItems related seo packagingImages availableFrom availableUntil')
     .populate('category', 'slug name')
     .lean();
   if (!p) throw notFound('Product');
@@ -187,7 +187,7 @@ async function loadProduct(slug: string) {
       .lean(),
     Product.find({ isBundle: true, status: 'active', 'bundleItems.product': p._id }).select(PUBLIC_PRODUCT_FIELDS).limit(4).lean(),
     p.isBundle && p.bundleItems?.length
-      ? Product.find({ _id: { $in: p.bundleItems.map((b) => b.product) } }).select('slug name images model').lean()
+      ? Product.find({ _id: { $in: p.bundleItems.map((b) => b.product) } }).select('slug name images model price status').lean()
       : [],
   ]);
   const related = (relatedExplicit.length ? relatedExplicit : sameCategory).map((r) => toPublicProduct(r as unknown as LeanProduct, low));
@@ -195,16 +195,18 @@ async function loadProduct(slug: string) {
   const warrantyMonths = settings?.commerce?.warrantyEnabled ? (p.warrantyMonths ?? settings.commerce.warrantyMonths ?? 0) : 0;
 
   let reviews = null;
-  if (settings?.reviews?.enabled) {
-    const stats = await Review.aggregate([{ $match: { product: p._id, status: 'approved' } }, { $group: { _id: null, avg: { $avg: '$rating' }, n: { $sum: 1 } } }]);
-    reviews = stats[0] ? { average: Math.round(stats[0].avg * 10) / 10, count: stats[0].n } : { average: 0, count: 0 };
-  }
+  if (settings?.reviews?.enabled) reviews = await reviewSummary(p._id);
 
   const { related: _r, bundleItems: bi, ...rest } = p as unknown as LeanProduct & { related: unknown; bundleItems: { product: Types.ObjectId; quantity: number }[] };
   return {
     ...toPublicProduct(rest as LeanProduct, low),
     warrantyMonths,
-    bundleContents: (bi ?? []).map((b) => ({ quantity: b.quantity, product: bundleItems.find((x) => String(x._id) === String(b.product)) ?? null })),
+    bundleContents: (bi ?? []).map((b) => {
+      const x = bundleItems.find((y) => String(y._id) === String(b.product));
+      return { quantity: b.quantity, product: x ? { _id: x._id, slug: x.slug, name: x.name, images: x.images, model: x.model } : null };
+    }),
+    bundle: bundleValue(p as unknown as { price: number; isBundle?: boolean; availableFrom?: Date | null; availableUntil?: Date | null }, bi ?? [], bundleItems as unknown as { _id: unknown; price: number; status: string }[]),
+    offer: await productOffer(p as unknown as { _id: Types.ObjectId; category: unknown }),
     related,
     bundles: bundles.map((b) => toPublicProduct(b as unknown as LeanProduct, low)),
     reviews,
@@ -215,6 +217,61 @@ async function loadProduct(slug: string) {
       estimate: settings?.commerce?.estimatedDelivery ?? { ar: '', en: '' },
     },
   };
+}
+
+/** Approved reviews only: average, count and the 5→1 star distribution (always computed, never stored). */
+export async function reviewSummary(productId: unknown) {
+  const rows = await Review.aggregate<{ _id: number; n: number }>([{ $match: { product: productId, status: 'approved' } }, { $group: { _id: '$rating', n: { $sum: 1 } } }]);
+  const distribution: Record<'1' | '2' | '3' | '4' | '5', number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+  let count = 0;
+  let sum = 0;
+  for (const r of rows) {
+    const k = String(r._id) as keyof typeof distribution;
+    if (!(k in distribution)) continue;
+    distribution[k] = r.n;
+    count += r.n;
+    sum += r._id * r.n;
+  }
+  return { average: count ? Math.round((sum / count) * 10) / 10 : 0, count, distribution };
+}
+
+/**
+ * Bundle value from the contained products' current SAR prices. Savings are shown only when the
+ * whole value is known (every item still exists and is active) and the bundle costs less.
+ */
+function bundleValue(p: { price: number; isBundle?: boolean; availableFrom?: Date | null; availableUntil?: Date | null }, items: { product: unknown; quantity: number }[], found: { _id: unknown; price: number; status: string }[]) {
+  if (!p.isBundle || !items.length) return null;
+  let value = 0;
+  let complete = true;
+  for (const it of items) {
+    const x = found.find((y) => String(y._id) === String(it.product));
+    if (!x || x.status !== 'active') complete = false;
+    else value += x.price * it.quantity;
+  }
+  const savings = complete && value > p.price ? value - p.price : 0;
+  return { value: complete ? value : null, savings, availableFrom: p.availableFrom ?? null, availableUntil: p.availableUntil ?? null };
+}
+
+/** The best automatic offer that can apply to this product (by product, category or store-wide). */
+async function productOffer(p: { _id: Types.ObjectId; category: unknown }) {
+  const now = new Date();
+  const categoryId = (p.category as { _id?: unknown } | null)?._id ?? p.category;
+  const offers = await Discount.find({
+    active: true,
+    automatic: true,
+    $and: [
+      { $or: [{ startsAt: null }, { startsAt: { $exists: false } }, { startsAt: { $lte: now } }] },
+      { $or: [{ endsAt: null }, { endsAt: { $exists: false } }, { endsAt: { $gte: now } }] },
+      { $or: [{ usageLimit: null }, { usageLimit: { $exists: false } }, { $expr: { $lt: ['$usedCount', '$usageLimit'] } }] },
+      { $or: [{ products: p._id }, { categories: categoryId }, { 'products.0': { $exists: false }, 'categories.0': { $exists: false } }] },
+    ],
+  })
+    .select('title type value minOrderTotal endsAt eligibility')
+    .lean();
+  if (!offers.length) return null;
+  // Rank by the headline value: percent as-is; fixed in SAR (rough, display only — checkout decides).
+  const best = offers.sort((a, b) => (b.type === 'percent' ? b.value : b.value / 100) - (a.type === 'percent' ? a.value : a.value / 100))[0];
+  return { title: best.title, type: best.type, value: best.value, minOrderTotal: best.minOrderTotal ?? 0, endsAt: best.endsAt ?? null, eligibility: best.eligibility ?? 'all' };
 }
 
 /** Best sellers are computed from real paid/fulfilled orders; a curated collection is the fallback. */

@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ErrorState, Spinner } from '../../components/ui';
-import { del, get, patch, post, put } from '../../lib/api';
+import { del, get, post, put } from '../../lib/api';
 import { invalidateCache, useApi } from '../../lib/hooks';
 import type { Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
 import { Card, dt, en, ErrorBox, F, LocInput, Modal, ProductPicker, Status, Tabs, AHead, usePerms } from '../kit';
 import { MediaField } from '../media';
+import { ReviewsModeration } from './Reviews';
 
 type TabKey = 'home' | 'banners' | 'collections' | 'campaigns' | 'pages' | 'reviews' | 'trust';
 const emptyL = { ar: '', en: '' };
@@ -654,56 +655,9 @@ function PageHistory({ page, onClose, onRestored }: { page: Page; onClose: () =>
   );
 }
 
-type Review = { _id: string; rating: number; title: string; body: string; status: string; createdAt: string; product?: { sku: string; name: Localized }; customer?: { name: string; email: string } };
 
 function Reviews() {
-  const { data, error, loading, reload } = useApi<Review[]>('/api/admin/content/reviews');
-  if (error) return <ErrorState message={error.message} />;
-  if (loading || !data) return <Spinner />;
-  return (
-    <Card title="Customer reviews">
-      <p className="muted reviews-note" style={{ fontSize: 13 }}>
-        Only customers with a delivered order can review a product. Reviews stay hidden on the store until “Show reviews” is enabled in Settings (Q19: no imported reviews).
-      </p>
-      {data.map((r) => (
-        <div key={r._id} className="picker__row reviews-row" style={{ alignItems: 'flex-start' }}>
-          <div>
-            <strong>{'★'.repeat(r.rating)}</strong> {r.title} — <span className="muted">{r.product?.sku}</span>
-            <div>{r.body}</div>
-            <div className="muted">
-              {r.customer?.name} · {dt(r.createdAt)}
-            </div>
-          </div>
-          <div className="actions">
-            <Status value={r.status} />
-            {r.status !== 'approved' ? (
-              <button
-                className="btn btn--outline btn--sm"
-                onClick={async () => {
-                  await patch(`/api/admin/content/reviews/${r._id}`, { status: 'approved' });
-                  reload();
-                }}
-              >
-                Approve
-              </button>
-            ) : null}
-            {r.status !== 'rejected' ? (
-              <button
-                className="btn btn--ghost btn--sm"
-                onClick={async () => {
-                  await patch(`/api/admin/content/reviews/${r._id}`, { status: 'rejected' });
-                  reload();
-                }}
-              >
-                Reject
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ))}
-      {!data.length ? <p className="muted">No reviews yet.</p> : null}
-    </Card>
-  );
+  return <ReviewsModeration />;
 }
 
 

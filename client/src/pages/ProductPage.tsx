@@ -8,11 +8,13 @@ import { RestockForm } from '../components/RestockForm';
 import { RichText } from '../components/RichText';
 import { Crumbs, ErrorState, NotFound, Price, Quantity, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
-import { connectorLabel, formatInt, L, listSep } from '../lib/format';
+import { connectorLabel, formatDate, formatInt, L, listSep } from '../lib/format';
 import { useApi } from '../lib/hooks';
 import { absoluteUrl, useSeo } from '../lib/useSeo';
 import type { ProductDetail } from '../lib/types';
 import { useCart } from '../state/cart';
+import { useMoney } from '../state/currency';
+import '../styles/phase5.css';
 import { useSettings } from '../state/settings';
 import { useWishlist } from '../state/wishlist';
 import { storeCopy } from '../storefront/copy';
@@ -23,6 +25,7 @@ import { flyToCart, InteractiveProductGallery } from '../three-d';
 export default function ProductPage() {
   const { slug } = useParams();
   const { t, lang, p } = useI18n();
+  const money = useMoney();
   const { data, error, loading, reload } = useApi<ProductDetail>(`/api/products/${slug}`);
   const cart = useCart();
   const wish = useWishlist();
@@ -151,6 +154,33 @@ export default function ProductPage() {
                   {data.discountPercent ? <span className="cx-tag cx-tag--accent">{t.product.save(data.discountPercent)}</span> : null}
                 </div>
                 <small className="cx-pdp__vat">{t.product.vatIncluded}</small>
+                {data.bundle?.value && data.bundle.savings > 0 ? (
+                  <p className="cx-bundle-value" data-testid="bundle-value">
+                    <span>{t.bundle.worth(money(data.bundle.value))}</span>
+                    <strong>{t.bundle.save(money(data.bundle.savings))}</strong>
+                  </p>
+                ) : null}
+                {data.bundle ? (
+                  <p className="cx-bundle-note">
+                    {[data.bundle.availableFrom && new Date(data.bundle.availableFrom) > new Date() ? t.bundle.from(formatDate(data.bundle.availableFrom, lang)) : '', data.bundle.availableUntil ? t.bundle.until(formatDate(data.bundle.availableUntil, lang)) : '', t.bundle.stockNote].filter(Boolean).join(' · ')}
+                  </p>
+                ) : null}
+                {data.offer && L(data.offer.title, lang) ? (
+                  <div className="cx-offer" data-testid="product-offer">
+                    <span className="cx-offer__value">{data.offer.type === 'percent' ? t.offer.percent(data.offer.value) : t.offer.amount(money(data.offer.value))}</span>
+                    <span className="cx-offer__title">{L(data.offer.title, lang)}</span>
+                    <span className="cx-offer__terms">
+                      {[
+                        data.offer.minOrderTotal ? t.offer.minOrder(money(data.offer.minOrderTotal)) : '',
+                        data.offer.eligibility === 'signed_in' ? t.offer.members : data.offer.eligibility === 'new_customers' ? t.offer.firstOrder : '',
+                        data.offer.endsAt ? t.offer.ends(formatDate(data.offer.endsAt, lang)) : '',
+                        t.offer.automatic,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </div>
+                ) : null}
 
                 <div className="pdp__buy cx-buy">
                   <Quantity label={t.product.quantity} value={qty} onChange={setQty} max={maxQ} />

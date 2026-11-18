@@ -19,6 +19,16 @@ async function normalize(input: Input, selfId?: string) {
   if (input.compareAtPrice !== undefined) out.compareAtPrice = input.compareAtPrice == null ? undefined : toHalalas(input.compareAtPrice);
   if (input.category && !(await Category.exists({ _id: input.category }))) throw badRequest('INVALID_CATEGORY', 'Category not found');
   if (input.bundleItems?.some((b) => b.product === selfId)) throw badRequest('INVALID_BUNDLE', 'A bundle cannot contain itself');
+  if (input.bundleItems?.length) {
+    const ids = [...new Set(input.bundleItems.map((b) => b.product))];
+    if (ids.length !== input.bundleItems.length) throw badRequest('INVALID_BUNDLE', 'Each product can be listed only once in a bundle — use the quantity instead');
+    const found = await Product.find({ _id: { $in: ids } }).select('isBundle bundleItems').lean();
+    if (found.length !== ids.length) throw badRequest('INVALID_BUNDLE', 'A bundle item does not exist');
+    if (found.some((f) => f.isBundle && f.bundleItems?.length)) throw badRequest('INVALID_BUNDLE', 'A bundle cannot contain another bundle');
+  }
+  const from = input.availableFrom as Date | null | undefined;
+  const until = input.availableUntil as Date | null | undefined;
+  if (from && until && from >= until) throw badRequest('INVALID_SCHEDULE', 'The end date must be after the start date');
   if (out.compareAtPrice !== undefined && out.price !== undefined && (out.compareAtPrice as number) <= (out.price as number)) {
     out.compareAtPrice = undefined; // only meaningful when higher than the selling price
   }
@@ -54,7 +64,8 @@ export async function listProducts(q: { q?: string; status?: string; category?: 
 
 export async function createProduct(input: Input & { stock?: number }, userId: string) {
   const data = await normalize(input);
-  const stock = input.stock ?? 0;
+  // A bundle with items has no stock of its own: it follows its items (catalog/bundles.ts).
+  const stock = data.isBundle && (data.bundleItems as unknown[] | undefined)?.length ? 0 : (input.stock ?? 0);
   return withTx(async (session) => {
     const [p] = await Product.create([{ ...data, stock, dataSource: 'client' }], { session });
     if (stock > 0) await InventoryMovement.create([{ product: p._id, type: 'initial', delta: stock, stockAfter: stock, reason: 'Initial stock', user: userId }], { session });
@@ -91,8 +102,9 @@ export async function deleteProduct(id: string) {
 
 export async function adjustStock(productId: string, input: { mode: 'delta' | 'set'; value: number; reason: string; type: 'adjustment' | 'restock' }, userId: string) {
   return withTx(async (session) => {
-    const current = await Product.findById(productId).select('stock').session(session ?? null).lean();
+    const current = await Product.findById(productId).select('stock isBundle bundleItems').session(session ?? null).lean();
     if (!current) throw notFound('Product');
+    if (current.isBundle && current.bundleItems?.length) throw unprocessable('BUNDLE_STOCK', 'A bundle has no stock of its own — adjust the stock of the products it contains');
     const delta = input.mode === 'set' ? input.value - current.stock : input.value;
     if (delta === 0) throw badRequest('NO_CHANGE', 'Stock is unchanged');
     // Conditional update prevents going negative even under concurrent checkouts.

@@ -6,6 +6,7 @@ import { markAbandonedDrafts } from './modules/checkout-drafts/draft.service';
 import { retryOrderNotifications } from './integrations/notifications/order-confirmation';
 import { refreshRatesIfDue } from './modules/currency/rates.service';
 import { sweepRestock } from './modules/restock/restock.service';
+import { syncBundleStock } from './modules/catalog/bundles';
 
 /**
  * Scheduled maintenance. On Vercel these run through Vercel Cron (vercel.json → /api/cron/*).
@@ -20,6 +21,8 @@ export async function runReservationJob() {
   const checkouts = await markAbandonedDrafts();
   const confirmations = await retryOrderNotifications(50);
   // Back-in-stock emails for products that came back by any path (admin, import, released orders, returns).
+  // Bundle availability follows its items and schedule (also refreshed on every stock change).
+  await syncBundleStock().catch(() => undefined);
   const restock = await sweepRestock();
   return { ...reservations, checkouts, confirmations, restock };
 }

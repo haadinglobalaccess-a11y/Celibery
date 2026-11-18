@@ -1,3 +1,4 @@
+import { syncBundleStock } from '../modules/catalog/bundles';
 import { DEFAULT_ROLES } from '../lib/permissions';
 import { Campaign, Category, InventoryMovement, Page, Product, ProductCollection, Role, getSettings } from '../models';
 import { CAMPAIGNS, CATEGORIES, COLLECTIONS, PAGES } from './base-data';
@@ -59,6 +60,8 @@ export async function seedDemo() {
       { $set: { bundleItems: ['DEMO-PB-10K', 'DEMO-CB-CC-1M', 'DEMO-AD-30W'].map((s) => ({ product: bySku.get(s), quantity: 1 })).filter((b) => b.product) } },
     );
   }
+  // A bundle with contents has no stock of its own: it follows its items.
+  await syncBundleStock();
   const setCol = (slug: string, skus: string[]) =>
     ProductCollection.updateOne({ slug, products: { $size: 0 } }, { $set: { products: skus.map((s) => bySku.get(s)).filter(Boolean) } });
   await setCol('bundles', ['DEMO-KIT-TRAVEL', 'DEMO-KIT-GIFT']);

@@ -12,6 +12,7 @@ import { crudRouter } from './crud';
 import { exportProductsCsv, importProductsCsv } from './import.service';
 import { adminRestockRoutes } from '../restock/restock.routes';
 import { triggerRestock } from '../restock/restock.service';
+import { syncBundleStock } from '../catalog/bundles';
 import * as svc from './products.service';
 
 // ---- Products ----------------------------------------------------------------------------
@@ -38,6 +39,7 @@ adminProductRoutes.post(
     if (!req.body.dryRun) {
       await audit(req, 'import', 'product', '', `${report.created} created, ${report.updated} updated, ${report.skipped} skipped`);
       // Imported stock may bring products back: notify their waiting customers (the sweep checks stock).
+      await syncBundleStock();
       const waiting = await RestockSubscription.distinct('product', { status: 'active' });
       triggerRestock(waiting.map(String));
     }
@@ -78,6 +80,7 @@ adminProductRoutes.post(
   validate(productCreate),
   ah(async (req, res) => {
     const p = await svc.createProduct(req.body, req.user!.id);
+    await syncBundleStock([String(p._id)]);
     await audit(req, 'create', 'product', p._id, p.sku);
     return ok(res, p, 201);
   }),
@@ -90,6 +93,8 @@ adminProductRoutes.put(
   validate(productUpdate),
   ah(async (req, res) => {
     const p = await svc.updateProduct(req.params.id, req.body);
+    // Contents, schedule or status changed: bundles that use this product follow.
+    triggerRestock(await syncBundleStock([req.params.id]));
     await audit(req, 'update', 'product', req.params.id, p.sku);
     return ok(res, p);
   }),
@@ -145,7 +150,9 @@ adminInventoryRoutes.post(
   ah(async (req, res) => {
     const r = await svc.adjustStock(req.params.id, req.body, req.user!.id);
     await audit(req, 'stock_adjust', 'product', req.params.id, `${r.delta > 0 ? '+' : ''}${r.delta} → ${r.stock} (${req.body.reason})`);
-    if (r.stock > 0) triggerRestock([req.params.id]); // back-in-stock emails, if anyone is waiting
+    // Bundles containing this product follow its stock; back-in-stock emails for anything that returned.
+    const bundlesBack = await syncBundleStock([req.params.id]);
+    triggerRestock([...(r.stock > 0 ? [req.params.id] : []), ...bundlesBack]);
     return ok(res, r);
   }),
 );

@@ -49,7 +49,7 @@ describe('verified-purchase reviews (storefront → moderation → display)', ()
 
     // Pending reviews are invisible on the store.
     expect((await client().get(`/api/products/${slug}/reviews`)).body.data).toEqual([]);
-    expect((await client().get(`/api/products/${slug}`)).body.data.reviews).toEqual({ average: 0, count: 0 });
+    expect((await client().get(`/api/products/${slug}`)).body.data.reviews).toEqual({ average: 0, count: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } });
 
     // Moderation in Admin → Website content → Reviews.
     const list = await admin.get('/api/admin/content/reviews');
@@ -61,7 +61,7 @@ describe('verified-purchase reviews (storefront → moderation → display)', ()
     expect(shown).toHaveLength(1);
     expect(shown[0]).toMatchObject({ rating: 4, title: 'Charges fast', displayName: 'Sara' });
     expect(shown[0].customer).toBeUndefined(); // no customer identifiers on the public API
-    expect((await client().get(`/api/products/${slug}`)).body.data.reviews).toEqual({ average: 4, count: 1 });
+    expect((await client().get(`/api/products/${slug}`)).body.data.reviews).toEqual({ average: 4, count: 1, distribution: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 0 } });
 
     // Rejecting hides it again; content-only staff without the permission cannot moderate.
     const orderManager = await createStaff('order_manager');

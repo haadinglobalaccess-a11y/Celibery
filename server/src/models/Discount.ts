@@ -20,6 +20,12 @@ const DiscountSchema = new Schema(
     categories: { type: [{ type: Schema.Types.ObjectId, ref: 'Category' }], default: [] },
     products: { type: [{ type: Schema.Types.ObjectId, ref: 'Product' }], default: [] },
     active: { type: Boolean, default: true },
+    /** Automatic offer: applied without a code when the cart qualifies (the code is an internal reference). */
+    automatic: { type: Boolean, default: false, index: true },
+    /** Customer-facing offer name (shown on product pages and in the cart). */
+    title: { type: LocalizedSchema, default: () => ({}) },
+    /** Who may use it: everyone, signed-in customers, or customers without a previous order. */
+    eligibility: { type: String, enum: ['all', 'signed_in', 'new_customers'], default: 'all' },
     campaign: { type: Schema.Types.ObjectId, ref: 'Campaign' },
   },
   { timestamps: true },

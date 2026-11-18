@@ -43,7 +43,11 @@ export type ProductDetail = ProductCardData & {
   related: ProductCardData[];
   bundles: ProductCardData[];
   bundleContents: { quantity: number; product: { _id: string; slug: string; name: Localized; images: Image[]; model?: string } | null }[];
-  reviews: { average: number; count: number } | null;
+  reviews: { average: number; count: number; distribution?: Record<'1' | '2' | '3' | '4' | '5', number> } | null;
+  /** Bundles with contents: combined value of the items and the saving (SAR halalas). */
+  bundle?: { value: number | null; savings: number; availableFrom: string | null; availableUntil: string | null } | null;
+  /** Best automatic offer that can apply to this product (checkout decides the final discount). */
+  offer?: { title: Localized; type: 'percent' | 'fixed'; value: number; minOrderTotal: number; endsAt: string | null; eligibility: 'all' | 'signed_in' | 'new_customers' } | null;
   delivery: { free: boolean; fee: number; courier: string; estimate: Localized };
   seo?: { title?: Localized; description?: Localized };
   /** Packaging photos (box, contents), shown after the product photos. */
@@ -211,7 +215,7 @@ export type Quote = {
   issues: { productId?: string; code: string; message: string }[];
   subtotal: number;
   discountTotal: number;
-  discount: { code: string; id: string } | null;
+  discount: { code: string; id: string; automatic?: boolean; title?: Localized } | null;
   discountError: string | null;
   /** invalid | not_active | expired | usage_limit | min_order | already_used | not_applicable */
   discountErrorCode?: string | null;

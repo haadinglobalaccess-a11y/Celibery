@@ -34,6 +34,11 @@ const OrderItemSchema = new Schema(
     lineTotal: { type: Number, required: true, min: 0 },
     discount: { type: Number, default: 0, min: 0 },
     warrantyMonths: { type: Number, default: 0 },
+    /** Bundles: the products one unit contains (snapshot used to release/return their stock). */
+    components: {
+      type: [new Schema({ product: { type: Schema.Types.ObjectId, ref: 'Product', required: true }, sku: { type: String, default: '' }, quantity: { type: Number, required: true, min: 1 } }, { _id: false })],
+      default: undefined,
+    },
   },
   { _id: false },
 );

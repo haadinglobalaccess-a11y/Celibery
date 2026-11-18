@@ -75,6 +75,8 @@ export const productInput = z.object({
   warrantyMonths: z.number().int().min(0).max(120).nullable().optional(),
   isBundle: z.boolean().default(false),
   bundleItems: z.array(z.object({ product: objectId, quantity: z.number().int().min(1).max(20) })).max(20).default([]),
+  availableFrom: z.coerce.date().nullable().optional(),
+  availableUntil: z.coerce.date().nullable().optional(),
   related: z.array(objectId).max(12).default([]),
   sortOrder: z.number().int().default(0),
   seo: z.object({ title: localizedShort, description: localizedShort }).partial().optional(),
@@ -131,8 +133,13 @@ export const discountInput = z
     categories: z.array(objectId).default([]),
     products: z.array(objectId).default([]),
     active: z.boolean().default(true),
+    automatic: z.boolean().default(false),
+    title: localizedShort.default({ ar: '', en: '' }),
+    eligibility: z.enum(['all', 'signed_in', 'new_customers']).default('all'),
   })
   .refine((d) => d.type !== 'percent' || (d.value > 0 && d.value <= 100), { message: 'Percentage must be between 1 and 100', path: ['value'] })
+  .refine((d) => d.type !== 'fixed' || d.value > 0, { message: 'Enter an amount greater than zero', path: ['value'] })
+  .refine((d) => !d.automatic || Boolean(d.title.ar || d.title.en), { message: 'Automatic offers need a title customers can see', path: ['title'] })
   .refine((d) => !d.startsAt || !d.endsAt || d.startsAt < d.endsAt, { message: 'End date must be after start date', path: ['endsAt'] });
 
 export const bannerInput = z.object({
