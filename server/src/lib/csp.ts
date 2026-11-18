@@ -10,7 +10,8 @@
  *  - fonts: Google Fonts files;
  *  - images / video: own files, data:/blob: previews in the admin, and any https:// source because
  *    administrators may use external image/video URLs (media cannot execute script);
- *  - frames: YouTube (privacy-enhanced domain) and Vimeo players for hero/banner videos only;
+ *  - frames: YouTube (privacy-enhanced domain) and Vimeo players for hero/banner videos, plus
+ *    Facebook's embedded video player for the homepage video showcase;
  *  - connections: own API, plus the media bucket origin for direct admin uploads;
  *  - payments use full-page redirects to the gateway's hosted page, so no gateway origin is needed.
  * No dependencies — unit tested.
@@ -29,7 +30,7 @@ export const CSP_SOURCES = {
   fontsCss: 'https://fonts.googleapis.com',
   fontsFiles: 'https://fonts.gstatic.com',
   playerScripts: ['https://www.youtube.com', 'https://s.ytimg.com', 'https://player.vimeo.com'],
-  frames: ['https://www.youtube-nocookie.com', 'https://player.vimeo.com'],
+  frames: ['https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://www.facebook.com'],
 };
 
 const ORIGIN = /^https:\/\/[a-z0-9.-]+(?::\d{2,5})?$|^https:\/\/\*\.[a-z0-9.-]+$/i;

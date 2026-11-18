@@ -12,6 +12,7 @@ import { adminSystemRoutes } from './system.routes';
 import { adminTemplateRoutes } from './templates.routes';
 import { adminOrderNotificationRoutes } from './order-notifications.routes';
 import { adminFaqRoutes } from '../faq/faq.routes';
+import { adminHomeVideoRoutes } from '../home-videos/home-video.routes';
 
 /** All admin APIs require a staff session; each route additionally checks its permission. */
 export const adminRoutes = Router();
@@ -32,3 +33,4 @@ adminRoutes.use('/returns', adminReturnRoutes);
 adminRoutes.use('/templates', adminTemplateRoutes);
 adminRoutes.use('/order-notifications', adminOrderNotificationRoutes);
 adminRoutes.use('/faq', adminFaqRoutes);
+adminRoutes.use('/home-videos', adminHomeVideoRoutes);

@@ -207,6 +207,14 @@ const ar = {
     unavailable: 'غير متوفر',
     onlyLeft: (n: number) => `متبقي ${n} فقط`,
   },
+  videos: {
+    heading: 'فيديوهات',
+    play: (title: string) => `تشغيل الفيديو: ${title}`,
+    playing: (title: string) => `يتم تشغيل: ${title}`,
+    error: 'تعذّر تشغيل هذا الفيديو حالياً.',
+    retry: 'إعادة المحاولة',
+    duration: 'المدة',
+  },
   currency: {
     label: 'العملة',
     auto: (code: string) => `تلقائي حسب الدولة (${code})`,
@@ -623,6 +631,14 @@ const en: Dict = {
     changed: 'Some items in your cart changed. Please review.',
     unavailable: 'Unavailable',
     onlyLeft: (n: number) => `Only ${n} left`,
+  },
+  videos: {
+    heading: 'Videos',
+    play: (title: string) => `Play video: ${title}`,
+    playing: (title: string) => `Now playing: ${title}`,
+    error: 'This video can’t be played right now.',
+    retry: 'Try again',
+    duration: 'Duration',
   },
   currency: {
     label: 'Currency',

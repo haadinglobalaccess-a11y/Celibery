@@ -20,7 +20,7 @@ import { databaseReady } from '../db/connect';
 const RECONNECT_GRACE_MS = 2_000;
 
 /** GET routes (relative to /api) that may be answered from the public cache during an outage. */
-const STALE_OK = [/^\/home$/, /^\/settings\/public$/, /^\/categories$/, /^\/categories\/[a-z0-9-]{1,100}$/i, /^\/currency\/context$/];
+const STALE_OK = [/^\/home$/, /^\/settings\/public$/, /^\/categories$/, /^\/categories\/[a-z0-9-]{1,100}$/i, /^\/currency\/context$/, /^\/home\/videos$/];
 export const servesStaleWhenDbDown = (req: Pick<Request, 'method' | 'path'>) => req.method === 'GET' && STALE_OK.some((rx) => rx.test(req.path));
 
 function waitForDb(ms: number): Promise<boolean> {

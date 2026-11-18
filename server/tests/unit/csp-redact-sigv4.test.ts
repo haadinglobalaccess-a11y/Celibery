@@ -17,7 +17,8 @@ describe('Content-Security-Policy', () => {
     const d = cspDirectives();
     expect(d['style-src']).toContain('https://fonts.googleapis.com');
     expect(d['font-src']).toContain('https://fonts.gstatic.com');
-    expect(d['frame-src']).toEqual(['https://www.youtube-nocookie.com', 'https://player.vimeo.com']);
+    // Facebook's official embedded video player is used by the homepage video showcase only.
+    expect(d['frame-src']).toEqual(['https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://www.facebook.com']);
     expect(d['img-src']).toContain('https:');
     expect(d['media-src']).toContain('https:');
   });

@@ -23,6 +23,7 @@ import { authRoutes } from './modules/auth/auth.routes';
 import { llms, robots, sitemap } from './modules/catalog/catalog.controller';
 import { catalogRoutes } from './modules/catalog/catalog.routes';
 import { currencyRoutes } from './modules/currency/currency.routes';
+import { publicHomeVideoRoutes } from './modules/home-videos/home-video.routes';
 import { orderRoutes } from './modules/orders/order.routes';
 import { draftRoutes } from './modules/checkout-drafts/draft.routes';
 import { paymentRoutes } from './modules/payments/payment.routes';
@@ -165,6 +166,7 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   app.use('/api', paymentRoutes);
   app.use('/api', catalogRoutes);
   app.use('/api', currencyRoutes);
+  app.use('/api', publicHomeVideoRoutes);
   app.use('/api', draftRoutes);
   app.use('/api', orderRoutes);
   app.use('/api/me', accountRoutes);
