@@ -30,6 +30,38 @@ function cspPlugin(mode: string): Plugin {
 }
 
 /**
+ * Opens the connections the first page needs while the HTML is still being parsed: the API (when it is
+ * on another origin) and the Cloudinary image CDN. Without this the browser only starts DNS + TCP + TLS
+ * to those hosts after the JavaScript has downloaded and run (measured 16 Nov 2026: API requests began
+ * ~2.1 s into a desktop load). Credentialed fetches use the default connection pool, so the API hint
+ * has no `crossorigin` attribute; image requests are no-cors, likewise.
+ */
+function preconnectPlugin(mode: string): Plugin {
+  const env = { ...loadEnv(mode, path.resolve(__dirname, '..'), ''), ...process.env };
+  const origins = new Set<string>(['https://res.cloudinary.com']);
+  if (env.VITE_API_BASE_URL) {
+    try {
+      origins.add(new URL(env.VITE_API_BASE_URL).origin);
+    } catch {
+      /* invalid URL: the API client fails loudly elsewhere */
+    }
+  }
+  if (env.MEDIA_PUBLIC_BASE_URL) {
+    try {
+      origins.add(new URL(env.MEDIA_PUBLIC_BASE_URL).origin);
+    } catch {
+      /* ignore */
+    }
+  }
+  const tags = [...origins].map((o) => `<link rel="preconnect" href="${o}" />`).join('\n    ');
+  return {
+    name: 'celibery-preconnect',
+    apply: 'build',
+    transformIndexHtml: (html) => html.replace('<link rel="preconnect" href="https://fonts.googleapis.com" />', `${tags}\n    <link rel="preconnect" href="https://fonts.googleapis.com" />`),
+  };
+}
+
+/**
  * `vite preview` (the Railway storefront service) sends `Cache-Control: no-cache` for everything, so
  * every visit re-validated every bundle (verified 13 Nov 2026). Files under /assets/ carry a content
  * hash in their name and never change: browsers and CDNs may keep them for a year. Everything else
@@ -54,7 +86,7 @@ function immutableAssetsPlugin(): Plugin {
 }
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), cspPlugin(mode), immutableAssetsPlugin()],
+  plugins: [react(), cspPlugin(mode), preconnectPlugin(mode), immutableAssetsPlugin()],
   envDir: '..',
   preview: {
     allowedHosts: ['celiberyclient-production.up.railway.app'],

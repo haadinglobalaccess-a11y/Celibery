@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18n';
-import { formatDate, formatPrice, L } from '../lib/format';
+import { formatDate, formatPrice, L, listSep } from '../lib/format';
 import type { OrderView } from '../lib/types';
 import { ProductImage } from './ProductCard';
 
@@ -113,7 +113,7 @@ export function OrderDetails({ order }: { order: OrderView }) {
           <p>
             {order.shippingAddress.fullName} · <span className="ltr">{order.shippingAddress.phone}</span>
             <br />
-            {[order.shippingAddress.street, order.shippingAddress.buildingNumber, order.shippingAddress.district, order.shippingAddress.city, order.shippingAddress.postalCode].filter(Boolean).join('، ')}
+            {[order.shippingAddress.street, order.shippingAddress.buildingNumber, order.shippingAddress.district, order.shippingAddress.city, order.shippingAddress.postalCode].filter(Boolean).join(listSep(lang))}
           </p>
         </>
       ) : null}

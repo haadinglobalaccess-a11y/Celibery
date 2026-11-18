@@ -6,14 +6,15 @@ import { Crumbs, EmptyState, ErrorState, NotFound } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { api, qs } from '../lib/api';
 import { connectorLabel, formatInt, L, placeholderFor } from '../lib/format';
+import { cloudinaryAt, responsiveImg } from '../lib/media';
 import { useApi, useCached } from '../lib/hooks';
 import { useSeo } from '../lib/useSeo';
-import type { Category, Collection, Facets, HomeData, ProductCardData } from '../lib/types';
+import type { Category, Collection, Facets, ProductCardData } from '../lib/types';
 import { storeCopy } from '../storefront/copy';
 
 type Mode = 'all' | 'category' | 'search' | 'collection';
 
-function FiltersPanel({ facets, params, set }: { facets: Facets; params: URLSearchParams; set: (k: string, v: string | null) => void }) {
+function FiltersPanel({ facets, params, set, setRange }: { facets: Facets; params: URLSearchParams; set: (k: string, v: string | null) => void; setRange: (min: string, max: string) => void }) {
   const { t, lang } = useI18n();
   const list = (k: string) => (params.get(k) ?? '').split(',').filter(Boolean);
   const toggle = (k: string, v: string) => {
@@ -37,8 +38,7 @@ function FiltersPanel({ facets, params, set }: { facets: Facets; params: URLSear
             className="cx-price-range"
             onSubmit={(e) => {
               e.preventDefault();
-              set('minPrice', min || null);
-              set('maxPrice', max || null);
+              setRange(min, max);
             }}
           >
             <input className="cx-field" inputMode="numeric" aria-label={t.shop.min} placeholder={facets.price.max ? `${t.shop.min} ${Math.floor(facets.price.min / 100)}` : t.shop.min} value={min} onChange={(e) => setMin(e.target.value.replace(/[^\d.]/g, ''))} />
@@ -110,14 +110,17 @@ function FiltersPanel({ facets, params, set }: { facets: Facets; params: URLSear
 }
 
 /**
- * Category navigation above listings: "All" plus every category, each with its image. Uses the
- * category list the store layout has already loaded (cached /api/home) — nothing hard-coded.
+ * Category navigation above listings: "All" plus every category, each with its image. Uses the small
+ * category list (/api/categories, ~1 KB) rather than the whole homepage payload, and keeps its row
+ * reserved while loading so the products below never jump when it appears (layout shift).
  */
 function CategoryNav({ current }: { current?: string }) {
   const { t, lang, p } = useI18n();
   const c = storeCopy(lang);
-  const { data } = useCached<HomeData>('/api/home');
-  if (!data?.categories.length) return null;
+  const { data: categories, error } = useCached<Category[]>('/api/categories');
+  if (error || (categories && !categories.length)) return null;
+  if (!categories) return <div className="cx-catnav cx-catnav--pending" aria-hidden="true" />;
+  const data = { categories };
   return (
     <nav className="cx-catnav" aria-label={t.home.categories}>
       <Link to={p('/shop')} className="cx-catnav__item" aria-current={!current ? 'page' : undefined}>
@@ -129,7 +132,7 @@ function CategoryNav({ current }: { current?: string }) {
       {data.categories.map((cat) => (
         <Link key={cat._id} to={p(`/c/${cat.slug}`)} className="cx-catnav__item" aria-current={cat.slug === current ? 'page' : undefined}>
           <span className="cx-catnav__media" aria-hidden="true">
-            <img src={cat.image?.url || placeholderFor(cat.slug)} alt="" loading="lazy" />
+            <img src={cloudinaryAt(cat.image?.url, 160) || placeholderFor(cat.slug)} alt="" loading="lazy" decoding="async" width={40} height={40} />
           </span>
           <span>{L(cat.name, lang)}</span>
         </Link>
@@ -146,7 +149,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
   const { slug } = useParams();
   const [params, setParams] = useSearchParams();
   const [drawer, setDrawer] = useState(false);
-  const { data: home } = useCached<HomeData>('/api/home');
+  const { data: categoryList } = useCached<Category[]>('/api/categories');
   const colSlug = collectionSlug ?? (mode === 'collection' ? slug : undefined);
   const q = params.get('q') ?? '';
 
@@ -203,6 +206,15 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
     if (q) next.set('q', q);
     setParams(next);
   };
+  const setRange = (min: string, max: string) => {
+    const next = new URLSearchParams(params);
+    for (const [key, value] of [['minPrice', min], ['maxPrice', max]]) {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    }
+    next.delete('page');
+    setParams(next, { replace: true });
+  };
 
   // Filters depend on the category (Q18). "All products" and search only offer price + availability.
   const facets: Facets = mode === 'category' ? (cat.data?.facets ?? {}) : { price: { min: 0, max: 0 }, availability: true };
@@ -223,7 +235,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
   const activeFilters = ['minPrice', 'maxPrice', 'capacity', 'power', 'connector', 'color', 'inStock'].some((k) => params.get(k));
 
   const sc = storeCopy(lang);
-  const catIndex = mode === 'category' ? (home?.categories.findIndex((x) => x.slug === slug) ?? -1) : -1;
+  const catIndex = mode === 'category' ? (categoryList?.findIndex((x) => x.slug === slug) ?? -1) : -1;
   // Q1 hybrid theme: shopping pages stay light. Listing headers use only the light category tones;
   // dark tones remain for the homepage's premium sections.
   const tone = mode === 'category' ? LIGHT_TONES[Math.max(0, catIndex) % LIGHT_TONES.length] : mode === 'search' ? 'porcelain' : 'mist';
@@ -242,11 +254,20 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
               {title || ' '}
             </h1>
             {description ? <p className="cx-lead">{description}</p> : null}
+            {mode === 'search' ? (
+              <form role="search" className="cx-results-search" onSubmit={event => {
+                event.preventDefault();
+                set('q', String(new FormData(event.currentTarget).get('q') || '').trim() || null);
+              }}>
+                <input key={q} className="input" type="search" name="q" defaultValue={q} aria-label={t.nav.search} placeholder={t.nav.searchPlaceholder} />
+                <button className="cx-btn cx-btn--solid" type="submit" aria-label={t.nav.search}><Icon name="search" /></button>
+              </form>
+            ) : null}
           </div>
           {visual ? (
             <div className="cx-listhead__visual" aria-hidden="true">
               <span className="cx-listhead__halo" />
-              <img src={visual} alt="" decoding="async" />
+              <img {...responsiveImg(visual, '(max-width: 959px) 70vw, 36vw', [480, 800, 1200])} alt="" decoding="async" fetchPriority="high" />
             </div>
           ) : null}
         </div>
@@ -260,7 +281,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
               <Icon name="filter" />
               <strong>{t.shop.filters}</strong>
             </div>
-            <FiltersPanel facets={facets} params={params} set={set} />
+            <FiltersPanel facets={facets} params={params} set={set} setRange={setRange} />
             {activeFilters ? (
               <button className="cx-btn cx-btn--ghost cx-btn--sm cx-filters__clear" onClick={clearFilters}>
                 {t.shop.clear}
@@ -342,7 +363,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
               </button>
             </div>
             <div className="drawer__body">
-              <FiltersPanel facets={facets} params={params} set={set} />
+              <FiltersPanel facets={facets} params={params} set={set} setRange={setRange} />
             </div>
             <div className="drawer__foot" style={{ display: 'flex', gap: 8 }}>
               <button className="cx-btn cx-btn--ghost" onClick={clearFilters}>

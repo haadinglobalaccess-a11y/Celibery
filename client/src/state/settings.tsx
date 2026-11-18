@@ -33,16 +33,45 @@ export function applyBrandAccent(color: string | undefined) {
   root.setProperty('--accent-ink', onDark >= onWhite ? '#111111' : '#ffffff');
 }
 
+/**
+ * Last public settings seen on this device (public store data only: brand, announcement, delivery
+ * text — nothing about the visitor). The first paint uses it, so the header renders in its final shape
+ * at once instead of changing when the request returns (measured 16 Nov 2026: the default announcement
+ * bar showing and then disappearing moved the whole page — CLS 0.14 on phones). The fresh copy from the
+ * API always replaces it a moment later, so Admin changes still apply on the next page load.
+ */
+const SNAPSHOT_KEY = 'celibery.public-settings.v1';
+function readSnapshot(): PublicSettings | null {
+  try {
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    return raw ? (JSON.parse(raw) as PublicSettings) : null;
+  } catch {
+    return null;
+  }
+}
+function writeSnapshot(s: PublicSettings) {
+  try {
+    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(s));
+  } catch {
+    /* storage full or blocked: the snapshot is only a first-paint hint */
+  }
+}
+
 /** Loads public store settings once and applies the configurable brand accent colour (Q2). */
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<PublicSettings | null>(null);
+  const [settings, setSettings] = useState<PublicSettings | null>(() => {
+    const snap = readSnapshot();
+    if (snap) applyBrandAccent(snap.brand?.accentColor);
+    return snap;
+  });
   useEffect(() => {
     cachedGet<PublicSettings>('/api/settings/public')
       .then((s) => {
         setSettings(s);
         applyBrandAccent(s.brand?.accentColor);
+        writeSnapshot(s);
       })
-      .catch(() => setSettings(null));
+      .catch(() => setSettings((prev) => prev));
   }, []);
   return <SettingsCtx.Provider value={settings}>{children}</SettingsCtx.Provider>;
 }

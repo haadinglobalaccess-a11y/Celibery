@@ -44,6 +44,19 @@ export function classifyVideoUrl(raw: string | undefined | null): VideoSource | 
   return /\.(mp4|webm)$/i.test(u.pathname) ? { type: 'file', url: v } : null;
 }
 
+/**
+ * A URL that can be shown as a still image. Admin image/poster fields sometimes hold a video link
+ * (live data, 16 Nov 2026: the hero poster is a youtu.be link), which the browser cannot display —
+ * the request fails and the hero stays empty until the player loads. For YouTube the video's own
+ * thumbnail is shown instead (always available at hqdefault); other video links give no still.
+ */
+export function stillImage(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
+  const v = classifyVideoUrl(url);
+  if (!v) return url;
+  return v.type === 'youtube' ? `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` : undefined;
+}
+
 /** srcset for uploaded images with responsive variants; undefined for plain URL images. */
 /** Widths requested from Cloudinary for images stored as a single original (no recorded variants). */
 const CLOUDINARY_WIDTHS = [160, 480, 800, 1200];
@@ -53,10 +66,35 @@ const CLOUDINARY_UPLOAD = /^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/uploa
  * Cloudinary delivery variants: the same stored original, resized and re-encoded (WebP/AVIF where
  * supported) on Cloudinary's side. Nothing is uploaded or changed — the URL only asks for a size.
  */
-function cloudinarySrcSet(url: string): string | undefined {
-  const m = CLOUDINARY_UPLOAD.exec(url);
+export function cloudinarySrcSet(url: string | undefined | null, widths: number[] = CLOUDINARY_WIDTHS): string | undefined {
+  const m = url ? CLOUDINARY_UPLOAD.exec(url) : null;
   if (!m || /^[a-z]{1,3}_/.test(m[2])) return undefined; // URL already carries a transformation
-  return CLOUDINARY_WIDTHS.map((w) => `${m[1]}c_limit,w_${w},f_auto,q_auto/${m[2]} ${w}w`).join(', ');
+  return widths.map((w) => `${m[1]}c_limit,w_${w},f_auto,q_auto/${m[2]} ${w}w`).join(', ');
+}
+
+/**
+ * One delivery size for an admin-uploaded Cloudinary original (logos, category icons, banners shown
+ * at a known size). Same stored file, resized/re-encoded by Cloudinary; any other URL is returned
+ * unchanged. Measured 16 Nov 2026: the uploaded logo and category images were downloaded as 0.5–2.4 MB
+ * originals on every page view while displayed at 40–600 CSS px.
+ */
+export function cloudinaryAt(url: string, width: number): string;
+export function cloudinaryAt(url: string | undefined | null, width: number): string | undefined;
+export function cloudinaryAt(url: string | undefined | null, width: number): string | undefined {
+  if (!url) return url ?? undefined;
+  const m = CLOUDINARY_UPLOAD.exec(url);
+  if (!m || /^[a-z]{1,3}_/.test(m[2])) return url;
+  return `${m[1]}c_limit,w_${width},f_auto,q_auto/${m[2]}`;
+}
+
+/**
+ * `src` / `srcSet` / `sizes` for an admin-uploaded image of unknown size (banners, campaign art, brand
+ * story, category visuals): the browser picks the smallest Cloudinary width that fills its slot.
+ * Non-Cloudinary URLs (placeholders, local files) are passed through unchanged.
+ */
+export function responsiveImg(url: string, sizes: string, widths: number[] = [480, 800, 1200, 1600]) {
+  const srcSet = cloudinarySrcSet(url, widths);
+  return { src: srcSet ? cloudinaryAt(url, widths[widths.length - 1]) : url, srcSet, sizes: srcSet ? sizes : undefined };
 }
 
 export function srcSetFor(image?: Pick<Image, 'url' | 'variants' | 'width'> | null): string | undefined {
@@ -84,11 +122,13 @@ export function useMediaQuery(query: string): boolean {
 /** Background video for the hero and banners: file → <video>, YouTube/Vimeo → privacy-enhanced embed. */
 export function BackgroundVideo({ src, poster, reduced, className }: { src: string; poster?: string; reduced: boolean; className?: string }) {
   const v = classifyVideoUrl(src);
-  if (!v) return poster ? <img className={className} src={poster} alt="" /> : null;
+  const posterSrcSet = cloudinarySrcSet(poster, [800, 1200, 1600, 2000]);
+  const posterImg = poster ? <img className={className} src={cloudinaryAt(poster, 1600)} srcSet={posterSrcSet} sizes={posterSrcSet ? '100vw' : undefined} alt="" decoding="async" /> : null;
+  if (!v) return posterImg;
   // Visitors who prefer reduced motion see the poster instead of an autoplaying video.
-  if (reduced && poster) return <img className={className} src={poster} alt="" />;
+  if (reduced && poster) return posterImg;
   if (v.type === 'file') {
-    return <video className={className} src={v.url} poster={poster || undefined} autoPlay={!reduced} muted loop playsInline preload="metadata" aria-hidden="true" />;
+    return <video className={className} src={v.url} poster={cloudinaryAt(poster, 1600) || undefined} autoPlay={!reduced} muted loop playsInline preload="metadata" aria-hidden="true" />;
   }
   return (
     <div className={`embed-cover ${className ?? ''}`} aria-hidden="true">

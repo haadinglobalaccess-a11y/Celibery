@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n/I18n';
 import { L } from '../lib/format';
-import { classifyVideoUrl, useMediaQuery } from '../lib/media';
+import { classifyVideoUrl, cloudinaryAt, cloudinarySrcSet, responsiveImg, stillImage, useMediaQuery } from '../lib/media';
 import type { Banner, HomeData } from '../lib/types';
 import { PremiumButton } from './PremiumButton';
 import { CampaignPlayback } from './CampaignPlayback';
@@ -31,6 +31,10 @@ export const bannerVideo = (b: Banner, isPhone: boolean) => {
 };
 
 
+/** Hero art widths requested from Cloudinary: full-bleed, so sized to the viewport (incl. 2x phones). */
+const HERO_W = [800, 1200, 1600, 2000, 2560];
+const HERO_MOBILE_W = [480, 800, 1200];
+
 export function CinematicHero({ data }: { data: HomeData }) {
   const { t, lang } = useI18n();
   const linkFor = useLinkFor();
@@ -46,8 +50,8 @@ export function CinematicHero({ data }: { data: HomeData }) {
   const [saveData, setSaveData] = useState(Boolean(connection?.saveData));
   const products = (data.featured.length ? data.featured : data.categoryProducts.flatMap(c => c.items)).slice(0, 6);
   const slides: { id: string; image?: string; poster?: string; mobileImage?: string; video?: string; mobileVideo?: string; title: string; subtitle: string; cta?: string; link?: string; product: boolean; description?: string; sortOrder?: number; durationSec?: number; videoDurationSec?: number; videoFallbackSec?: number }[] = [
-    ...(data.hero.videoUrl || data.hero.mobileVideoUrl || data.hero.posterUrl || data.hero.mobilePosterUrl ? [{ id: 'hero', sortOrder: data.hero.sortOrder ?? -1, durationSec: data.hero.durationSec, videoDurationSec: data.hero.videoDurationSec, videoFallbackSec: data.hero.videoFallbackSec, description: L(data.hero.description, lang), image: data.hero.posterUrl, mobileImage: data.hero.mobilePosterUrl, video: data.hero.videoUrl, mobileVideo: data.hero.mobileVideoUrl, title: L(data.hero.title, lang), subtitle: L(data.hero.subtitle, lang), cta: L(data.hero.ctaLabel, lang), link: data.hero.ctaLink, product: false }] : []),
-    ...data.hero.banners.map(b => ({ id: b._id, sortOrder: b.sortOrder ?? 0, durationSec: b.durationSec, videoDurationSec: b.videoDurationSec, videoFallbackSec: b.videoFallbackSec, description: L(b.description, lang), image: L(b.imageUrl, lang) || b.posterUrl, poster: b.posterUrl, mobileImage: L(b.mobileImageUrl, lang), video: b.videoUrl, mobileVideo: b.mobileVideoUrl, title: L(b.title, lang), subtitle: L(b.subtitle, lang), cta: L(b.ctaLabel, lang), link: b.link, product: false })),
+    ...(data.hero.videoUrl || data.hero.mobileVideoUrl || data.hero.posterUrl || data.hero.mobilePosterUrl ? [{ id: 'hero', sortOrder: data.hero.sortOrder ?? -1, durationSec: data.hero.durationSec, videoDurationSec: data.hero.videoDurationSec, videoFallbackSec: data.hero.videoFallbackSec, description: L(data.hero.description, lang), image: stillImage(data.hero.posterUrl), mobileImage: stillImage(data.hero.mobilePosterUrl), video: data.hero.videoUrl, mobileVideo: data.hero.mobileVideoUrl, title: L(data.hero.title, lang), subtitle: L(data.hero.subtitle, lang), cta: L(data.hero.ctaLabel, lang), link: data.hero.ctaLink, product: false }] : []),
+    ...data.hero.banners.map(b => ({ id: b._id, sortOrder: b.sortOrder ?? 0, durationSec: b.durationSec, videoDurationSec: b.videoDurationSec, videoFallbackSec: b.videoFallbackSec, description: L(b.description, lang), image: stillImage(L(b.imageUrl, lang) || b.posterUrl), poster: stillImage(b.posterUrl), mobileImage: stillImage(L(b.mobileImageUrl, lang)), video: b.videoUrl, mobileVideo: b.mobileVideoUrl, title: L(b.title, lang), subtitle: L(b.subtitle, lang), cta: L(b.ctaLabel, lang), link: b.link, product: false })),
   ];
   if (!slides.length) products.forEach(pr => slides.push({ id: pr._id, image: pr.images?.[0]?.url, mobileImage: undefined, video: undefined, mobileVideo: undefined, title: L(data.hero.title, lang) || t.home.heroTitle, subtitle: L(data.hero.subtitle, lang) || t.home.heroSubtitle, cta: L(data.hero.ctaLabel, lang), link: data.hero.ctaLink, product: true }));
   if (!slides.length) slides.push({ id: 'empty', image: undefined, mobileImage: undefined, video: undefined, mobileVideo: undefined, title: L(data.hero.title, lang) || t.home.heroTitle, subtitle: L(data.hero.subtitle, lang) || t.home.heroSubtitle, cta: L(data.hero.ctaLabel, lang), link: data.hero.ctaLink, product: false });
@@ -79,8 +83,8 @@ export function CinematicHero({ data }: { data: HomeData }) {
       const video = classifyVideoUrl(raw);
       const poster = (phone && s.mobileImage) || s.poster || s.image;
       return <div key={s.id} className={`campaign-slide ${s.product ? 'campaign-slide--product' : ''}`} data-active={i === index}>
-        {(s.image || s.mobileImage) && (i === index || i === (index + 1) % slides.length || i === (index - 1 + slides.length) % slides.length) && <picture>{s.mobileImage && <source media="(max-width: 639px)" srcSet={s.mobileImage} />}<img key={poster} src={(video && s.poster) || s.image || s.mobileImage} alt="" loading={i === index ? 'eager' : 'lazy'} {...{ fetchpriority: i === 0 ? 'high' : 'low' }} onError={e => { e.currentTarget.onerror = null; e.currentTarget.style.visibility = 'hidden'; }} /></picture>}
-        {i === index && <CampaignPlayback key={`${s.id}:${visit}:${phone}:${raw || ''}:${reduced}:${saveData}`} source={!reduced && !saveData ? video : null} poster={poster} playing={mediaPlaying}
+        {(s.image || s.mobileImage) && (i === index || i === (index + 1) % slides.length || i === (index - 1 + slides.length) % slides.length) && <picture>{s.mobileImage && <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(s.mobileImage, HERO_MOBILE_W) || s.mobileImage} sizes="100vw" />}<img key={poster} {...responsiveImg(((video && s.poster) || s.image || s.mobileImage)!, '100vw', HERO_W)} alt="" loading={i === index ? 'eager' : 'lazy'} {...{ fetchpriority: i === 0 ? 'high' : 'low' }} onError={e => { e.currentTarget.onerror = null; e.currentTarget.style.visibility = 'hidden'; }} /></picture>}
+        {i === index && <CampaignPlayback key={`${s.id}:${visit}:${phone}:${raw || ''}:${reduced}:${saveData}`} source={!reduced && !saveData ? video : null} poster={cloudinaryAt(poster, phone ? 1200 : 2000)} playing={mediaPlaying}
           imageDurationMs={(s.durationSec ?? 5) * 1000} videoDurationMs={(s.videoDurationSec ?? 0) * 1000} fallbackMs={Math.max(2, s.videoFallbackSec ?? 20) * 1000}
           onProgress={progress} onEnd={() => go(index + 1)} />}
       </div>;

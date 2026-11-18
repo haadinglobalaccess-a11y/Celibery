@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
 import { formatPrice, L, placeholderFor } from '../lib/format';
+import { cloudinaryAt } from '../lib/media';
 import { useCached } from '../lib/hooks';
 import { useScrolled } from '../lib/motion';
 import type { HomeData } from '../lib/types';
@@ -57,6 +58,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const loc = useLocation();
   const megaRef = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLElement>(null);
   const scrolled = useScrolled(40);
   const [heroOverlay, setHeroOverlay] = useState(false);
 
@@ -69,6 +71,28 @@ export function Header() {
     setMobile(false);
     setSearchOpen(false);
   }, [loc.pathname, loc.search]);
+
+  useEffect(() => {
+    if (!mobile) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    mobileRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const items = mobileRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input');
+      if (!items?.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', trap);
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener('keydown', trap);
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [mobile]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -110,11 +134,12 @@ export function Header() {
             <Logo onDark={heroOverlay && !scrolled} />
           </Link>
           <nav className="header__nav" aria-label="Main">
-            <button aria-expanded={mega} aria-controls="mega" onClick={() => setMega((v) => !v)} onMouseEnter={() => setMega(true)}>
+            <button aria-expanded={mega} aria-controls="mega" onClick={() => setMega((v) => !v)} onMouseEnter={() => setMega(true)} onFocus={() => setMega(true)}>
               {t.nav.shop} <Icon name="chevronDown" className="icon" />
             </button>
             <Link to={p('/bundles')}>{t.nav.bundles}</Link>
             <Link to={p('/track')}>{t.nav.track}</Link>
+            <Link to={p('/faq')}>{t.footer.help}</Link>
           </nav>
           <div className="header__actions">
             <Link className="lang-switch" to={switchHref} hrefLang={lang === 'ar' ? 'en' : 'ar'} lang={lang === 'ar' ? 'en' : 'ar'} data-testid="lang-switch" aria-label={t.nav.language}>
@@ -146,6 +171,9 @@ export function Header() {
         {searchOpen ? (
           <div className="container" style={{ paddingBottom: 12 }}>
             <SearchBox autoFocus onDone={() => setSearchOpen(false)} />
+            <nav className="search-categories" aria-label={t.home.categories}>
+              {categories.map(category => <Link key={category._id} to={p(`/c/${category.slug}`)}>{L(category.name, lang)}</Link>)}
+            </nav>
           </div>
         ) : null}
         {mega ? (
@@ -153,7 +181,7 @@ export function Header() {
             <div className="container mega__grid">
               {categories.map((c, i) => (
                 <Link key={c._id} to={p(`/c/${c.slug}`)} className="mega__cat" style={{ '--i': i } as CSSProperties}>
-                  <img src={c.image?.url || placeholderFor(c.slug)} alt="" loading="lazy" />
+                  <img src={cloudinaryAt(c.image?.url, 320) || placeholderFor(c.slug)} alt="" loading="lazy" decoding="async" />
                   <span>
                     <strong>{L(c.name, lang)}</strong>
                     <ul>
@@ -180,9 +208,9 @@ export function Header() {
       {mobile ? (
         <>
           <div className="overlay" onClick={() => setMobile(false)} />
-          <aside className="drawer drawer--start" role="dialog" aria-modal="true" aria-label={t.nav.menu}>
+          <aside ref={mobileRef} className="drawer drawer--start" role="dialog" aria-modal="true" aria-label={t.nav.menu}>
             <div className="drawer__head">
-              <Logo onDark={heroOverlay && !scrolled} />
+              <Logo />
               <button className="icon-btn" aria-label={t.nav.close} onClick={() => setMobile(false)}>
                 <Icon name="close" />
               </button>
@@ -195,13 +223,18 @@ export function Header() {
                 </Link>
               ))}
               <Link to={p('/bundles')}>{t.nav.bundles}</Link>
-              <Link to={p('/track')}>{t.nav.track}</Link>
-              <Link to={p('/wishlist')}>
+              <Link to={p('/faq')}>{t.footer.help}</Link>
+              <Link to={p('/track')} className="mnav__util mnav__util--first">
+                {t.nav.track}
+              </Link>
+              <Link to={p('/wishlist')} className="mnav__util">
                 {t.nav.wishlist}
                 {wish.ids.size ? <span className="badge">{wish.ids.size}</span> : null}
               </Link>
-              <Link to={user?.type === 'customer' ? p('/account') : p('/login')}>{user ? t.nav.account : t.nav.login}</Link>
-              <Link to={switchHref}>
+              <Link to={user?.type === 'customer' ? p('/account') : p('/login')} className="mnav__util">
+                {user ? t.nav.account : t.nav.login}
+              </Link>
+              <Link to={switchHref} className="mnav__util mnav__lang">
                 <span>
                   <Icon name="globe" className="icon" /> {t.nav.language}
                 </span>
@@ -218,7 +251,10 @@ export function Header() {
 function Announcement({ fallback }: { fallback: string }) {
   const { lang, p } = useI18n();
   const settings = useSettings();
-  const a = settings?.announcement;
+  // Until the store's settings are known (first visit: no device snapshot yet) nothing is shown, so a
+  // bar the Admin has switched off never appears and then collapses, moving the page (layout shift).
+  if (!settings) return null;
+  const a = settings.announcement;
   if (a && a.enabled === false) return null;
   const text = (a && L(a.text, lang)) || fallback;
   if (!text) return null;

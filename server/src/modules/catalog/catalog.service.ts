@@ -6,7 +6,7 @@ import { Banner, Campaign, Category, Order, Product, ProductCollection, Review, 
 import type { ProductListQuery } from './catalog.schemas';
 import { availablePaymentMethods } from '../payments/payment.service';
 import { homepageFaq } from '../faq/faq.service';
-import { cached } from '../../lib/public-cache';
+import { cached, keepWarm } from '../../lib/public-cache';
 
 /**
  * Store settings for PUBLIC catalogue reads (display thresholds, delivery text, warranty), from the
@@ -93,7 +93,19 @@ async function loadCategory(slug: string) {
   return { category, facets };
 }
 
-export async function listProducts(q: ProductListQuery) {
+/**
+ * Product listings (shop, category, collection pages and the homepage chapters). Browsing listings are
+ * identical for every visitor, so they share the public cache — same freshness rules as the homepage:
+ * admin edits are visible immediately (version bump), availability flags are at most TTL (+ the
+ * revalidate window) old, and checkout always re-reads price and stock. Text search and wishlist
+ * id lookups are not cached (unbounded keys).
+ */
+export function listProducts(q: ProductListQuery) {
+  if (q.q || q.ids?.length) return loadProducts(q);
+  return cached(`products:${JSON.stringify(q)}`, () => loadProducts(q));
+}
+
+async function loadProducts(q: ProductListQuery) {
   const settings = await cachedSettings();
   const filter: FilterQuery<ProductDoc> = { status: 'active' };
   let category = null;
@@ -152,7 +164,10 @@ export async function listProducts(q: ProductListQuery) {
   };
 }
 
-export async function getProduct(slug: string) {
+/** Product detail (public cache, per slug; unknown slugs throw and are never cached). */
+export const getProduct = (slug: string) => cached(`product:${slug}`, () => loadProduct(slug));
+
+async function loadProduct(slug: string) {
   const settings = await cachedSettings();
   const p = await Product.findOne({ slug, status: 'active' })
     .select(PUBLIC_PRODUCT_FIELDS + ' description specs warrantyMonths bundleItems related seo')
@@ -365,4 +380,14 @@ async function loadPublicSettings() {
     seo: s?.seo,
     announcement: s?.announcement ?? { enabled: true, text: { ar: '', en: '' }, link: '' },
   };
+}
+
+/** Long-running servers: keep the payloads every visit needs computed (see keepWarm in lib/public-cache.ts). */
+export function startPublicCacheWarmup() {
+  return keepWarm([
+    { key: 'settings', load: getSettings },
+    { key: 'public-settings', load: loadPublicSettings },
+    { key: 'categories', load: loadCategories },
+    { key: 'home', load: loadHomePayload },
+  ]);
 }

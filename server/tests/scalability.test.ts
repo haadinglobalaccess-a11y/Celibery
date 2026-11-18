@@ -69,6 +69,54 @@ describe('public cache (homepage, categories, public settings)', () => {
     expect(await priceOnHome(p.slug)).toBe(p.price + 7);
   });
 
+  it('past its TTL, an entry is answered instantly and refreshed once in the background (stale-while-revalidate)', async () => {
+    const { cached } = await import('../src/lib/public-cache');
+    let calls = 0;
+    const load = async () => {
+      calls++;
+      await new Promise((r) => setTimeout(r, 30));
+      return calls;
+    };
+    expect(await cached('swr-test', load, 50)).toBe(1);
+    await new Promise((r) => setTimeout(r, 70)); // past the 50 ms TTL
+    const t0 = Date.now();
+    expect(await cached('swr-test', load, 50)).toBe(1); // previous copy, without waiting for load()
+    expect(Date.now() - t0).toBeLessThan(25);
+    expect(await cached('swr-test', load, 50)).toBe(1); // refresh already running: no second load
+    await new Promise((r) => setTimeout(r, 60));
+    expect(calls).toBe(2);
+    expect(await cached('swr-test', load, 50)).toBe(2); // refreshed copy
+  });
+
+  it('product pages and listings are cached, and an admin save is visible on the very next request', async () => {
+    const p = (await Product.findOne({ status: 'active' }).populate('category', 'slug').sort({ _id: 1 }).lean())!;
+    const catSlug = (p.category as unknown as { slug: string }).slug;
+    const detail = async () => (await client().get(`/api/products/${p.slug}`)).body.data.price as number;
+    const listed = async () =>
+      ((await client().get(`/api/products?category=${catSlug}&limit=48`)).body.data as { slug: string; price: number }[]).find((x) => x.slug === p.slug)?.price;
+    expect(await detail()).toBe(p.price);
+    expect(await listed()).toBe(p.price);
+    const admin = await createStaff('admin');
+    expect((await admin.put(`/api/admin/products/${p._id}`).send({ price: (p.price + 300) / 100 })).status).toBe(200);
+    expect(await detail()).toBe(p.price + 300);
+    expect(await listed()).toBe(p.price + 300);
+    // Unknown products are never cached as "found".
+    expect((await client().get('/api/products/no-such-product-slug')).status).toBe(404);
+  });
+
+  it('catalogue reads need no custom header (no CORS preflight); state-changing requests still do', async () => {
+    const request = (await import('supertest')).default;
+    const { createApp } = await import('../src/app');
+    const app = createApp();
+    const read = await request(app).get('/api/home');
+    expect(read.status).toBe(200);
+    const write = await request(app).post('/api/cart/quote').send({ items: [] });
+    expect(write.status).toBe(403);
+    // Preflight answers may be reused by the browser for 2 hours.
+    const pre = await request(app).options('/api/cart/quote').set('Origin', env.CORS_ORIGINS.split(',')[0] || 'http://localhost:5173').set('Access-Control-Request-Method', 'POST');
+    expect(pre.headers['access-control-max-age']).toBe('7200');
+  });
+
   it('caches nothing tied to a visitor: signed-in and anonymous visitors get the same public payload', async () => {
     const anon = await client().get('/api/settings/public');
     const admin = await createStaff('admin');

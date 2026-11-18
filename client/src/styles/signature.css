@@ -170,7 +170,7 @@ html[lang='ar'] .drawer .mnav > a {
 }
 #main .btn--primary:not(:disabled),
 .sticky-buy .btn--primary:not(:disabled) {
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 10px 24px -14px rgb(0 0 0 / 0.5);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.1) inset, 0 1px 2px rgb(0 0 0 / 0.12);
 }
 @media (hover: hover) and (pointer: fine) {
   #main .btn--primary:not(:disabled):hover {

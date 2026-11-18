@@ -6,7 +6,7 @@ import { ProductReviews } from '../components/ProductReviews';
 import { RichText } from '../components/RichText';
 import { Crumbs, ErrorState, NotFound, Price, Quantity, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
-import { connectorLabel, formatInt, L } from '../lib/format';
+import { connectorLabel, formatInt, L, listSep } from '../lib/format';
 import { useApi } from '../lib/hooks';
 import { absoluteUrl, useSeo } from '../lib/useSeo';
 import type { ProductDetail } from '../lib/types';
@@ -84,7 +84,7 @@ export default function ProductPage() {
   const attrs: [string, string][] = [];
   if (data.attributes?.capacityMah) attrs.push([t.shop.capacity, formatInt(data.attributes.capacityMah, lang)]);
   if (data.attributes?.powerW) attrs.push([t.shop.power, `${data.attributes.powerW}W`]);
-  if (data.attributes?.connectors?.length) attrs.push([t.shop.connector, data.attributes.connectors.map((c) => connectorLabel(c, lang)).join('، ')]);
+  if (data.attributes?.connectors?.length) attrs.push([t.shop.connector, data.attributes.connectors.map((c) => connectorLabel(c, lang)).join(listSep(lang))]);
   if (data.attributes?.color) attrs.push([t.shop.color, L(data.attributes.color.name, lang)]);
 
   const c = storeCopy(lang);
@@ -218,7 +218,10 @@ export default function ProductPage() {
               <Kinetic text={t.product.description} className="cx-display" />
             </div>
             <div className="cx-overview__text" data-fx="rise">
-              <RichText text={L(data.description, lang)} />
+              <details className="cx-detail">
+                <summary>{t.product.description}</summary>
+                <RichText text={L(data.description, lang)} />
+              </details>
             </div>
           </div>
         </section>
@@ -231,6 +234,8 @@ export default function ProductPage() {
               <span className="cx-eyebrow">{c.techSpecs}</span>
               <Kinetic id="cx-specs-title" text={t.product.specs} className="cx-display" />
             </div>
+            <details className="cx-detail" open>
+            <summary>{t.product.specs}</summary>
             <dl className="cx-specs__list" data-fx="stagger">
               {specRows.map(([k, v], i) => (
                 <div key={`${k}-${i}`} className="cx-specs__row">
@@ -239,6 +244,7 @@ export default function ProductPage() {
                 </div>
               ))}
             </dl>
+            </details>
           </div>
         </section>
       ) : null}

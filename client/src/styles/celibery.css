@@ -173,7 +173,7 @@ html[dir='rtl'] .cx-uni:hover .cx-arrow {
 .cx-btn--solid {
   background: var(--cx-ink);
   color: #fff;
-  box-shadow: 0 14px 30px -18px rgb(0 0 0 / 0.6);
+  box-shadow: 0 10px 22px -16px rgb(0 0 0 / 0.45);
 }
 .cx-btn--solid:not(:disabled):hover {
   background: var(--accent);
@@ -327,7 +327,7 @@ html[dir='rtl'] .cx-chev--prev {
   isolation: isolate;
   box-shadow:
     0 0 0 1px var(--cx-line),
-    0 22px 36px -30px rgb(0 0 0 / 0.55);
+    0 18px 32px -30px rgb(0 0 0 / 0.32);
   transition:
     translate 600ms var(--cx-ease),
     box-shadow 600ms var(--cx-ease);
@@ -353,7 +353,7 @@ html[dir='rtl'] .cx-chev--prev {
     translate: 0 -4px;
     box-shadow:
       0 0 0 1px var(--cx-line),
-      0 30px 44px -30px rgb(0 0 0 / 0.6);
+      0 26px 40px -30px rgb(0 0 0 / 0.38);
   }
   .cx-card:hover .cx-card__media.has-alt .cx-card__img:not(.cx-card__img--alt) {
     opacity: 0;
@@ -1859,9 +1859,12 @@ html[lang='ar'] .cx-fgroup h3 {
   display: flex;
   gap: 8px;
   align-items: center;
+  min-width: 0;
 }
 .cx-toolbar .cx-select {
   width: auto;
+  min-width: 0;
+  max-width: 100%;
   min-height: 40px;
   padding-inline: 14px 34px;
   border-radius: 999px;
@@ -1909,6 +1912,12 @@ html[lang='ar'] .cx-fgroup h3 {
   gap: 32px;
   padding: 0;
 }
+/* Base rule first: it previously followed the media query and overrode `sticky` with `relative`,
+   which left `top` acting as a 92px offset and stopped the gallery from staying in view. */
+.cx-pdp__stage {
+  position: relative;
+  min-width: 0;
+}
 @media (min-width: 960px) {
   .cx-pdp .cx-pdp__grid {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
@@ -1919,10 +1928,6 @@ html[lang='ar'] .cx-fgroup h3 {
     position: sticky;
     top: calc(var(--header-h) + 24px);
   }
-}
-.cx-pdp__stage {
-  position: relative;
-  min-width: 0;
 }
 .cx-pdp__halo {
   position: absolute;
@@ -2021,24 +2026,27 @@ html[lang='ar'] .cx-fgroup h3 {
   font-weight: 600;
   color: var(--cx-muted);
 }
+/* A product name is information, not a campaign headline: sized so a typical two-line name, the
+   price and the add-to-cart button all sit in the first screen on a laptop. */
 .cx-pdp .cx-pdp__title {
   margin: 0;
-  font-size: clamp(2.1rem, 1.4rem + 2.6vw, 3.75rem);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.02;
+  font-size: clamp(1.75rem, 1.3rem + 1.5vw, 2.75rem);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
   text-wrap: balance;
   text-shadow: none;
 }
 html[lang='ar'] .cx-pdp .cx-pdp__title {
   letter-spacing: 0;
-  line-height: 1.3;
+  line-height: 1.4;
   font-weight: 700;
 }
 .cx-pdp__lead {
-  margin: 16px 0 0;
-  font-size: 1.125rem;
-  line-height: 1.55;
+  margin: 14px 0 0;
+  max-width: 46ch;
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  line-height: 1.6;
   color: var(--cx-muted);
 }
 .cx-pdp .cx-pdp__meta {
@@ -2124,6 +2132,7 @@ html[lang='ar'] .cx-pdp .cx-pdp__title {
   border-radius: 999px;
   border: 0;
   background: var(--cx-cloud);
+  box-shadow: none;
 }
 .cx-buy__add {
   min-height: 56px;
@@ -2385,6 +2394,38 @@ html[lang='ar'] .cx-overview__text {
     top: 10px;
     inset-inline-start: 10px;
     inset-inline-end: 48px;
+    gap: 4px;
+  }
+  /* Two-column phone grids: compact badges so a discount + status pair fits on one row
+     instead of stacking over the product. */
+  .cx-card__badges .cx-tag {
+    height: 20px;
+    padding: 0 7px;
+    font-size: 0.625rem;
+  }
+  .cx-toolbar__count {
+    white-space: nowrap;
+  }
+}
+/* Narrow phones (320–399px): the count sits on its own line and Filters + Sort share the full
+   width, so the sort menu is never clipped at the screen edge. */
+@media (max-width: 399px) {
+  .cx-toolbar {
+    flex-wrap: wrap;
+  }
+  .cx-toolbar__actions {
+    flex: 1 1 100%;
+  }
+  .cx-toolbar .cx-select {
+    flex: 1;
+  }
+}
+@media (max-width: 639px) {
+  .cx-pdp__price .price__now {
+    font-size: 1.75rem;
+  }
+  .cx-pdp__price .price__was {
+    font-size: 0.9375rem;
   }
   .cx-card__wish {
     top: 8px;
@@ -2412,6 +2453,22 @@ html[lang='ar'] .cx-overview__text {
 }
 .cx-pagehead h1 {
   text-shadow: none;
+}
+/* Bag, checkout and saved items are task pages: a confident heading, but one that leaves the
+   order lines and summary in the first screen (the listing pages keep the full display size). */
+.cx-pagehead .cx-display--xl {
+  font-size: clamp(2.25rem, 1.6rem + 2.4vw, 3.75rem);
+}
+/* Utility pages (track order, account, information): the same rhythm as .cx-pagehead —
+   room above the title and a clear step between the title and its introduction. */
+#main .page-head {
+  padding-block: clamp(32px, 5vw, 64px) clamp(20px, 3vw, 32px);
+}
+#main .page-head > p {
+  margin: 12px 0 0;
+  max-width: 56ch;
+  font-size: clamp(0.95rem, 0.9rem + 0.25vw, 1.0625rem);
+  line-height: 1.6;
 }
 .cx-pagehead__meta {
   margin: 14px 0 0;
@@ -2529,6 +2586,7 @@ html[lang='ar'] .cx-bag .line__name {
   border-radius: 999px;
   border: 0;
   background: var(--cx-cloud);
+  box-shadow: none;
 }
 .cx-bagline__remove {
   font-size: 0.8125rem;
@@ -4263,4 +4321,226 @@ textarea {
       background: rgb(255 255 255 / 0.92);
     }
   }
+}
+
+/* =====================================================================
+   Refinement pass 2 (16 Nov 2026) — menus, account, empty states, product story
+   Visual values only. Behaviour, markup contracts and motion timing are unchanged.
+   ===================================================================== */
+
+/* ---- Mobile menu: shopping first, account utilities second ---- */
+/* A sliver of the page stays visible, so the menu reads as a sheet over the store. */
+@media (max-width: 479px) {
+  .drawer.drawer--start {
+    width: min(420px, calc(100vw - 44px));
+  }
+}
+.drawer .mnav > a:not(.mnav__util) {
+  min-height: 54px;
+  font-size: 1.0625rem;
+  font-weight: 650;
+}
+/* Quiet chevron on each shopping destination (mirrors in Arabic). */
+.drawer .mnav > a:not(.mnav__util)::after {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 4px;
+  border-block-start: 1.5px solid currentColor;
+  border-inline-end: 1.5px solid currentColor;
+  rotate: 45deg;
+  opacity: 0.3;
+  transition: opacity 200ms var(--cx-ease), translate 200ms var(--cx-ease);
+}
+html[dir='rtl'] .drawer .mnav > a:not(.mnav__util)::after {
+  rotate: -45deg;
+}
+.drawer .mnav > a:not(.mnav__util):active::after {
+  opacity: 0.8;
+}
+.drawer .mnav > .mnav__util {
+  min-height: 46px;
+  border-bottom: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--cx-muted);
+}
+.drawer .mnav > .mnav__util--first {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 0;
+}
+.drawer .mnav > .mnav__lang {
+  width: auto;
+  min-height: 44px;
+  margin-top: 14px;
+  padding-inline: 16px;
+  border: 1px solid var(--cx-line);
+  border-radius: 999px;
+  color: var(--cx-ink);
+  font-weight: 600;
+}
+.drawer .mnav > .mnav__lang .icon {
+  width: 18px;
+  height: 18px;
+}
+.drawer .mnav .badge {
+  min-width: 22px;
+  height: 22px;
+  padding-inline: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-grid;
+  place-items: center;
+}
+
+/* ---- Empty states: a calm brand tile instead of the extruded black block ----
+   The gentle float animation is kept; only the surface and depth change. */
+.state--3d .d-icon {
+  --face: var(--cx-cloud);
+  --side: transparent;
+  --glyph: var(--cx-ink);
+  --s: 64px;
+}
+.state--3d .d-icon__back,
+.state--3d .d-icon__side {
+  display: none;
+}
+.state--3d .d-icon__face {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--cx-line);
+}
+.state--3d .d-icon .icon {
+  width: 44%;
+  height: 44%;
+  filter: none;
+}
+.state--3d h2 {
+  margin: 4px 0 0;
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+html[lang='ar'] .state--3d h2 {
+  letter-spacing: 0;
+}
+.state--3d p {
+  max-width: 40ch;
+  margin: 0;
+  line-height: 1.6;
+}
+.state--3d .btn {
+  margin-top: 10px;
+}
+
+/* ---- Account area ---- */
+.account nav {
+  scrollbar-width: none;
+}
+.account nav::-webkit-scrollbar {
+  display: none;
+}
+#main .account nav a {
+  min-height: 44px;
+  border-radius: 999px;
+  color: var(--cx-muted);
+  font-weight: 600;
+  box-shadow: none;
+  background: transparent;
+  transition: background 200ms var(--cx-ease), color 200ms var(--cx-ease);
+}
+#main .account nav a:hover {
+  background: var(--cx-cloud);
+  color: var(--cx-ink);
+}
+#main .account nav a.active {
+  background: var(--cx-ink);
+  color: #fff;
+  box-shadow: none;
+}
+#main .account .account__signout {
+  gap: 10px;
+  min-height: 44px;
+  padding-inline: var(--s-4);
+  justify-content: flex-start;
+  border-radius: 999px;
+  color: var(--cx-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+#main .account .account__signout .icon {
+  width: 18px;
+  height: 18px;
+}
+#main .account .account__signout:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+@media (min-width: 960px) {
+  .account nav {
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+    align-self: start;
+    gap: 4px;
+    padding: 10px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px var(--cx-line);
+  }
+  #main .account nav a {
+    border-radius: 14px;
+  }
+  #main .account .account__signout {
+    margin-top: 6px;
+    padding-top: 0;
+    border-radius: 14px;
+    position: relative;
+  }
+  #main .account .account__signout::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    inset-inline: 12px;
+    border-top: 1px solid var(--cx-line);
+  }
+}
+@media (max-width: 959px) {
+  /* Tabs bleed to the screen edge so the scroll affordance is obvious. */
+  .account nav {
+    margin-inline: calc(var(--s-4) * -1);
+    padding-inline: var(--s-4);
+    padding-bottom: 4px;
+  }
+  #main .account nav a:not(.active) {
+    background: var(--cx-cloud);
+    color: var(--cx-ink);
+  }
+}
+.account__empty {
+  margin: 16px 0 0;
+  padding: 28px 24px;
+  border-radius: 20px;
+  border: 1px dashed var(--cx-line);
+  background: var(--cx-cloud);
+  text-align: center;
+}
+
+/* ---- Product story below the purchase area ---- */
+/* Facts: long values (two connectors, long colour names) stay on one balanced line or two. */
+.cx-facts__item dd {
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+.cx-pdp__section .cx-display {
+  font-size: clamp(1.875rem, 1.3rem + 2.2vw, 3rem);
+}
+
+/* Category row placeholder while /api/categories loads: same box as the loaded row (one 52px chip
+   row inside 2px padding), so the listing below does not move when the chips appear. */
+.cx-catnav--pending {
+  min-height: 56px;
 }

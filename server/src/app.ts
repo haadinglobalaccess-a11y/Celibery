@@ -85,6 +85,9 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
       origin: (origin, cb) => cb(null, !origin || corsOrigins.includes(origin)),
       credentials: true,
       allowedHeaders: ['Content-Type', 'X-Requested-With', 'X-Celibery-Webhook-Secret', 'Authorization'],
+      // Browsers may reuse a preflight answer for 2 hours (Chrome's cap) instead of 5 seconds, so
+      // cart/checkout POSTs to a cross-origin API stop paying an extra round trip each time.
+      maxAge: 7200,
     }),
   );
   app.use(express.json({ limit: '1mb' }));

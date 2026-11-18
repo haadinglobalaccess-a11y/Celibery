@@ -3,6 +3,7 @@ import { ProductCard } from '../components/ProductCard';
 import { Crumbs, ErrorState, NotFound, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { L } from '../lib/format';
+import { cloudinarySrcSet, responsiveImg } from '../lib/media';
 import { useApi } from '../lib/hooks';
 import { Markdown } from '../lib/markdown';
 import { useSeo } from '../lib/useSeo';
@@ -17,13 +18,13 @@ export function PolicyPage() {
   if (error) return <ErrorState onRetry={reload} />;
   if (loading || !data) return <Spinner />;
   return (
-    <div className="container" style={{ paddingBottom: 64 }}>
+    <article className="container cx-content" style={{ paddingBottom: 64 }}>
       <div className="page-head">
         <Crumbs items={[{ label: t.common.home, to: p('/') }, { label: L(data.title, lang) }]} />
         <h1>{L(data.title, lang)}</h1>
       </div>
       <Markdown source={L(data.body, lang)} />
-    </div>
+    </article>
   );
 }
 
@@ -55,8 +56,8 @@ export function CampaignPage() {
         </div>
         {data.heroImageUrl ? (
           <picture className="campaign-hero__art">
-            {data.heroMobileImageUrl ? <source media="(max-width: 639px)" srcSet={data.heroMobileImageUrl} /> : null}
-            <img src={data.heroImageUrl} alt="" decoding="async" />
+            {data.heroMobileImageUrl ? <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(data.heroMobileImageUrl, [480, 800, 1200]) || data.heroMobileImageUrl} sizes="100vw" /> : null}
+            <img {...responsiveImg(data.heroImageUrl, '100vw', [800, 1200, 1600, 2000])} alt="" decoding="async" fetchPriority="high" />
           </picture>
         ) : null}
       </section>

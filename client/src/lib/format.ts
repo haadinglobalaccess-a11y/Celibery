@@ -38,6 +38,11 @@ export function L(v: Localized | undefined | null, lang: Lang) {
   return v[lang] || v[lang === 'ar' ? 'en' : 'ar'] || '';
 }
 
+/** List separator for the active language: the Arabic comma in Arabic, ", " in English. */
+export function listSep(lang: Lang) {
+  return lang === 'ar' ? '، ' : ', ';
+}
+
 export function connectorLabel(key: string, lang: Lang) {
   const map: Record<string, [string, string]> = {
     'usb-c': ['USB-C', 'USB-C'],

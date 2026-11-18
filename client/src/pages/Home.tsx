@@ -13,7 +13,9 @@ import { Ambient, CinematicHero } from '../three-d';
 function HomeSkeleton() {
   return (
     <>
-      <section className="cine dark" aria-busy="true">
+      {/* Same frame as the real Hero (campaign-hero-slider): the transparent header overlays it from the
+          first paint and the page does not jump up when the Hero replaces it (measured CLS 0.08 on phones). */}
+      <section className="cine dark campaign-hero-slider" aria-busy="true">
         <Ambient />
         <div className="container cine__inner">
           <div className="cine__copy">
@@ -77,11 +79,11 @@ export default function Home() {
       <TheatreStage className="cx-stage">
       {/* 01 */}
       <CategoryUniverse data={data} />
+      <ExploreCollection data={data} />
       {/* 02 */}
       <FlagshipCampaigns data={data} />
       <CampaignGallery data={data} />
       {/* 03 */}
-      <ExploreCollection data={data} />
       {/* 04 */}
       <CategorySpotlights data={data} />
       {/* 05 */}

@@ -18,6 +18,7 @@ import './styles/productMotion.css';
 import './styles/luxuryMotion.css';
 import './styles/signature.css';
 import './styles/celibery.css';
+import './styles/commerce.css';
 
 // Brand fonts load without blocking first paint (index.html marks the stylesheet media="print").
 document.querySelector('link[data-brand-fonts]')?.setAttribute('media', 'all');
