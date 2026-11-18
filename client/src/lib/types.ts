@@ -273,3 +273,25 @@ export type Address = {
   notes: string;
   isDefault?: boolean;
 };
+
+/** GET /api/home/videos — homepage video showcase (Admin → Website → Homepage videos). */
+export type HomeVideoItem = {
+  id: string;
+  position: number;
+  provider: 'youtube' | 'vimeo' | 'facebook' | 'file';
+  title: Localized;
+  description: Localized;
+  posterUrl: string;
+  posterAlt: Localized;
+  /** Official click-to-play player (YouTube / Vimeo / Facebook); null for files. */
+  embedUrl: string | null;
+  /** Direct or uploaded file; null for embeds. */
+  fileUrl: string | null;
+  mime: string | null;
+  fit: 'cover' | 'contain';
+  mutedPreview: boolean;
+  loop: boolean;
+  durationSec: number | null;
+  uploadDate: string | null;
+};
+export type HomeVideoSectionData = { enabled: boolean; eyebrow: Localized; title: Localized; subtitle: Localized; videos: HomeVideoItem[] };

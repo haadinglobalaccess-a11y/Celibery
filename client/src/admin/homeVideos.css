@@ -1,0 +1,117 @@
+/* Admin → Homepage videos (scoped to .hv-admin__*). */
+.hv-admin__slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+.hv-admin__slot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper, #fff);
+}
+.hv-admin__slot.is-empty {
+  border-style: dashed;
+  background: var(--surface);
+}
+.hv-admin__slot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hv-admin__move {
+  display: inline-flex;
+  gap: 2px;
+}
+.hv-admin__thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #242b30;
+}
+.hv-admin__thumb--empty {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.hv-admin__row .hv-admin__thumb {
+  width: 96px;
+  flex: none;
+}
+.hv-admin__title {
+  font-weight: 600;
+  line-height: 1.35;
+}
+.hv-admin__chips,
+.hv-admin__actions,
+.hv-admin__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.hv-admin__empty {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-height: 120px;
+}
+.hv-admin__danger {
+  color: var(--danger, #b42318);
+}
+.hv-admin__danger-solid {
+  background: var(--danger, #b42318);
+  border-color: var(--danger, #b42318);
+}
+.hv-admin__seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hv-admin__seg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.hv-admin__seg-item.is-on {
+  border-color: var(--accent, #00b1c0);
+  box-shadow: 0 0 0 1px var(--accent, #00b1c0) inset;
+}
+.hv-admin__preview {
+  margin-top: 10px;
+  max-width: 560px;
+}
+.hv-admin__preview iframe,
+.hv-admin__preview video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 10px;
+  background: #000;
+}
+.hv-admin__fieldset {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px 16px;
+  margin: 0;
+}
+.hv-admin__fieldset legend {
+  padding: 0 6px;
+  font-weight: 600;
+}

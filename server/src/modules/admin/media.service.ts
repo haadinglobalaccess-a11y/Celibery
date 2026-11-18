@@ -6,7 +6,7 @@ import { canonicalMime, imageDimensions, mediaKey, sniffMedia, EXT_FOR_MIME } fr
 import { validateUploadParts, type PartInput } from '../../lib/media-rules';
 import { randomToken } from '../../lib/tokens';
 import { storage, storageStatus } from '../../integrations/storage';
-import { Banner, Campaign, Category, MediaAsset, Order, Product, ProductCollection, Settings } from '../../models';
+import { Banner, Campaign, Category, HomeVideo, MediaAsset, Order, Product, ProductCollection, Settings } from '../../models';
 
 export type UploadInput = {
   kind: 'image' | 'video';
@@ -75,17 +75,21 @@ export async function receiveLocalPart(assetId: string, key: string, body: Buffe
   await store.put(key, body, part.mime);
 }
 
-async function deleteObjects(asset: { storage?: string | null; parts?: { key: string }[] | null; key?: string | null; variants?: { key?: string | null }[] | null }) {
+/** Deletes the asset's stored objects; returns how many could not be deleted (logged). */
+async function deleteObjects(asset: { storage?: string | null; parts?: { key: string }[] | null; key?: string | null; variants?: { key?: string | null }[] | null }): Promise<number> {
   const store = storage();
-  if (!store || (asset.storage && asset.storage !== store.name)) return;
+  if (!store || (asset.storage && asset.storage !== store.name)) return 0;
   const keys = new Set<string>([...(asset.parts ?? []).map((p) => p.key), asset.key ?? '', ...(asset.variants ?? []).map((v) => v.key ?? '')].filter(Boolean));
+  let failed = 0;
   for (const k of keys) {
     try {
       await store.delete(k);
     } catch (e) {
+      failed++;
       logger.warn('Could not delete stored media object', { key: k, err: String((e as Error).message) });
     }
   }
+  return failed;
 }
 
 /** Verifies every uploaded part by its real content before the asset becomes usable. */
@@ -172,7 +176,7 @@ export async function findMediaUsage(asset: { _id: unknown; url: string; posterU
   const urls = [asset.url, asset.posterUrl ?? '', ...(asset.variants ?? []).map((v) => v.url)].filter(Boolean);
   const inUrls = { $in: urls };
   const out: MediaUsage = [];
-  const [products, categories, collections, banners, campaigns, settings, orders] = await Promise.all([
+  const [products, categories, collections, banners, campaigns, settings, orders, homeVideos] = await Promise.all([
     Product.find({ $or: [{ 'images.url': inUrls }, { 'images.mediaId': asset._id }, { 'images.variants.url': inUrls }] }).select('sku name').limit(50).lean(),
     Category.find({ $or: [{ 'image.url': inUrls }, { 'image.mediaId': asset._id }] }).select('slug').lean(),
     ProductCollection.find({ $or: [{ 'image.url': inUrls }, { 'image.mediaId': asset._id }] }).select('slug').lean(),
@@ -184,6 +188,7 @@ export async function findMediaUsage(asset: { _id: unknown; url: string; posterU
     Campaign.find({ heroImageUrl: inUrls }).select('slug').lean(),
     Settings.findOne({ key: 'store' }).lean(),
     Order.countDocuments({ 'items.image': inUrls }),
+    HomeVideo.find({ $or: [{ media: asset._id }, { posterMedia: asset._id }, { url: inUrls }, { posterUrl: inUrls }] }).select('title archived').lean(),
   ]);
   products.forEach((p) => out.push({ type: 'product', id: String(p._id), label: p.sku, field: 'images', live: true }));
   categories.forEach((c) => out.push({ type: 'category', id: String(c._id), label: c.slug, field: 'image', live: true }));
@@ -202,11 +207,17 @@ export async function findMediaUsage(asset: { _id: unknown; url: string; posterU
     ['business.sbcBadgeImageUrl', s?.business && (s.business as Record<string, unknown>).sbcBadgeImageUrl],
   ];
   for (const [field, value] of settingFields) if (typeof value === 'string' && urls.includes(value)) out.push({ type: 'settings', id: 'store', label: field, field, live: true });
+  // Archived homepage videos still count: restoring one must not find its file gone.
+  homeVideos.forEach((v) => out.push({ type: 'home_video', id: String(v._id), label: `Homepage video ${v.title?.en || v.title?.ar || ''}${v.archived ? ' (archived)' : ''}`.trim(), field: 'video', live: true }));
   if (orders) out.push({ type: 'orders', id: '', label: `${orders} past order(s) show this image`, field: 'items.image', live: false });
   return out;
 }
 
-export async function deleteMedia(assetId: string, opts: { confirmOrders?: boolean } = {}) {
+/**
+ * `keepRecordOnStorageError`: when a stored object cannot be deleted, keep the library entry (so the
+ * file stays visible and the deletion can be retried) and fail instead of silently orphaning it.
+ */
+export async function deleteMedia(assetId: string, opts: { confirmOrders?: boolean; keepRecordOnStorageError?: boolean } = {}) {
   const asset = await MediaAsset.findById(assetId).lean();
   if (!asset) throw notFound('Media');
   if (asset.source === 'upload' && asset.status === 'ready') {
@@ -214,7 +225,8 @@ export async function deleteMedia(assetId: string, opts: { confirmOrders?: boole
     const live = usage.filter((u) => u.live);
     if (live.length) throw conflict('MEDIA_IN_USE', 'This file is used on the website. Replace it there first.', { usage });
     if (usage.length && !opts.confirmOrders) throw conflict('MEDIA_IN_ORDER_HISTORY', 'This image appears in past orders. Deleting it removes the picture from those order records.', { usage });
-    await deleteObjects(asset);
+    const failed = await deleteObjects(asset);
+    if (failed && opts.keepRecordOnStorageError) throw serviceUnavailable('STORAGE_DELETE_FAILED', 'The file could not be deleted from storage. It is kept in the media library; try again later.');
   } else if (asset.source === 'upload') {
     await deleteObjects(asset);
   }

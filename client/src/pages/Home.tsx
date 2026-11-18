@@ -8,6 +8,7 @@ import type { HomeData } from '../lib/types';
 import { BrandStory, CampaignGallery, CategorySpotlights, CategoryUniverse, ClosingCampaign, Ecosystem, ExploreCollection, FlagshipCampaigns, WhyCelibery } from '../storefront/HomeSections';
 import { TheatreStage } from '../storefront/motion';
 import { HomeFaq } from '../storefront/Faq';
+import { HomeVideos } from '../storefront/HomeVideos';
 import { Ambient, CinematicHero } from '../three-d';
 
 function HomeSkeleton() {
@@ -88,6 +89,8 @@ export default function Home() {
       <CategorySpotlights data={data} />
       {/* 05 */}
       <Ecosystem data={data} />
+      {/* Video showcase (Admin → Website → Homepage videos) — not rendered when no video is published */}
+      <HomeVideos />
       {/* 06 */}
       <WhyCelibery />
       {/* 07 */}

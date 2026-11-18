@@ -1,0 +1,373 @@
+/* ==========================================================================
+   Homepage video showcase (.hv) — four Admin-managed positions.
+   Midnight stage, graphite frames, one turquoise accent (brand tokens in tokens.css).
+   Layout is fixed by the slot grid (never by the media), so posters and players
+   loading never shift the page. Every rule is scoped to .hv.
+   ========================================================================== */
+
+.hv {
+  --hv-gap: clamp(14px, 1.6vw, 24px);
+  --hv-radius: var(--cx-r-lg, 24px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding-block: var(--cx-pad, 96px);
+  background:
+    radial-gradient(60% 50% at 85% 0%, rgb(0 177 192 / 0.16), transparent 70%),
+    radial-gradient(50% 40% at 0% 100%, rgb(0 177 192 / 0.08), transparent 70%),
+    var(--brand-midnight);
+  color: var(--brand-white);
+}
+
+/* ---------- Heading ---------- */
+.hv__head {
+  max-width: 760px;
+}
+.hv .cx-eyebrow {
+  color: var(--brand-turquoise);
+}
+.hv__title {
+  margin: 14px 0 0;
+  color: var(--brand-white);
+}
+.hv__lead {
+  margin: 18px 0 0;
+  max-width: 58ch;
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.125rem);
+  line-height: 1.65;
+  color: rgb(255 255 255 / 0.7);
+}
+
+/* ---------- Grid of positions ---------- */
+.hv__grid {
+  list-style: none;
+  margin: clamp(32px, 4.5vw, 64px) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--hv-gap);
+  grid-template-columns: minmax(0, 1fr);
+}
+.hv__slot {
+  min-width: 0;
+}
+
+/* ---------- Card ---------- */
+.hv-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hv-card__frame {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--hv-radius);
+  background:
+    radial-gradient(70% 60% at 30% 20%, rgb(0 177 192 / 0.14), transparent 70%),
+    var(--brand-graphite);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08) inset,
+    0 30px 60px -30px rgb(0 0 0 / 0.7);
+  transform: translateZ(0); /* clip children to the radius in Safari */
+}
+.hv-card__poster,
+.hv-card__preview,
+.hv-card__player,
+.hv-card__placeholder,
+.hv-card__shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hv-card__poster,
+.hv-card__preview {
+  object-fit: cover;
+  transition: transform 900ms var(--cx-ease, ease);
+}
+.hv-card[data-fit='contain'] .hv-card__poster,
+.hv-card__preview[data-fit='contain'] {
+  object-fit: contain;
+}
+.hv-card__player {
+  border: 0;
+  background: #000;
+  object-fit: contain;
+}
+/* Facebook's player draws a 16:9 video at the top of its frame: centre a 16:9 frame instead. */
+.hv-card__player[data-provider='facebook'] {
+  inset: 50% 0 auto;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  transform: translateY(-50%);
+}
+.hv-card__frame:has(.hv-card__player[data-provider='facebook']) {
+  background: #000;
+}
+.hv-card__placeholder {
+  background:
+    linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px) 0 0 / 32px 32px;
+}
+.hv-card__shade {
+  pointer-events: none;
+  background: linear-gradient(180deg, rgb(17 17 17 / 0) 35%, rgb(17 17 17 / 0.25) 60%, rgb(17 17 17 / 0.85) 100%);
+}
+.hv-card:hover .hv-card__poster,
+.hv-card:hover .hv-card__preview {
+  transform: scale(1.04);
+}
+
+/* Play button */
+.hv-card__play {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: clamp(60px, 5.5vw, 80px);
+  aspect-ratio: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brand-turquoise);
+  color: var(--brand-midnight);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 18px 40px -12px rgb(0 177 192 / 0.6);
+  transition:
+    transform 320ms var(--cx-spring, ease),
+    background 220ms ease;
+}
+[dir='rtl'] .hv-card__play {
+  transform: translate(50%, -50%);
+}
+.hv-card__play svg {
+  width: 38%;
+  height: 38%;
+  fill: currentColor;
+  margin-inline-start: 6%;
+}
+[dir='rtl'] .hv-card__play svg {
+  margin-inline-start: 0;
+  margin-inline-end: 6%;
+}
+.hv-card__play::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  border: 1px solid rgb(0 177 192 / 0.55);
+  animation: hv-ring 2.8s var(--cx-ease, ease) infinite;
+}
+.hv-card:hover .hv-card__play,
+.hv-card__play:focus-visible {
+  background: var(--brand-white);
+  transform: translate(-50%, -50%) scale(1.06);
+}
+[dir='rtl'] .hv-card:hover .hv-card__play,
+[dir='rtl'] .hv-card__play:focus-visible {
+  transform: translate(50%, -50%) scale(1.06);
+}
+.hv-card__play:focus-visible,
+.hv-card__retry:focus-visible,
+.hv-card__player:focus-visible {
+  outline: 3px solid var(--brand-white);
+  outline-offset: 4px;
+}
+@keyframes hv-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.92);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+/* Error state (one card failing never affects the others) */
+.hv-card__error {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background: rgb(17 17 17 / 0.72);
+  color: var(--brand-white);
+  font-size: 0.9375rem;
+}
+.hv-card__retry {
+  min-height: 40px;
+  padding: 0 20px;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hv-card__retry:hover {
+  border-color: var(--brand-turquoise);
+  color: var(--brand-turquoise);
+}
+
+/* Caption */
+.hv-card__caption {
+  display: grid;
+  gap: 8px;
+  text-align: start;
+}
+.hv-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.hv-card__index {
+  text-shadow: 0 1px 10px rgb(0 0 0 / 0.65);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--brand-turquoise);
+}
+.hv-card__badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 0.85);
+  background: rgb(17 17 17 / 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.hv-card__title {
+  margin: 0;
+  font-size: clamp(1.0625rem, 0.98rem + 0.5vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--brand-white);
+  text-wrap: balance;
+}
+html[lang='ar'] .hv-card__title {
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+.hv-card__text {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 0.72);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- Tablet: two columns, caption over the frame ---------- */
+@media (min-width: 640px) {
+  .hv__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: clamp(260px, 40vw, 380px);
+  }
+  .hv__grid[data-count='1'] > .hv__slot,
+  .hv__grid[data-count='3'] > .hv__slot:first-child {
+    grid-column: 1 / -1;
+  }
+  .hv__grid[data-count='1'] {
+    grid-auto-rows: clamp(320px, 52vw, 520px);
+  }
+  .hv-card {
+    height: 100%;
+    display: block;
+  }
+  .hv-card__frame {
+    position: absolute;
+    inset: 0;
+    aspect-ratio: auto;
+  }
+  .hv-card__caption {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 1;
+    padding: clamp(18px, 2vw, 28px);
+    pointer-events: none;
+    transition:
+      opacity 280ms ease,
+      transform 280ms var(--cx-ease, ease);
+  }
+  .hv-card.is-playing .hv-card__caption {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .hv-card__play {
+    inset-block-start: 44%;
+  }
+}
+
+/* ---------- Desktop: balanced 12-column composition ---------- */
+@media (min-width: 1024px) {
+  .hv__grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: clamp(300px, 29vw, 460px);
+  }
+  .hv__grid > .hv__slot {
+    grid-column: span 6;
+  }
+  /* 4: alternating wide/narrow rows (7·5 / 5·7) */
+  .hv__grid[data-count='4'] > .hv__slot:nth-child(1),
+  .hv__grid[data-count='4'] > .hv__slot:nth-child(4) {
+    grid-column: span 7;
+  }
+  .hv__grid[data-count='4'] > .hv__slot:nth-child(2),
+  .hv__grid[data-count='4'] > .hv__slot:nth-child(3) {
+    grid-column: span 5;
+  }
+  /* 3: one feature beside two stacked */
+  .hv__grid[data-count='3'] > .hv__slot:first-child {
+    grid-column: span 7;
+    grid-row: span 2;
+  }
+  .hv__grid[data-count='3'] > .hv__slot:not(:first-child) {
+    grid-column: span 5;
+  }
+  /* 1: full-width feature */
+  .hv__grid[data-count='1'] > .hv__slot {
+    grid-column: 1 / -1;
+  }
+  .hv__grid[data-count='1'] {
+    grid-auto-rows: clamp(380px, 44vw, 640px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hv-card__poster,
+  .hv-card__preview,
+  .hv-card__play,
+  .hv-card__caption {
+    transition: none;
+  }
+  .hv-card:hover .hv-card__poster,
+  .hv-card:hover .hv-card__preview {
+    transform: none;
+  }
+  .hv-card__play::after {
+    animation: none;
+    opacity: 0;
+  }
+}
