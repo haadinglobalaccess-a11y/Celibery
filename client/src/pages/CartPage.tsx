@@ -4,6 +4,7 @@ import { ProductImage } from '../components/ProductCard';
 import { EmptyState, Quantity } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { formatPrice, L } from '../lib/format';
+import { discountErrorText } from '../lib/apiErrors';
 import { useCurrency, useMoney } from '../state/currency';
 import { useSeo } from '../lib/useSeo';
 import type { Quote } from '../lib/types';
@@ -65,7 +66,7 @@ export function Summary({ quote, children, showCode = true }: { quote: Quote | n
               </button>
             )}
           </div>
-          {quote?.discountError ? <p className="alert alert--error">{quote.discountError}</p> : null}
+          {quote?.discountError ? <p className="alert alert--error">{discountErrorText(quote, t, lang)}</p> : null}
         </>
       ) : null}
       {quote ? (

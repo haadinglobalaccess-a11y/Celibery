@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Field } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
-import { ApiError, post } from '../lib/api';
+import { errorText } from '../lib/apiErrors';
+import { post } from '../lib/api';
 import { useSeo } from '../lib/useSeo';
 import { useAuth } from '../state/auth';
 
@@ -33,8 +34,7 @@ export function Login() {
       nav(safeNext(params.get('next'), lang), { replace: true });
     } catch (err) {
       // Staff accounts with two-factor authentication sign in through the admin page.
-      if ((err as ApiError).code === 'MFA_REQUIRED') setError(lang === 'ar' ? 'هذا حساب موظف — سجّل الدخول من صفحة الإدارة ‎/admin' : 'This is a staff account — sign in on the admin page (/admin).');
-      else setError((err as ApiError).message);
+      setError(errorText(err, t, lang));
       setBusy(false);
     }
   };
@@ -93,7 +93,7 @@ export function Register() {
       await register({ ...form, phone: form.phone.replace(/\s/g, '') || undefined, lang });
       nav(safeNext(params.get('next'), lang), { replace: true });
     } catch (err) {
-      setError((err as ApiError).message);
+      setError(errorText(err, t, lang));
       setBusy(false);
     }
   };
@@ -169,7 +169,7 @@ export function ForgotPassword() {
 }
 
 export function ResetPasswordForm({ onDone, loginHref }: { onDone?: () => void; loginHref: string }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const [password, setPassword] = useState('');
@@ -183,7 +183,7 @@ export function ResetPasswordForm({ onDone, loginHref }: { onDone?: () => void; 
       setDone(true);
       onDone?.();
     } catch (err) {
-      setError((err as ApiError).message);
+      setError(errorText(err, t, lang));
     }
   };
   if (done)

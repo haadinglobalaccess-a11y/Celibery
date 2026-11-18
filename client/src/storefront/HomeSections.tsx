@@ -5,6 +5,7 @@ import { ProductCard, ProductImage } from '../components/ProductCard';
 import { PayLogos, Price } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { post } from '../lib/api';
+import { errorText } from '../lib/apiErrors';
 import { L, placeholderFor } from '../lib/format';
 import { useMoney } from '../state/currency';
 import { BackgroundVideo, cloudinarySrcSet, responsiveImg, useMediaQuery } from '../lib/media';
@@ -533,7 +534,7 @@ export function ClosingCampaign({ data }: { data: HomeData }) {
       toast(t.home.subscribed);
       setEmail('');
     } catch (err) {
-      toast((err as Error).message, 'error');
+      toast(errorText(err, t, lang), 'error');
     } finally {
       setBusy(false);
     }

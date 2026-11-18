@@ -5,7 +5,8 @@ import { Icon } from '../components/Icon';
 import { ProductCard } from '../components/ProductCard';
 import { EmptyState, ErrorState, Field, NotFound, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
-import { ApiError, del, patch, post, put } from '../lib/api';
+import { errorText } from '../lib/apiErrors';
+import { del, patch, post, put } from '../lib/api';
 import { formatDate, formatPrice, L, listSep } from '../lib/format';
 import { useApi } from '../lib/hooks';
 import { useSeo } from '../lib/useSeo';
@@ -133,7 +134,7 @@ export function AccountAddresses() {
       toast(t.account.saved);
       reload();
     } catch (ex) {
-      setErr((ex as ApiError).message);
+      setErr(errorText(ex, t, lang));
     }
   };
   if (error) return <ErrorState onRetry={reload} />;
@@ -195,7 +196,7 @@ export function AccountAddresses() {
                   await del(`/api/me/addresses/${a._id}`);
                   setErr('');
                 } catch (ex) {
-                  setErr((ex as Error).message);
+                  setErr(errorText(ex, t, lang));
                 }
                 reload();
               }}
@@ -210,7 +211,7 @@ export function AccountAddresses() {
 }
 
 export function AccountProfile() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { user, refresh } = useAuth();
   const toast = useToast();
   const [name, setName] = useState(user?.name ?? '');
@@ -225,7 +226,7 @@ export function AccountProfile() {
       await refresh();
       toast(t.account.saved);
     } catch (ex) {
-      setErr((ex as ApiError).message);
+      setErr(errorText(ex, t, lang));
     }
   };
   const changePw = async (e: FormEvent) => {
@@ -236,7 +237,7 @@ export function AccountProfile() {
       setPw({ currentPassword: '', newPassword: '' });
       toast(t.account.saved);
     } catch (ex) {
-      setErr((ex as ApiError).message);
+      setErr(errorText(ex, t, lang));
     }
   };
   return (

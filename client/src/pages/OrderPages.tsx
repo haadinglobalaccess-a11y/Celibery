@@ -4,6 +4,7 @@ import { Icon } from '../components/Icon';
 import { OrderDetails } from '../components/OrderDetails';
 import { ErrorState, Field, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
+import { errorText } from '../lib/apiErrors';
 import { ApiError, get, post, qs } from '../lib/api';
 import { formatPrice } from '../lib/format';
 import { useSeo } from '../lib/useSeo';
@@ -61,7 +62,7 @@ export function CheckoutReturn() {
     }
   };
 
-  if (error) return <ErrorState message={error.code === 'RESERVATION_EXPIRED' ? t.ret.expired : error.message} />;
+  if (error) return <ErrorState message={errorText(error, t, lang)} />;
   if (!order) return <Spinner label={t.ret.verifying} />;
 
   const paid = order.paymentStatus === 'paid';

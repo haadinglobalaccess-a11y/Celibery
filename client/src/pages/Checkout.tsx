@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Field, PayLogos } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { ApiError, get, post, uuid } from '../lib/api';
+import { errorText } from '../lib/apiErrors';
 import { draftStore, draftSync, loadDraft, optInToDraft, optOutOfDraft, type DraftPayload, type DraftStatus } from '../lib/checkoutDraft';
 import { L } from '../lib/format';
 import { useSeo } from '../lib/useSeo';
@@ -263,7 +264,7 @@ export default function Checkout() {
       } else nav(ret + (method === 'cod' ? '&cod=1' : ''));
     } catch (e) {
       const err = e as ApiError;
-      setServerError(err.code === 'CART_CHANGED' || err.code === 'OUT_OF_STOCK' ? t.cart.changed : err.message);
+      setServerError(errorText(err, t, lang));
       setBusy(false);
     }
   };

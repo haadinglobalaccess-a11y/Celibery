@@ -138,7 +138,7 @@ export function Footer() {
               ) : null}
             </ul>
             {social.length ? (
-              <div className="footer__social" aria-label="Social media">
+              <div className="footer__social" aria-label={t.a11y.social}>
                 {social.map(([k, v]) => {
                   const platform = k.toLowerCase();
                   const label = socialLabels[platform];

@@ -133,10 +133,10 @@ export function Header() {
           <button className="icon-btn mobile-only" aria-label={t.nav.menu} aria-expanded={mobile} onClick={() => setMobile(true)}>
             <Icon name="menu" />
           </button>
-          <Link to={p('/')} aria-label="CELIBERY — home">
+          <Link to={p('/')} aria-label={t.a11y.home}>
             <Logo onDark={heroOverlay && !scrolled} />
           </Link>
-          <nav className="header__nav" aria-label="Main">
+          <nav className="header__nav" aria-label={t.a11y.mainNav}>
             <button aria-expanded={mega} aria-controls="mega" onClick={() => setMega((v) => !v)} onMouseEnter={() => setMega(true)} onFocus={() => setMega(true)}>
               {t.nav.shop} <Icon name="chevronDown" className="icon" />
             </button>

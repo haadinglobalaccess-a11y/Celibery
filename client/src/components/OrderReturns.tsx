@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useI18n } from '../i18n/I18n';
+import { errorText } from '../lib/apiErrors';
 import { get, post, qs } from '../lib/api';
 import { formatDate, formatPrice, L } from '../lib/format';
 import type { Localized } from '../lib/types';
@@ -59,7 +60,7 @@ export function OrderReturns({ orderNumber, token }: { orderNumber: string; toke
       setDetails('');
       load();
     } catch (ex) {
-      setErr((ex as Error).message);
+      setErr(errorText(ex, t, lang));
     } finally {
       setBusy(false);
     }
@@ -70,7 +71,7 @@ export function OrderReturns({ orderNumber, token }: { orderNumber: string; toke
       await post(`/api/orders/${orderNumber}/returns/${returnNumber}/cancel`, { token: token || undefined });
       load();
     } catch (ex) {
-      toast((ex as Error).message, 'error');
+      toast(errorText(ex, t, lang), 'error');
     }
   };
 

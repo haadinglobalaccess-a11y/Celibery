@@ -39,7 +39,9 @@ export class LoginError extends AppError {
     message: string,
     public meta: { userId?: string; type?: string; lockedNow?: boolean } = {},
   ) {
-    super(401, 'UNAUTHORIZED', message);
+    // `reason` lets the storefront word the message in the page language. It reveals nothing the
+    // English message did not already say.
+    super(401, 'UNAUTHORIZED', message, { reason: outcome });
   }
 }
 

@@ -339,7 +339,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
               </div>
             )}
             {state.pages > 1 ? (
-              <nav className="cx-pager" aria-label="Pagination">
+              <nav className="cx-pager" aria-label={t.a11y.pagination}>
                 <button className="cx-btn cx-btn--ghost cx-btn--sm" disabled={page <= 1} onClick={() => set('page', String(page - 1))}>
                   {t.shop.prev}
                 </button>
