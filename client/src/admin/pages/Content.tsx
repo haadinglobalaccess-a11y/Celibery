@@ -7,7 +7,7 @@ import { useToast } from '../../state/toast';
 import { Card, dt, en, ErrorBox, F, LocInput, Modal, ProductPicker, Status, Tabs, AHead, usePerms } from '../kit';
 import { MediaField } from '../media';
 
-type TabKey = 'home' | 'banners' | 'collections' | 'campaigns' | 'pages' | 'reviews';
+type TabKey = 'home' | 'banners' | 'collections' | 'campaigns' | 'pages' | 'reviews' | 'trust';
 const emptyL = { ar: '', en: '' };
 const dateIn = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 16) : '');
 const dateOut = (s: string) => (s ? new Date(s).toISOString() : null);
@@ -20,6 +20,7 @@ export function Content({ canSettings, canReviews }: { canSettings: boolean; can
     ['collections', 'Collections & bundles'],
     ['campaigns', 'Seasonal campaigns'],
     ['pages', 'Policy pages'],
+    ['trust', 'Product page trust'],
     ...(canReviews ? ([['reviews', 'Reviews']] as [TabKey, string][]) : []),
   ];
   return (
@@ -32,6 +33,7 @@ export function Content({ canSettings, canReviews }: { canSettings: boolean; can
       {tab === 'campaigns' ? <Campaigns /> : null}
       {tab === 'pages' ? <Pages /> : null}
       {tab === 'reviews' ? <Reviews /> : null}
+      {tab === 'trust' ? <ProductTrustEditor /> : null}
     </>
   );
 }
@@ -704,3 +706,94 @@ function Reviews() {
   );
 }
 
+
+type TrustIcon = 'shield' | 'return' | 'truck' | 'support';
+type TrustRow = { icon: TrustIcon; title: Localized; description: Localized; link: string; visible: boolean };
+const TRUST_ICON_LABEL: Record<TrustIcon, string> = { shield: 'Shield (warranty)', return: 'Return arrow (returns)', truck: 'Truck (delivery)', support: 'Chat (support)' };
+
+/** Product page trust benefits: text, order, visibility and links. Saved to the store settings. */
+function ProductTrustEditor() {
+  const { data, error, reload } = useApi<{ items: TrustRow[]; isDefault: boolean }>('/api/admin/content/product-trust');
+  const [rows, setRows] = useState<TrustRow[] | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<unknown>(null);
+  const toast = useToast();
+  useEffect(() => {
+    if (data) setRows(data.items.map((x) => ({ icon: x.icon, title: { ...emptyL, ...x.title }, description: { ...emptyL, ...(x.description ?? {}) }, link: x.link ?? '', visible: x.visible !== false })));
+  }, [data]);
+  if (error) return <ErrorState onRetry={reload} />;
+  if (!rows) return <Spinner />;
+  const set = (i: number, patchRow: Partial<TrustRow>) => setRows(rows.map((r, j) => (j === i ? { ...r, ...patchRow } : r)));
+  const move = (i: number, d: number) => {
+    const next = [...rows];
+    [next[i], next[i + d]] = [next[i + d], next[i]];
+    setRows(next);
+  };
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setErr(null);
+    try {
+      await put('/api/admin/content/product-trust', { items: rows });
+      invalidateCache('/api/settings/public');
+      toast('Saved — visible on product pages');
+      reload();
+    } catch (ex) {
+      setErr(ex);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <Card title="Product page trust benefits">
+      <form onSubmit={save} data-testid="trust-editor">
+        <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+          Shown next to the price on every product page, in this order. Keep the wording to what the business has approved; link to the policy page for the full terms.
+          {data?.isDefault ? ' These are the four approved defaults — nothing is saved until you press Save.' : ''}
+        </p>
+        {rows.map((r, i) => (
+          <div key={i} className="a-card" style={{ marginBottom: 12 }}>
+            <div className="a-head" style={{ marginBottom: 8 }}>
+              <strong>
+                {i + 1}. {r.title.en || r.title.ar || 'New benefit'}
+              </strong>
+              <span style={{ display: 'flex', gap: 4 }}>
+                <button type="button" className="btn btn--ghost btn--sm" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up">↑</button>
+                <button type="button" className="btn btn--ghost btn--sm" disabled={i === rows.length - 1} onClick={() => move(i, 1)} aria-label="Move down">↓</button>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove</button>
+              </span>
+            </div>
+            <div className="form-grid form-grid--2">
+              <LocInput label="Title" value={r.title} onChange={(v) => set(i, { title: v })} required />
+              <LocInput label="Short description (optional)" value={r.description} onChange={(v) => set(i, { description: v })} />
+              <F label="Icon">
+                <select className="a-select" value={r.icon} onChange={(e) => set(i, { icon: e.target.value as TrustIcon })}>
+                  {(Object.keys(TRUST_ICON_LABEL) as TrustIcon[]).map((k) => (
+                    <option key={k} value={k}>{TRUST_ICON_LABEL[k]}</option>
+                  ))}
+                </select>
+              </F>
+              <F label="“Learn more” link (optional)" hint="A site path such as /page/warranty, or an https:// link">
+                <input className="input ltr" value={r.link} onChange={(e) => set(i, { link: e.target.value })} placeholder="/page/warranty" />
+              </F>
+              <label className="check">
+                <input type="checkbox" checked={r.visible} onChange={(e) => set(i, { visible: e.target.checked })} /> Show on product pages
+              </label>
+            </div>
+          </div>
+        ))}
+        {rows.length < 8 ? (
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => setRows([...rows, { icon: 'shield', title: { ...emptyL }, description: { ...emptyL }, link: '', visible: true }])}>
+            + Add benefit
+          </button>
+        ) : null}
+        {err ? <ErrorBox error={err} /> : null}
+        <div style={{ marginTop: 16 }}>
+          <button className="btn btn--primary" disabled={saving} data-testid="trust-save">
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </form>
+    </Card>
+  );
+}

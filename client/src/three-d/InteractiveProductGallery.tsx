@@ -16,7 +16,8 @@ import { useTilt } from './TiltCard';
  * The photos are flat images presented in perspective — no rotation of a 3D model is implied.
  * Re-mount with `key={product slug}` to reset when the product changes.
  */
-export function InteractiveProductGallery({ images, name, category, stageRef }: { images: Image[]; name: string; category?: string; stageRef?: RefObject<HTMLDivElement> }) {
+/** `packagingStart`: index of the first packaging photo (photos from there on are marked "Packaging"). */
+export function InteractiveProductGallery({ images, name, category, stageRef, packagingStart = images.length }: { images: Image[]; name: string; category?: string; stageRef?: RefObject<HTMLDivElement>; packagingStart?: number }) {
   const { t, lang } = useI18n();
   const [img, setImg] = useState(0);
   const [dir, setDir] = useState<'next' | 'prev'>('next');
@@ -102,7 +103,7 @@ export function InteractiveProductGallery({ images, name, category, stageRef }: 
         tabIndex={0}
         role="group"
         aria-roledescription={lang === 'ar' ? 'معرض صور' : 'image gallery'}
-        aria-label={`${name} — ${img + 1} / ${images.length}`}
+        aria-label={`${name} — ${img + 1} / ${images.length}${img >= packagingStart ? ` — ${t.product.packaging}` : ''}`}
       >
         <span className="gallery__floor" aria-hidden="true" />
         {/* Re-keyed so each image change plays the directional turn */}
@@ -110,6 +111,11 @@ export function InteractiveProductGallery({ images, name, category, stageRef }: 
           <ProductImage src={images[img]?.url} image={images[img]} sizes="(max-width: 899px) 100vw, 50vw" alt={L(images[img]?.alt, lang) || name} category={category} eager />
         </div>
         <span className="tilt__glare" aria-hidden="true" />
+        {img >= packagingStart ? (
+          <span className="gallery__badge" data-testid="packaging-badge">
+            {t.product.packaging}
+          </span>
+        ) : null}
         <span className="gallery__hint" aria-hidden="true">
           {t.premium.zoomHint}
         </span>
@@ -130,7 +136,13 @@ export function InteractiveProductGallery({ images, name, category, stageRef }: 
       {many ? (
         <div className="gallery__thumbs">
           {images.map((im, i) => (
-            <button key={i} aria-current={i === img} aria-label={`${i + 1}`} onClick={() => i !== img && go(i, i > img ? 'next' : 'prev')}>
+            <button
+              key={i}
+              aria-current={i === img}
+              aria-label={i >= packagingStart ? `${i + 1} — ${t.product.packaging}` : `${i + 1}`}
+              data-kind={i >= packagingStart ? 'packaging' : 'product'}
+              onClick={() => i !== img && go(i, i > img ? 'next' : 'prev')}
+            >
               <ProductImage src={im.url} image={im} sizes="96px" alt="" category={category} />
             </button>
           ))}

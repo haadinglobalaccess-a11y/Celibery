@@ -39,6 +39,8 @@ const ProductSchema = new Schema(
     category: { type: Schema.Types.ObjectId, ref: 'Category', required: true, index: true },
     series: { type: String, default: '', trim: true },
     images: { type: [ImageSchema], default: [] },
+    /** Packaging photos (box, contents, labels) shown after the product photos in the gallery. */
+    packagingImages: { type: [ImageSchema], default: [] },
     /** Selling price in halalas, VAT inclusive. */
     price: { type: Number, required: true, min: 0 },
     /** Optional original price in halalas, shown struck-through when higher than price. */

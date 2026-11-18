@@ -46,7 +46,12 @@ export type ProductDetail = ProductCardData & {
   reviews: { average: number; count: number } | null;
   delivery: { free: boolean; fee: number; courier: string; estimate: Localized };
   seo?: { title?: Localized; description?: Localized };
+  /** Packaging photos (box, contents), shown after the product photos. */
+  packagingImages?: Image[];
 };
+
+/** One product-page trust benefit (Admin → Website content → Product page trust). */
+export type TrustItem = { icon: 'shield' | 'return' | 'truck' | 'support'; title: Localized; description?: Localized; link?: string; visible?: boolean };
 
 export type Facets = {
   price?: { min: number; max: number } | null;
@@ -148,6 +153,7 @@ export type FaqPageData = {
 };
 
 export type PublicSettings = {
+  productTrust?: TrustItem[];
   business: {
     name: Localized;
     legalName: Localized;

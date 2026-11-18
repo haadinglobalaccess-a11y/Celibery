@@ -1,0 +1,201 @@
+/* ==========================================================================
+   Product page — Phase 4: trust benefits, restock request, packaging badge.
+   Brand tokens from tokens.css; every rule is scoped to these new classes.
+   ========================================================================== */
+
+/* ---------- Trust benefits ---------- */
+.cx-trust {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--cx-line, rgb(17 17 17 / 0.09));
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.cx-trust__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--brand-cloud);
+  border: 1px solid transparent;
+  transition:
+    border-color 220ms ease,
+    background 220ms ease;
+}
+.cx-trust__item:hover {
+  border-color: rgb(0 177 192 / 0.35);
+  background: #fff;
+}
+.cx-trust__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--brand-midnight);
+  color: var(--brand-turquoise);
+}
+.cx-trust__icon .icon,
+.cx-trust__icon svg {
+  width: 20px;
+  height: 20px;
+}
+.cx-trust__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cx-trust__text strong {
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--brand-midnight);
+}
+.cx-trust__text span {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--cx-muted, #5b6470);
+}
+.cx-trust__more {
+  justify-self: start;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #00838f; /* turquoise darkened for 4.5:1 text contrast on cloud grey */
+  text-decoration: none;
+}
+.cx-trust__more:hover,
+.cx-trust__more:focus-visible {
+  text-decoration: underline;
+}
+/* Phones: one benefit per row so titles (especially Arabic) never break into narrow columns. */
+@media (max-width: 479px) {
+  .cx-trust {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .cx-trust__item {
+    padding: 12px 14px;
+  }
+}
+
+/* ---------- Restock request ---------- */
+.cx-restock {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgb(0 177 192 / 0.35);
+  background: linear-gradient(180deg, rgb(0 177 192 / 0.07), rgb(0 177 192 / 0.02));
+}
+.cx-restock__head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.cx-restock__head .icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  color: #00838f;
+}
+.cx-restock__head strong {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--brand-midnight);
+}
+.cx-restock__head span {
+  font-size: 0.8125rem;
+  color: var(--cx-muted, #5b6470);
+}
+.cx-restock__row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.cx-restock__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgb(17 17 17 / 0.16);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 16px; /* no iOS zoom */
+}
+.cx-restock__input:focus-visible {
+  outline: 2px solid var(--brand-turquoise);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.cx-restock__input[aria-invalid='true'] {
+  border-color: var(--danger, #b42318);
+}
+.cx-restock__btn {
+  flex: none;
+  min-height: 46px;
+}
+.cx-restock__error {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: var(--danger, #b42318);
+}
+.cx-restock--done {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand-midnight);
+}
+.cx-restock--done .icon {
+  width: 22px;
+  height: 22px;
+  color: #00838f;
+}
+@media (max-width: 420px) {
+  .cx-restock__row {
+    flex-direction: column;
+  }
+}
+
+/* ---------- Packaging badge in the gallery ---------- */
+.gallery__badge {
+  position: absolute;
+  inset-block-start: 14px;
+  inset-inline-start: 14px;
+  z-index: 3;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--brand-midnight);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+.gallery__thumbs button[data-kind='packaging'] {
+  position: relative;
+}
+.gallery__thumbs button[data-kind='packaging']::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 4px;
+  inset-inline-end: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-turquoise);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-trust__item {
+    transition: none;
+  }
+}

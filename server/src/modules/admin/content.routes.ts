@@ -5,7 +5,9 @@ import { videoUrlError } from '../../lib/media-url';
 import { ah, ok } from '../../lib/http';
 import { requirePermission } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { Banner, Campaign, Page, PageRevision, ProductCollection, Review } from '../../models';
+import { Banner, Campaign, Page, PageRevision, ProductCollection, Review, Settings, getSettings } from '../../models';
+import { DEFAULT_PRODUCT_TRUST, TRUST_ICONS } from '../../models/Settings';
+import { text } from './admin.schemas';
 import { bannerInput, campaignInput, collectionInput, idParam, pageInput, reviewModerate } from './admin.schemas';
 import { z } from 'zod';
 import type { NextFunction, Request, Response } from 'express';
@@ -39,6 +41,41 @@ adminContentRoutes.use(
 adminContentRoutes.use(
   '/campaigns',
   crudRouter(Campaign, campaignInput, { entity: 'campaign', readPermission: 'content:write', writePermission: 'content:write', sort: { startsAt: -1 } }),
+);
+
+// Product page trust benefits (Phase 4). Order = list order; an empty list hides the block.
+const trustLink = z.string().trim().max(500).refine((v) => v === '' || /^\/(?![/\\])/.test(v) || /^https:\/\//.test(v), 'Use a site path (/page/warranty) or an https:// link');
+const trustInput = z.object({
+  items: z
+    .array(
+      z.object({
+        icon: z.enum(TRUST_ICONS),
+        title: z.object({ ar: text(80).default(''), en: text(80).default('') }).refine((t) => Boolean(t.ar || t.en), 'Enter a title'),
+        description: z.object({ ar: text(200).default(''), en: text(200).default('') }).default({ ar: '', en: '' }),
+        link: trustLink.default(''),
+        visible: z.boolean().default(true),
+      }),
+    )
+    .max(8),
+});
+adminContentRoutes.get(
+  '/product-trust',
+  requirePermission('content:write'),
+  ah(async (_req, res) => {
+    const s = (await getSettings()) as { productTrust?: unknown[] } | null;
+    return ok(res, { items: s?.productTrust ?? DEFAULT_PRODUCT_TRUST, isDefault: !s?.productTrust });
+  }),
+);
+adminContentRoutes.put(
+  '/product-trust',
+  requirePermission('content:write'),
+  validate(trustInput),
+  ah(async (req, res) => {
+    await getSettings();
+    await Settings.updateOne({ key: 'store' }, { $set: { productTrust: req.body.items } }, { runValidators: true });
+    await audit(req, 'update', 'product_trust', 'store', `${req.body.items.length} item(s)`);
+    return ok(res, { items: req.body.items, isDefault: false });
+  }),
 );
 
 // Legal / policy pages: fixed set of slugs, editable and approvable (Q31).
