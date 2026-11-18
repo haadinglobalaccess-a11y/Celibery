@@ -13,7 +13,11 @@ const intFormats: Record<Lang, Intl.NumberFormat> = {
   en: new Intl.NumberFormat('en-SA'),
 };
 
-/** halalas → "149.00 ر.س" / "SAR 149.00" */
+/**
+ * halalas → "149.00 ر.س" / "SAR 149.00" — always SAR, the currency orders are quoted and charged in.
+ * Used for the admin, placed orders, refunds and payment amounts. Storefront catalogue/cart prices
+ * use useMoney() (state/currency.ts), which shows them in the visitor's display currency.
+ */
 export function formatPrice(halalas: number, lang: Lang) {
   const n = numberFormats[lang].format(halalas / 100);
   return lang === 'ar' ? `${n} ر.س` : `SAR ${n}`;

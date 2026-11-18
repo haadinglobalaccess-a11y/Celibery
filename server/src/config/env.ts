@@ -121,6 +121,23 @@ const schema = z.object({
   PASSWORD_HASH_THREADS: z.coerce.number().int().min(0).max(16).optional(),
   /** Password operations allowed to wait per instance before new sign-ins get 503 SIGN_IN_BUSY. */
   PASSWORD_HASH_MAX_QUEUE: z.coerce.number().int().min(1).max(10_000).default(64),
+
+  // ---- Display currency (modules/currency) -------------------------------------------------
+  // Prices are stored and charged in SAR; these only control the converted prices shown to visitors.
+  /** Optional exchangerate-api.com v6 key (server-side only). Tried before the free providers. */
+  EXCHANGE_RATE_API_KEY: z.string().default(''),
+  /** Comma-separated HTTPS rate URLs ({base} / {base_lower} placeholders) replacing the free defaults; "off" disables them. */
+  EXCHANGE_RATE_API_URL: z.string().default(''),
+  /** Minutes before cached rates are refreshed. */
+  EXCHANGE_RATE_REFRESH_MINUTES: z.coerce.number().int().min(15).max(10_080).default(360),
+  /** Cached rates older than this are not used (the storefront shows SAR) while every provider is failing. */
+  EXCHANGE_RATE_MAX_AGE_HOURS: z.coerce.number().int().min(1).max(720).default(168),
+  /** Header carrying the visitor's country set by a CDN in front of the app (e.g. cf-ipcountry). Never set it unless that proxy overwrites client values. Vercel's x-vercel-ip-country is used automatically on Vercel. */
+  GEO_COUNTRY_HEADER: z.string().default(''),
+  /** IP → country lookup used when no trusted header is available. HTTPS URL containing {ip}; "off" disables. Default https://api.country.is/{ip} (off in tests). */
+  GEO_IP_LOOKUP_URL: z.string().default(''),
+  /** Local development / tests only: pretend every visitor is in this country (ignored in production). */
+  GEO_DEV_COUNTRY: z.string().default(''),
 });
 
 const parsed = schema.safeParse(process.env);

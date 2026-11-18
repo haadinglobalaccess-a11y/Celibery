@@ -4,6 +4,7 @@ import { ProductImage } from '../components/ProductCard';
 import { EmptyState, Quantity } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { formatPrice, L } from '../lib/format';
+import { useCurrency, useMoney } from '../state/currency';
 import { useSeo } from '../lib/useSeo';
 import type { Quote } from '../lib/types';
 import { useCart } from '../state/cart';
@@ -13,6 +14,8 @@ import { storeCopy } from '../storefront/copy';
 
 export function Summary({ quote, children, showCode = true }: { quote: Quote | null; children?: ReactNode; showCode?: boolean }) {
   const { t, lang } = useI18n();
+  const currency = useCurrency();
+  const money = useMoney();
   const cart = useCart();
   const [code, setCode] = useState(cart.discountCode);
   const apply = () => {
@@ -69,34 +72,40 @@ export function Summary({ quote, children, showCode = true }: { quote: Quote | n
         <div data-testid="summary">
           <div className="sum-row">
             <span>{t.cart.subtotal}</span>
-            <span>{formatPrice(quote.subtotal, lang)}</span>
+            <span>{money(quote.subtotal)}</span>
           </div>
           {quote.discountTotal ? (
             <div className="sum-row" style={{ color: 'var(--success)' }}>
               <span>
                 {t.cart.discount} <span className="ltr">({quote.discount?.code})</span>
               </span>
-              <span>−{formatPrice(quote.discountTotal, lang)}</span>
+              <span>−{money(quote.discountTotal)}</span>
             </div>
           ) : null}
           <div className="sum-row">
             <span>{t.cart.delivery}</span>
-            <span>{quote.deliveryFee ? formatPrice(quote.deliveryFee, lang) : t.cart.free}</span>
+            <span>{quote.deliveryFee ? money(quote.deliveryFee) : t.cart.free}</span>
           </div>
           {quote.codFee ? (
             <div className="sum-row">
               <span>{t.cart.codFee}</span>
-              <span>{formatPrice(quote.codFee, lang)}</span>
+              <span>{money(quote.codFee)}</span>
             </div>
           ) : null}
           <div className="sum-row sum-row--total">
             <span>{t.cart.total}</span>
-            <span data-testid="total">{formatPrice(quote.total, lang)}</span>
+            <span data-testid="total">{money(quote.total)}</span>
           </div>
           {quote.vatRate ? (
             <small className="muted">
-              {t.cart.vat(quote.vatRate)} ({formatPrice(quote.vatAmount, lang)})
+              {t.cart.vat(quote.vatRate)} ({money(quote.vatAmount)})
             </small>
+          ) : null}
+          {currency.converted ? (
+            // Display currency only: the order is quoted and charged in SAR (the amount below).
+            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }} data-testid="charge-currency-note">
+              {t.currency.chargeNote(currency.code, formatPrice(quote.total, lang))}
+            </p>
           ) : null}
         </div>
       ) : (
@@ -109,6 +118,7 @@ export function Summary({ quote, children, showCode = true }: { quote: Quote | n
 
 export default function CartPage() {
   const { t, lang, p } = useI18n();
+  const money = useMoney();
   const cart = useCart();
   const settings = useSettings();
   const { quote } = useQuote();
@@ -172,7 +182,7 @@ export default function CartPage() {
                       </Link>
                       {model ? <div className="cx-bagline__model ltr">{model}</div> : null}
                     </div>
-                    <strong>{formatPrice(line ? line.unitPrice * i.quantity : i.snapshot.price * i.quantity, lang)}</strong>
+                    <strong>{money(line ? line.unitPrice * i.quantity : i.snapshot.price * i.quantity)}</strong>
                   </div>
                   {issue ? (
                     <p className="alert alert--warning" style={{ marginTop: 8 }}>

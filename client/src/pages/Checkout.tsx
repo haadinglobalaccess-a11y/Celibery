@@ -4,11 +4,12 @@ import { Field, PayLogos } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { ApiError, get, post, uuid } from '../lib/api';
 import { draftStore, draftSync, loadDraft, optInToDraft, optOutOfDraft, type DraftPayload, type DraftStatus } from '../lib/checkoutDraft';
-import { formatPrice, L } from '../lib/format';
+import { L } from '../lib/format';
 import { useSeo } from '../lib/useSeo';
 import type { Address, OrderView } from '../lib/types';
 import { useAuth } from '../state/auth';
 import { useCart } from '../state/cart';
+import { useMoney } from '../state/currency';
 import { useSettings } from '../state/settings';
 import { useQuote } from '../state/useQuote';
 import { storeCopy } from '../storefront/copy';
@@ -52,6 +53,7 @@ const emptyAddress: Address = { fullName: '', phone: '', city: '', district: '',
 
 export default function Checkout() {
   const { t, lang, p } = useI18n();
+  const money = useMoney();
   const nav = useNavigate();
   const cart = useCart();
   const { user } = useAuth();
@@ -409,7 +411,7 @@ export default function Checkout() {
             <div className="info-row" style={{ marginTop: 16 }}>
               <strong>
                 {options?.freeDelivery !== false || (quote && quote.deliveryFee === 0) ? t.checkout.deliveryFree : t.checkout.delivery}
-                {options?.freeDelivery === false && options.freeDeliveryThreshold && quote && quote.deliveryFee > 0 ? ` · ${t.checkout.freeFrom(formatPrice(options.freeDeliveryThreshold, lang))}` : ''}
+                {options?.freeDelivery === false && options.freeDeliveryThreshold && quote && quote.deliveryFee > 0 ? ` · ${t.checkout.freeFrom(money(options.freeDeliveryThreshold))}` : ''}
               </strong>
               <span className="muted">
                 {options?.courier ? `· ${options.courier}` : ''} {L(options?.estimatedDelivery, lang) ? `· ${L(options?.estimatedDelivery, lang)}` : ''}
@@ -455,7 +457,7 @@ export default function Checkout() {
                 <span>
                   {L(l.name, lang)} <span className="ltr muted">×{l.quantity}</span>
                 </span>
-                <span>{formatPrice(l.lineTotal, lang)}</span>
+                <span>{money(l.lineTotal)}</span>
               </li>
             ))}
           </ul>

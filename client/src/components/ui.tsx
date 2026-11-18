@@ -1,20 +1,21 @@
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n, useMaybeI18n } from '../i18n/I18n';
-import { formatPrice } from '../lib/format';
+import { useMoney } from '../state/currency';
 import { useSettings } from '../state/settings';
 import { DimensionalIcon } from '../three-d/DimensionalIcon';
 import { Icon } from './Icon';
 
 export function Price({ price, compareAt, className = '' }: { price: number; compareAt?: number | null; className?: string }) {
   const { lang } = useI18n();
+  const money = useMoney();
   return (
     <span className={`price ${className}`}>
-      <span className="price__now">{formatPrice(price, lang)}</span>
+      <span className="price__now">{money(price)}</span>
       {compareAt && compareAt > price ? (
         <s className="price__was">
           <span className="sr-only">{lang === 'ar' ? 'السعر قبل الخصم' : 'Was'} </span>
-          {formatPrice(compareAt, lang)}
+          {money(compareAt)}
         </s>
       ) : null}
     </span>

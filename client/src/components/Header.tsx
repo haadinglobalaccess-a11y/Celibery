@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
-import { formatPrice, L, placeholderFor } from '../lib/format';
+import { L, placeholderFor } from '../lib/format';
 import { cloudinaryAt } from '../lib/media';
 import { useCached } from '../lib/hooks';
 import { useScrolled } from '../lib/motion';
 import type { HomeData } from '../lib/types';
 import { useAuth } from '../state/auth';
 import { useCart } from '../state/cart';
+import { useMoney } from '../state/currency';
 import { useSettings } from '../state/settings';
 import { useWishlist } from '../state/wishlist';
 import { CartPeek } from './CartPeek';
+import { CurrencySelect } from './CurrencySelect';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 
@@ -48,6 +50,7 @@ function SearchBox({ onDone, autoFocus = false }: { onDone?: () => void; autoFoc
 
 export function Header() {
   const { t, p, lang, switchHref } = useI18n();
+  const money = useMoney();
   const { count } = useCart();
   const wish = useWishlist();
   const { user } = useAuth();
@@ -118,7 +121,7 @@ export function Header() {
           settings?.commerce?.freeDelivery !== false
             ? t.service.delivery
             : settings.commerce.freeDeliveryThreshold
-              ? t.checkout.freeFrom(formatPrice(settings.commerce.freeDeliveryThreshold, lang))
+              ? t.checkout.freeFrom(money(settings.commerce.freeDeliveryThreshold))
               : '',
           settings?.commerce?.warrantyEnabled && months ? t.service.warranty(months) : '',
         ]
@@ -148,6 +151,7 @@ export function Header() {
                 {t.nav.languageShort}
               </span>
             </Link>
+            <CurrencySelect />
             <button className="icon-btn" aria-label={t.nav.search} aria-expanded={searchOpen} data-testid="search-toggle" onClick={() => setSearchOpen((v) => !v)}>
               <Icon name="search" />
             </button>
