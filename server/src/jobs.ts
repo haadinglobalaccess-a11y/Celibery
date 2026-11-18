@@ -4,6 +4,7 @@ import { releaseExpiredReservations } from './modules/orders/order.service';
 import { reconcileOpenRefunds } from './modules/payments/refund.service';
 import { markAbandonedDrafts } from './modules/checkout-drafts/draft.service';
 import { retryOrderNotifications } from './integrations/notifications/order-confirmation';
+import { refreshRatesIfDue } from './modules/currency/rates.service';
 
 /**
  * Scheduled maintenance. On Vercel these run through Vercel Cron (vercel.json → /api/cron/*).
@@ -20,11 +21,12 @@ export async function runReservationJob() {
   return { ...reservations, checkouts, confirmations };
 }
 
-/** Refunds whose gateway outcome was uncertain, and abandoned media uploads. */
+/** Refunds whose gateway outcome was uncertain, abandoned media uploads, and display exchange rates when due. */
 export async function runMaintenanceJob() {
   const refunds = await reconcileOpenRefunds(50);
   const media = await cleanupAbandonedUploads(24, 100);
-  return { refunds, media };
+  const exchangeRates = await refreshRatesIfDue(); // never throws; display prices only
+  return { refunds, media, exchangeRates };
 }
 
 const RESERVATION_EVERY_MS = 5 * 60_000;

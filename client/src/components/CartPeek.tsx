@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
-import { formatPrice, L, placeholderFor } from '../lib/format';
+import { L, placeholderFor } from '../lib/format';
+import { useMoney } from '../state/currency';
 import { cloudinaryAt } from '../lib/media';
 import { prefersReducedMotion } from '../lib/motion';
 import { useCart } from '../state/cart';
@@ -15,6 +16,7 @@ import { Icon } from './Icon';
  */
 export function CartPeek() {
   const { t, lang, p } = useI18n();
+  const money = useMoney();
   const { peek, closePeek, count } = useCart();
   const { pathname } = useLocation();
   const [leaving, setLeaving] = useState(false);
@@ -77,7 +79,7 @@ export function CartPeek() {
         <div>
           <div className="cart-peek__name">{name}</div>
           <div className="muted">
-            {t.premium.qty(added)} · {formatPrice(item.snapshot.price, lang)}
+            {t.premium.qty(added)} · {money(item.snapshot.price)}
           </div>
         </div>
       </div>

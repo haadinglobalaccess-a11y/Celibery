@@ -5,7 +5,8 @@ import { ProductCard, ProductImage } from '../components/ProductCard';
 import { PayLogos, Price } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { post } from '../lib/api';
-import { formatPrice, L, placeholderFor } from '../lib/format';
+import { L, placeholderFor } from '../lib/format';
+import { useMoney } from '../state/currency';
 import { BackgroundVideo, cloudinarySrcSet, responsiveImg, useMediaQuery } from '../lib/media';
 import { prefersReducedMotion } from '../lib/motion';
 import type { Category, HomeData, ProductCardData } from '../lib/types';
@@ -439,6 +440,7 @@ export function Ecosystem({ data }: { data: HomeData }) {
 /* ───────────────────────── 06 · Why CELIBERY — drawn hairlines ───────────────────────── */
 export function WhyCelibery() {
   const { t, lang } = useI18n();
+  const money = useMoney();
   const c = storeCopy(lang);
   const settings = useSettings();
   const commerce = settings?.commerce;
@@ -449,7 +451,7 @@ export function WhyCelibery() {
     : {
         t: t.product.shipping,
         d: commerce.freeDeliveryThreshold
-          ? t.checkout.freeFrom(formatPrice(commerce.freeDeliveryThreshold, lang))
+          ? t.checkout.freeFrom(money(commerce.freeDeliveryThreshold))
           : L(commerce.estimatedDelivery, lang) || (commerce.courierName ? t.product.deliveryBy(commerce.courierName) : ''),
       };
   const pay = settings?.payments;

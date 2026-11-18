@@ -207,6 +207,11 @@ const ar = {
     unavailable: 'غير متوفر',
     onlyLeft: (n: number) => `متبقي ${n} فقط`,
   },
+  currency: {
+    label: 'العملة',
+    auto: (code: string) => `تلقائي حسب الدولة (${code})`,
+    chargeNote: (code: string, amount: string) => `الأسعار بعملة ${code} تقريبية وفق سعر الصرف الحالي. يتم تحصيل طلبك بالريال السعودي: ${amount}.`,
+  },
   checkout: {
     title: 'إتمام الشراء',
     contact: 'بيانات التواصل',
@@ -618,6 +623,11 @@ const en: Dict = {
     changed: 'Some items in your cart changed. Please review.',
     unavailable: 'Unavailable',
     onlyLeft: (n: number) => `Only ${n} left`,
+  },
+  currency: {
+    label: 'Currency',
+    auto: (code: string) => `Automatic by country (${code})`,
+    chargeNote: (code: string, amount: string) => `Prices in ${code} are approximate, at today's exchange rate. Your order is charged in Saudi riyals: ${amount}.`,
   },
   checkout: {
     title: 'Checkout',

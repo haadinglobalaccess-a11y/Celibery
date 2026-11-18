@@ -12,6 +12,7 @@ import { databaseReady } from '../db/connect';
  *
  *  - public, read-only storefront payloads (homepage, categories, public settings) continue from the
  *    last cached copy (lib/public-cache.ts, at most 15 minutes old) — the store stays browsable;
+ *    the display-currency context continues from its in-memory exchange rates;
  *  - everything else (checkout, accounts, orders, admin, webhooks) gets 503 DATABASE_UNAVAILABLE with
  *    Retry-After. Nothing is half-written: no request reaches the database code. Payment providers
  *    re-deliver webhooks after a 503, so no payment event is lost.
@@ -19,7 +20,7 @@ import { databaseReady } from '../db/connect';
 const RECONNECT_GRACE_MS = 2_000;
 
 /** GET routes (relative to /api) that may be answered from the public cache during an outage. */
-const STALE_OK = [/^\/home$/, /^\/settings\/public$/, /^\/categories$/, /^\/categories\/[a-z0-9-]{1,100}$/i];
+const STALE_OK = [/^\/home$/, /^\/settings\/public$/, /^\/categories$/, /^\/categories\/[a-z0-9-]{1,100}$/i, /^\/currency\/context$/];
 export const servesStaleWhenDbDown = (req: Pick<Request, 'method' | 'path'>) => req.method === 'GET' && STALE_OK.some((rx) => rx.test(req.path));
 
 function waitForDb(ms: number): Promise<boolean> {

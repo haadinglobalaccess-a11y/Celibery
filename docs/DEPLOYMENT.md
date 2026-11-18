@@ -33,6 +33,9 @@ The repository deploys as **one Vercel project**: the React storefront/admin is 
 | `TABBY_SECRET_KEY`, `TABBY_PUBLIC_KEY`, `TABBY_MERCHANT_CODE`, `TABBY_WEBHOOK_SECRET` | for Tabby | from Tabby |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | optional (legacy) | Prefer **Admin → Settings → Notifications & reviews → Email (SMTP)**: encrypted, testable, can be enabled/disabled. These variables are used only while nothing is saved there. |
 | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ORDER_TEMPLATE` | optional (legacy) | Prefer **Admin → Settings → Notifications & reviews → WhatsApp Business**. Same fallback rule as SMTP. |
+| `EXCHANGE_RATE_API_KEY` | optional | exchangerate-api.com key for display-currency rates. Without it, free no-key providers are used (see `.env.example`). |
+| `EXCHANGE_RATE_API_URL`, `EXCHANGE_RATE_REFRESH_MINUTES`, `EXCHANGE_RATE_MAX_AGE_HOURS` | optional | Rate provider override, refresh interval (default 360 min), maximum age of cached rates during an outage (default 168 h). |
+| `GEO_COUNTRY_HEADER`, `GEO_IP_LOOKUP_URL` | optional | Visitor-country detection for display currency. Not needed on Vercel (`x-vercel-ip-country` is used). Railway/VPS: set `GEO_COUNTRY_HEADER=cf-ipcountry` behind Cloudflare, otherwise the IP lookup (default api.country.is) is used. |
 
 The server **refuses to start** in production if `MONGODB_URI` is missing, `JWT_SECRET` is shorter than 32 characters, or the sandbox gateway is selected.
 
