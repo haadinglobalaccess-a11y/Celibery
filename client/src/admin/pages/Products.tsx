@@ -7,7 +7,7 @@ import { useApi } from '../../lib/hooks';
 import { readTextFile, type DecodedText } from '../../lib/textFile';
 import type { Category, Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
-import { AHead, Card, en, ErrorBox, F, fromSarInput, LocInput, Modal, Pager, ProductPicker, sar, Status, toSarInput } from '../kit';
+import { AHead, Card, dt, en, ErrorBox, F, fromSarInput, LocInput, Modal, Pager, ProductPicker, sar, Status, toSarInput, usePerms } from '../kit';
 import { ImageGallery, type GalleryImage } from '../media';
 
 type Row = { _id: string; sku: string; slug: string; model: string; name: Localized; price: number; stock: number; status: string; featured: boolean; flagship?: boolean; dataSource: string; images: { url: string }[]; category?: { name: Localized } };
@@ -230,6 +230,7 @@ type ProductForm = {
   category: string;
   series: string;
   images: GalleryImage[];
+  packagingImages: GalleryImage[];
   price: string;
   compareAtPrice: string;
   stock: string;
@@ -265,6 +266,7 @@ const blank: ProductForm = {
   category: '',
   series: '',
   images: [],
+  packagingImages: [],
   price: '',
   compareAtPrice: '',
   stock: '0',
@@ -304,6 +306,7 @@ function fromApi(p: any): ProductForm {
     series: p.series ?? '',
     // Older products store only url/alt; uploaded images also carry media id + responsive variants.
     images: (p.images ?? []).map((i: GalleryImage) => ({ url: i.url, alt: i.alt ?? { ar: '', en: '' }, mediaId: i.mediaId ?? null, variants: i.variants, width: i.width ?? null, height: i.height ?? null })),
+    packagingImages: (p.packagingImages ?? []).map((i: GalleryImage) => ({ url: i.url, alt: i.alt ?? { ar: '', en: '' }, mediaId: i.mediaId ?? null, variants: i.variants, width: i.width ?? null, height: i.height ?? null })),
     price: toSarInput(p.price),
     compareAtPrice: toSarInput(p.compareAtPrice),
     stock: String(p.stock ?? 0),
@@ -342,6 +345,7 @@ function toApi(f: ProductForm, isNew: boolean) {
     category: f.category,
     series: f.series,
     images: f.images.filter((i) => i.url.trim()),
+    packagingImages: f.packagingImages.filter((i) => i.url.trim()),
     price: fromSarInput(f.price) ?? 0,
     compareAtPrice: fromSarInput(f.compareAtPrice),
     ...(isNew ? { stock: Number(f.stock || 0) } : {}),
@@ -475,7 +479,17 @@ export function ProductEdit() {
             <p className="muted" style={{ fontSize: 13 }}>
               Upload photos from your computer, pick them from the media library, or paste image URLs. Two photos per product on a plain background are recommended (Q15). The first image is the main photo — drag or use the arrows to reorder.
             </p>
-            <ImageGallery images={f.images} onChange={(images) => up({ images })} />
+            <div data-testid="product-gallery">
+              <ImageGallery images={f.images} onChange={(images) => up({ images })} />
+            </div>
+          </Card>
+          <Card title="Packaging images">
+            <p className="muted" style={{ fontSize: 13 }}>
+              Photos of the box, its contents and labels. They appear after the product photos in the product gallery, marked “Packaging”. Upload, choose from the library or paste URLs; drag or use the arrows to reorder.
+            </p>
+            <div data-testid="packaging-gallery">
+              <ImageGallery images={f.packagingImages} onChange={(packagingImages) => up({ packagingImages })} />
+            </div>
           </Card>
           <Card title="Specifications" actions={<button type="button" className="btn btn--outline btn--sm" onClick={() => up({ specs: [...f.specs, { label: { ar: '', en: '' }, value: { ar: '', en: '' } }] })}>+ Add row</button>}>
             {f.specs.map((s, i) => (
@@ -556,6 +570,7 @@ export function ProductEdit() {
               </F>
             </div>
           </Card>
+          {!isNew && id ? <RestockRequests productId={id} stock={Number(f.stock || 0)} /> : null}
           <Card title="Inventory">
             <div className="form-grid">
               {isNew ? (
@@ -628,3 +643,80 @@ function confirmDelete() {
   return window.confirm('Delete this product? Products that appear in orders are archived instead.');
 }
 
+
+type RestockRow = { _id: string; email: string; lang: string; status: string; attempts: number; lastError?: string; notifiedAt?: string; createdAt: string };
+const RESTOCK_LABEL: Record<string, string> = { active: 'Waiting', sending: 'Sending', notified: 'Emailed', failed: 'Failed', cancelled: 'Cancelled' };
+
+/** "Notify me when restocked" requests for this product, with delivery status. */
+function RestockRequests({ productId, stock }: { productId: string; stock: number }) {
+  const [nonce, setNonce] = useState(0);
+  const { data, error } = useApi<{ items: RestockRow[]; counts: Record<string, number> }>(`/api/admin/products/${productId}/restock?r=${nonce}`);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const perms = usePerms();
+  const send = async () => {
+    setBusy(true);
+    setMsg('');
+    try {
+      const r = await post<{ sent: number; retry: number; failed: number; skipped: number }>(`/api/admin/products/${productId}/restock/send`, {});
+      setMsg(r.skipped ? 'Email (SMTP) is not configured — requests stay waiting and are sent once email is set up in Settings → Notifications.' : `Sent ${r.sent}${r.retry ? `, ${r.retry} will be retried` : ''}${r.failed ? `, ${r.failed} failed` : ''}.`);
+      setNonce((n) => n + 1);
+    } catch (e) {
+      setMsg((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const waiting = data?.counts.active ?? 0;
+  return (
+    <Card title="Restock requests">
+      <div data-testid="restock-requests">
+        {error ? <p className="alert alert--error">Could not load restock requests.</p> : null}
+        {data ? (
+          <>
+            <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+              Customers who asked to be emailed when this product is back. Emails go out automatically when stock goes above zero (by any route: inventory, import, cancelled orders, returns).
+            </p>
+            <p style={{ margin: '0 0 8px' }}>
+              Waiting: <strong>{waiting}</strong> · Emailed: <strong>{data.counts.notified ?? 0}</strong> · Failed: <strong>{data.counts.failed ?? 0}</strong>
+            </p>
+            {waiting && stock > 0 && perms.has('inventory:write') ? (
+              <button type="button" className="btn btn--outline btn--sm" disabled={busy} onClick={send}>
+                {busy ? 'Sending…' : 'Send now'}
+              </button>
+            ) : null}
+            {msg ? <p className="muted" style={{ fontSize: 13 }}>{msg}</p> : null}
+            {data.items.length ? (
+              <div className="a-table-wrap" style={{ marginTop: 8, maxHeight: 260, overflow: 'auto' }}>
+                <table className="a-table">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Requested</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.items.map((r) => (
+                      <tr key={r._id}>
+                        <td className="ltr" style={{ wordBreak: 'break-all' }}>{r.email}</td>
+                        <td title={r.lastError || undefined}>
+                          {RESTOCK_LABEL[r.status] ?? r.status}
+                          {r.status === 'active' && r.lastError ? <span className="muted"> — {r.lastError}</span> : null}
+                          {r.notifiedAt ? <span className="muted"> · {dt(r.notifiedAt)}</span> : null}
+                        </td>
+                        <td className="muted">{dt(r.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="muted" style={{ fontSize: 13 }}>No requests.</p>
+            )}
+          </>
+        ) : null}
+      </div>
+    </Card>
+  );
+}

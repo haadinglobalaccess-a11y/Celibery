@@ -7,6 +7,32 @@ import { LocalizedSchema } from './common';
  * so it can be changed from the admin dashboard without code changes.
  * Empty values are never replaced with invented data: the storefront hides or marks them.
  */
+/** One customer-trust benefit on the product page (Admin → Website content → Product page trust). */
+export const TRUST_ICONS = ['shield', 'return', 'truck', 'support'] as const;
+const TrustItemSchema = new Schema(
+  {
+    icon: { type: String, enum: TRUST_ICONS, default: 'shield' },
+    title: { type: LocalizedSchema, default: () => ({}) },
+    description: { type: LocalizedSchema, default: () => ({}) },
+    /** Optional site path (e.g. /page/warranty) or https link for "learn more". */
+    link: { type: String, default: '', trim: true },
+    visible: { type: Boolean, default: true },
+  },
+  { _id: false },
+);
+
+/**
+ * The four benefits the client approved for the product page (Phase 4), used until an
+ * administrator saves their own list. Titles only — no policy terms are invented here; the
+ * links point to the store's own policy pages.
+ */
+export const DEFAULT_PRODUCT_TRUST = [
+  { icon: 'shield', title: { ar: 'ضمان لمدة سنتين', en: '2-Year Warranty' }, description: { ar: '', en: '' }, link: '/page/warranty', visible: true },
+  { icon: 'return', title: { ar: 'إرجاع واسترداد خلال 30 يوماً', en: '30-Day Return/Refund' }, description: { ar: '', en: '' }, link: '/page/returns', visible: true },
+  { icon: 'truck', title: { ar: 'توصيل سريع خلال 2–3 أيام', en: '2–3 Days Fast Delivery' }, description: { ar: '', en: '' }, link: '', visible: true },
+  { icon: 'support', title: { ar: 'دعم العملاء', en: 'Customer Support' }, description: { ar: '', en: '' }, link: '/support', visible: true },
+] as const;
+
 /** One delivery zone (amounts in halalas). */
 const ShippingZoneSchema = new Schema(
   {
@@ -114,6 +140,8 @@ const SettingsSchema = new Schema(
       emailOrderUpdates: { type: Boolean, default: true },
       whatsappOrderUpdates: { type: Boolean, default: true },
     },
+    /** Product page trust benefits; unset = DEFAULT_PRODUCT_TRUST (an empty list hides the block). */
+    productTrust: { type: [TrustItemSchema], default: undefined },
     /** Announcement bar above the header (empty text = default free-delivery & warranty message). */
     announcement: {
       enabled: { type: Boolean, default: true },

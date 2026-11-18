@@ -113,14 +113,25 @@ export const TEMPLATES: TemplateDef[] = [
       en: { subject: 'Activate your admin account', body: 'Hello {{name}},\n\nYou have been added to the CELIBERY admin dashboard. Use the link below to set your password. It expires in 72 hours.', whatsapp: '' },
     },
   },
+  {
+    key: 'product.back_in_stock',
+    label: 'Back in stock (restock request)',
+    group: 'account',
+    variables: ['productName', 'storeName'],
+    whatsapp: false,
+    defaults: {
+      ar: { subject: 'عاد إلى المخزون: {{productName}}', body: 'مرحباً،\n\nطلبت منا إبلاغك عند توفّر {{productName}}. المنتج متوفر الآن — الكمية محدودة.\n\nهذه رسالة واحدة فقط ولن نراسلك مرة أخرى بخصوص هذا الطلب.', whatsapp: '' },
+      en: { subject: 'Back in stock: {{productName}}', body: 'Hello,\n\nYou asked us to let you know when {{productName}} is available again. It is back in stock now — quantities are limited.\n\nThis is a one-time message; we will not email you again about this request.', whatsapp: '' },
+    },
+  },
 ];
 
 export const templateDef = (key: string) => TEMPLATES.find((t) => t.key === key);
 
 /** Fixed (system) wording around the editable text. */
 const FIXED = {
-  ar: { brand: 'سيليبري إنترناشونال', total: 'الإجمالي', tracking: 'رقم التتبع', view: 'عرض الطلب', reset: 'إعادة تعيين كلمة المرور', invite: 'تعيين كلمة المرور' },
-  en: { brand: 'CELIBERY International', total: 'Total', tracking: 'Tracking number', view: 'View order', reset: 'Reset password', invite: 'Set password' },
+  ar: { brand: 'سيليبري إنترناشونال', total: 'الإجمالي', tracking: 'رقم التتبع', view: 'عرض الطلب', reset: 'إعادة تعيين كلمة المرور', invite: 'تعيين كلمة المرور', product: 'عرض المنتج' },
+  en: { brand: 'CELIBERY International', total: 'Total', tracking: 'Tracking number', view: 'View order', reset: 'Reset password', invite: 'Set password', product: 'View product' },
 } as const;
 
 const PLACEHOLDER = /\{\{\s*([A-Za-z_]+)\s*\}\}/g;
@@ -234,6 +245,10 @@ export function orderEmail(lang: Lang, event: OrderEvent, o: OrderEmailData, ove
 
 export function passwordResetEmail(lang: Lang, name: string, link: string, override?: TemplateOverride): Built {
   return buildEmail(templateDef('auth.password_reset')!, lang, { name, storeName: FIXED[lang].brand }, override, { cta: { href: link, label: FIXED[lang].reset } });
+}
+
+export function backInStockEmail(lang: Lang, productName: string, link: string, override?: TemplateOverride): Built {
+  return buildEmail(templateDef('product.back_in_stock')!, lang, { productName, storeName: FIXED[lang].brand }, override, { cta: { href: link, label: FIXED[lang].product } });
 }
 
 export function staffInviteEmail(lang: Lang, name: string, link: string, override?: TemplateOverride): Built {

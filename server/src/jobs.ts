@@ -5,6 +5,7 @@ import { reconcileOpenRefunds } from './modules/payments/refund.service';
 import { markAbandonedDrafts } from './modules/checkout-drafts/draft.service';
 import { retryOrderNotifications } from './integrations/notifications/order-confirmation';
 import { refreshRatesIfDue } from './modules/currency/rates.service';
+import { sweepRestock } from './modules/restock/restock.service';
 
 /**
  * Scheduled maintenance. On Vercel these run through Vercel Cron (vercel.json → /api/cron/*).
@@ -18,7 +19,9 @@ export async function runReservationJob() {
   const reservations = await releaseExpiredReservations(200);
   const checkouts = await markAbandonedDrafts();
   const confirmations = await retryOrderNotifications(50);
-  return { ...reservations, checkouts, confirmations };
+  // Back-in-stock emails for products that came back by any path (admin, import, released orders, returns).
+  const restock = await sweepRestock();
+  return { ...reservations, checkouts, confirmations, restock };
 }
 
 /** Refunds whose gateway outcome was uncertain, abandoned media uploads, and display exchange rates when due. */

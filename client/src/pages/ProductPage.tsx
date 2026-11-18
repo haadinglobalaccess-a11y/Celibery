@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { ProductCard, ProductImage } from '../components/ProductCard';
 import { ProductReviews } from '../components/ProductReviews';
+import { ProductTrust } from '../components/ProductTrust';
+import { RestockForm } from '../components/RestockForm';
 import { RichText } from '../components/RichText';
 import { Crumbs, ErrorState, NotFound, Price, Quantity, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
@@ -73,7 +75,10 @@ export default function ProductPage() {
   if (loading || !data) return <Spinner />;
 
   const category = typeof data.category === 'object' ? data.category : undefined;
-  const images = data.images?.length ? data.images : [{ url: '', alt: data.name }];
+  const productImages = data.images?.length ? data.images : [{ url: '', alt: data.name }];
+  // Packaging photos follow the product photos in the same gallery (marked "Packaging").
+  const packaging = (data.packagingImages ?? []).filter((i) => i?.url);
+  const images = [...productImages, ...packaging];
   const maxQ = settings?.commerce?.maxQuantityPerItem ?? 10;
   const add = () => {
     cart.add(data, qty);
@@ -104,7 +109,7 @@ export default function ProductPage() {
           <div className="pdp cx-pdp__grid">
             <div className="cx-pdp__stage">
               <span className="cx-pdp__halo" aria-hidden="true" />
-              <InteractiveProductGallery key={slug} images={images} name={name} category={category?.slug} stageRef={stageRef} />
+              <InteractiveProductGallery key={slug} images={images} name={name} category={category?.slug} stageRef={stageRef} packagingStart={productImages.length} />
             </div>
 
             <div className="pdp__info cx-pdp__info">
@@ -157,35 +162,10 @@ export default function ProductPage() {
                     <Icon name="heart" />
                   </button>
                 </div>
+                {!data.available && slug ? <RestockForm key={slug} slug={slug} /> : null}
 
-                <ul className="cx-services" aria-label={c.services}>
-                  <li>
-                    <Icon name="truck" />
-                    <div>
-                      <strong>{data.delivery.free ? t.product.freeDelivery : t.product.shipping}</strong>
-                      <span>
-                        {data.delivery.courier ? t.product.deliveryBy(data.delivery.courier) : ''}
-                        {L(data.delivery.estimate, lang) ? ` · ${L(data.delivery.estimate, lang)}` : ''}
-                      </span>
-                    </div>
-                  </li>
-                  {data.warrantyMonths ? (
-                    <li>
-                      <Icon name="shield" />
-                      <div>
-                        <strong>{t.service.warranty(data.warrantyMonths)}</strong>
-                        <Link to={p('/page/warranty')}>{t.product.readPolicy}</Link>
-                      </div>
-                    </li>
-                  ) : null}
-                  <li>
-                    <Icon name="return" />
-                    <div>
-                      <strong>{t.product.returns}</strong>
-                      <Link to={p('/page/returns')}>{t.product.returnsText}</Link>
-                    </div>
-                  </li>
-                </ul>
+                {/* Admin-managed trust benefits (warranty, returns, delivery, support) */}
+                <ProductTrust />
               </div>
             </div>
           </div>

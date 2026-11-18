@@ -54,6 +54,7 @@ export const productInput = z.object({
   category: objectId,
   series: z.string().trim().max(80).default(''),
   images: z.array(image).max(12).default([]),
+  packagingImages: z.array(image).max(12).default([]),
   price: sar,
   compareAtPrice: sar.nullable().optional(),
   lowStockThreshold: z.number().int().min(0).nullable().optional(),

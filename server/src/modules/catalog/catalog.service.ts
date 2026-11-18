@@ -3,6 +3,7 @@ import { escapeRegex } from '../../lib/http';
 import { notFound } from '../../lib/errors';
 import { cleanLocLine, cleanLocRich } from '../../lib/text';
 import { Banner, Campaign, Category, Order, Product, ProductCollection, Review, getSettings, type ProductDoc } from '../../models';
+import { DEFAULT_PRODUCT_TRUST } from '../../models/Settings';
 import type { ProductListQuery } from './catalog.schemas';
 import { availablePaymentMethods } from '../payments/payment.service';
 import { homepageFaq } from '../faq/faq.service';
@@ -170,7 +171,7 @@ export const getProduct = (slug: string) => cached(`product:${slug}`, () => load
 async function loadProduct(slug: string) {
   const settings = await cachedSettings();
   const p = await Product.findOne({ slug, status: 'active' })
-    .select(PUBLIC_PRODUCT_FIELDS + ' description specs warrantyMonths bundleItems related seo')
+    .select(PUBLIC_PRODUCT_FIELDS + ' description specs warrantyMonths bundleItems related seo packagingImages')
     .populate('category', 'slug name')
     .lean();
   if (!p) throw notFound('Product');
@@ -379,6 +380,8 @@ async function loadPublicSettings() {
     checkoutRecovery: { enabled: s?.checkoutRecovery?.enabled !== false },
     seo: s?.seo,
     announcement: s?.announcement ?? { enabled: true, text: { ar: '', en: '' }, link: '' },
+    // Product page trust benefits (Admin → Website content → Product page trust); visible ones, in order.
+    productTrust: ((s as { productTrust?: unknown[] } | null)?.productTrust ?? DEFAULT_PRODUCT_TRUST).filter((x) => (x as { visible?: boolean }).visible !== false),
   };
 }
 

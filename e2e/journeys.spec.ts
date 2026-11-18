@@ -101,8 +101,10 @@ test.describe('journeys through the real UI', () => {
     await page.locator('.field', { hasText: 'Visibility' }).locator('select').selectOption('active');
     await page.locator('.field', { hasText: 'Price *' }).locator('input').fill('123.45');
     await page.locator('.field', { hasText: 'Initial stock' }).locator('input').fill('7');
-    await page.locator('.gallery-tile--add input[type="file"]').setInputFiles({ name: 'audit.png', mimeType: 'image/png', buffer: PNG });
-    await expect(page.locator('.gallery-tile:not(.gallery-tile--add):not(.is-uploading) img')).toHaveCount(1, { timeout: 20_000 });
+    // Product photos (the editor also has a separate packaging-images gallery).
+    const gallery = page.getByTestId('product-gallery');
+    await gallery.locator('.gallery-tile--add input[type="file"]').setInputFiles({ name: 'audit.png', mimeType: 'image/png', buffer: PNG });
+    await expect(gallery.locator('.gallery-tile:not(.gallery-tile--add):not(.is-uploading) img')).toHaveCount(1, { timeout: 20_000 });
     await page.getByTestId('save-product').click();
     await expect(page.getByText('Product created')).toBeVisible();
     await expect(page).toHaveURL(/\/admin\/products\/[a-f0-9]{24}$/);

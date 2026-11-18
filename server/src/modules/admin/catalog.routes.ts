@@ -6,10 +6,12 @@ import { ah, ok } from '../../lib/http';
 import { toHalalas } from '../../lib/money';
 import { requirePermission } from '../../middleware/auth';
 import { q, validate } from '../../middleware/validate';
-import { Category, Discount, Order, Product } from '../../models';
+import { Category, Discount, Order, Product, RestockSubscription } from '../../models';
 import { categoryInput, discountInput, idParam, objectId, productCreate, productListAdmin, productUpdate, stockAdjust } from './admin.schemas';
 import { crudRouter } from './crud';
 import { exportProductsCsv, importProductsCsv } from './import.service';
+import { adminRestockRoutes } from '../restock/restock.routes';
+import { triggerRestock } from '../restock/restock.service';
 import * as svc from './products.service';
 
 // ---- Products ----------------------------------------------------------------------------
@@ -25,13 +27,20 @@ adminProductRoutes.get(
   }),
 );
 
+adminProductRoutes.use(adminRestockRoutes);
+
 adminProductRoutes.post(
   '/import',
   requirePermission('products:write', 'inventory:write'),
   validate(z.object({ csv: z.string().min(10).max(900_000), dryRun: z.boolean().default(true) })),
   ah(async (req, res) => {
     const report = await importProductsCsv(req.body.csv, req.user!.id, req.body.dryRun);
-    if (!req.body.dryRun) await audit(req, 'import', 'product', '', `${report.created} created, ${report.updated} updated, ${report.skipped} skipped`);
+    if (!req.body.dryRun) {
+      await audit(req, 'import', 'product', '', `${report.created} created, ${report.updated} updated, ${report.skipped} skipped`);
+      // Imported stock may bring products back: notify their waiting customers (the sweep checks stock).
+      const waiting = await RestockSubscription.distinct('product', { status: 'active' });
+      triggerRestock(waiting.map(String));
+    }
     return ok(res, report);
   }),
 );
@@ -136,6 +145,7 @@ adminInventoryRoutes.post(
   ah(async (req, res) => {
     const r = await svc.adjustStock(req.params.id, req.body, req.user!.id);
     await audit(req, 'stock_adjust', 'product', req.params.id, `${r.delta > 0 ? '+' : ''}${r.delta} → ${r.stock} (${req.body.reason})`);
+    if (r.stock > 0) triggerRestock([req.params.id]); // back-in-stock emails, if anyone is waiting
     return ok(res, r);
   }),
 );
