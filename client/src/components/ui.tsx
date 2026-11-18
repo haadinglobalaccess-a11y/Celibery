@@ -117,8 +117,9 @@ export function Field({ label, error, hint, children, className = '' }: { label:
 }
 
 export function Crumbs({ items }: { items: { label: string; to?: string }[] }) {
+  const i18n = useMaybeI18n();
   return (
-    <nav className="crumbs" aria-label="Breadcrumb">
+    <nav className="crumbs" aria-label={i18n?.t.a11y.breadcrumb ?? 'Breadcrumb'}>
       {items.map((c, i) => (
         <span key={i}>
           {c.to ? <Link to={c.to}>{c.label}</Link> : <span aria-current="page">{c.label}</span>}
@@ -132,9 +133,10 @@ export function Crumbs({ items }: { items: { label: string; to?: string }[] }) {
 /** Logos of the payment methods the store can take right now (configured gateway + switched on in Admin). */
 export function PayLogos() {
   const pay = useSettings()?.payments;
+  const i18n = useMaybeI18n();
   if (!pay || !(pay.card || pay.applepay || pay.stcpay || pay.tabby)) return null;
   return (
-    <span className="pay-logos pay-brand-logos" aria-label="Accepted payment brands">
+    <span className="pay-logos pay-brand-logos" aria-label={i18n?.t.a11y.paymentBrands ?? 'Accepted payment brands'}>
       {pay.card ? <img src="/payment-logos/visa.svg" alt="Visa" /> : null}
       {pay.card ? <img src="/payment-logos/mastercard.svg" alt="Mastercard" /> : null}
       {pay.applepay ? <img src="/payment-logos/applepay.svg" alt="Apple Pay" /> : null}

@@ -207,6 +207,10 @@ export type Quote = {
   discountTotal: number;
   discount: { code: string; id: string } | null;
   discountError: string | null;
+  /** invalid | not_active | expired | usage_limit | min_order | already_used | not_applicable */
+  discountErrorCode?: string | null;
+  /** Minimum order (halalas) when discountErrorCode is 'min_order'. */
+  discountMinOrder?: number | null;
   deliveryFee: number;
   codFee: number;
   codAvailable: boolean;

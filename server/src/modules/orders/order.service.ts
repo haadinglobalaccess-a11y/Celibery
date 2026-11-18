@@ -53,6 +53,10 @@ export type Quote = {
   discountTotal: number;
   discount: { code: string; id: string; perCustomerLimit?: number | null } | null;
   discountError: string | null;
+  /** Machine-readable reason for discountError (the storefront words it in the page language). */
+  discountErrorCode: DiscountErrorCode | null;
+  /** Minimum order (halalas) when discountErrorCode is 'min_order'. */
+  discountMinOrder: number | null;
   deliveryFee: number;
   codFee: number;
   codAvailable: boolean;
@@ -118,20 +122,23 @@ async function claimRedemption(discountId: string, key: string, limit: number, s
 /** Open cash-on-delivery orders allowed per phone number (stops fake COD orders locking up stock). 0 = no limit. */
 export const maxOpenCodOrdersPerPhone = () => env.MAX_OPEN_COD_ORDERS_PER_PHONE ?? (isTest ? 0 : 3);
 
+export type DiscountErrorCode = 'invalid' | 'not_active' | 'expired' | 'usage_limit' | 'min_order' | 'already_used' | 'not_applicable';
+type DiscountRejection = { error: string; code: DiscountErrorCode; minOrder?: number };
+
 /** Validates a discount code against the cart. Returns the discount (halalas) and per-line allocation. */
 async function evaluateDiscount(
   code: string,
   lines: QuoteLine[],
   subtotal: number,
   customer: { id?: string; email?: string; phone?: string },
-): Promise<{ discount: DiscountDoc; amount: number; perLine: number[] } | { error: string }> {
+): Promise<{ discount: DiscountDoc; amount: number; perLine: number[] } | DiscountRejection> {
   const d = await Discount.findOne({ code: code.toUpperCase() }).lean();
   const now = new Date();
-  if (!d || !d.active) return { error: 'This discount code is not valid' };
-  if (d.startsAt && d.startsAt > now) return { error: 'This discount code is not active yet' };
-  if (d.endsAt && d.endsAt < now) return { error: 'This discount code has expired' };
-  if (d.usageLimit != null && d.usedCount >= d.usageLimit) return { error: 'This discount code has reached its usage limit' };
-  if (d.minOrderTotal && subtotal < d.minOrderTotal) return { error: `Minimum order for this code is ${(d.minOrderTotal / 100).toFixed(2)} SAR` };
+  if (!d || !d.active) return { error: 'This discount code is not valid', code: 'invalid' };
+  if (d.startsAt && d.startsAt > now) return { error: 'This discount code is not active yet', code: 'not_active' };
+  if (d.endsAt && d.endsAt < now) return { error: 'This discount code has expired', code: 'expired' };
+  if (d.usageLimit != null && d.usedCount >= d.usageLimit) return { error: 'This discount code has reached its usage limit', code: 'usage_limit' };
+  if (d.minOrderTotal && subtotal < d.minOrderTotal) return { error: `Minimum order for this code is ${(d.minOrderTotal / 100).toFixed(2)} SAR`, code: 'min_order', minOrder: d.minOrderTotal };
   if (d.perCustomerLimit != null && (customer.id || customer.email || phoneKey(customer.phone))) {
     const or: Record<string, unknown>[] = [];
     if (customer.id) or.push({ customer: customer.id });
@@ -140,7 +147,7 @@ async function evaluateDiscount(
     const p = phoneKey(customer.phone);
     if (p) or.push({ 'contact.phone': { $in: phoneVariants(p) } });
     const used = await Order.countDocuments({ 'discount.id': d._id, status: { $ne: 'cancelled' }, $or: or });
-    if (used >= d.perCustomerLimit) return { error: 'You have already used this discount code' };
+    if (used >= d.perCustomerLimit) return { error: 'You have already used this discount code', code: 'already_used' };
   }
 
   // Eligibility: restricted to products/categories when configured.
@@ -153,7 +160,7 @@ async function evaluateDiscount(
     eligibleIdx = eligibleIdx.filter((i) => productIds.has(lines[i].productId) || categoryIds.has(catOf.get(lines[i].productId) ?? ''));
   }
   const eligibleTotal = eligibleIdx.reduce((s, i) => s + lines[i].lineTotal, 0);
-  if (eligibleTotal <= 0) return { error: 'This discount code does not apply to the items in your cart' };
+  if (eligibleTotal <= 0) return { error: 'This discount code does not apply to the items in your cart', code: 'not_applicable' };
 
   let amount = d.type === 'percent' ? Math.floor((eligibleTotal * Math.min(d.value, 100)) / 100) : Math.min(d.value, eligibleTotal);
   if (d.type === 'percent' && d.maxDiscount) amount = Math.min(amount, d.maxDiscount);
@@ -225,10 +232,15 @@ export async function quote(
   let discountTotal = 0;
   let discount: Quote['discount'] = null;
   let discountError: string | null = null;
+  let discountErrorCode: DiscountErrorCode | null = null;
+  let discountMinOrder: number | null = null;
   if (opts.discountCode) {
     const r = await evaluateDiscount(opts.discountCode, purchasable, subtotal, { id: opts.customerId, email: opts.email, phone: opts.phone });
-    if ('error' in r) discountError = r.error;
-    else {
+    if ('error' in r) {
+      discountError = r.error;
+      discountErrorCode = r.code;
+      discountMinOrder = r.minOrder ?? null;
+    } else {
       discountTotal = r.amount;
       discount = { code: r.discount.code, id: String(r.discount._id), perCustomerLimit: r.discount.perCustomerLimit ?? null };
       purchasable.forEach((l, i) => (l.discount = r.perLine[i]));
@@ -254,6 +266,8 @@ export async function quote(
     discountTotal,
     discount,
     discountError,
+    discountErrorCode,
+    discountMinOrder,
     deliveryFee,
     codFee,
     codAvailable,

@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '../i18n/I18n';
 import { post } from '../lib/api';
+import { errorText } from '../lib/apiErrors';
 import type { Quote } from '../lib/types';
 import { useCart } from './cart';
 
 /** Server-authoritative cart pricing; re-quotes whenever the cart, code or method changes. */
 export function useQuote(paymentMethod?: string, email?: string, city?: string) {
   const { items, discountCode } = useCart();
+  const { t: dict, lang } = useI18n();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +33,7 @@ export function useQuote(paymentMethod?: string, email?: string, city?: string) 
         city: city && city.trim().length >= 2 ? city.trim() : undefined,
       })
         .then((q) => alive && (setQuote(q), setError(null)))
-        .catch((e) => { if (alive) { setQuote(null); setError((e as Error).message); } })
+        .catch((e) => { if (alive) { setQuote(null); setError(errorText(e, dict, lang)); } })
         .finally(() => alive && setLoading(false));
     }, 150);
     return () => {
