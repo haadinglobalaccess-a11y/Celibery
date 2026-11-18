@@ -218,7 +218,10 @@ export default function ProductPage() {
               <Kinetic text={t.product.description} className="cx-display" />
             </div>
             <div className="cx-overview__text" data-fx="rise">
-              <RichText text={L(data.description, lang)} />
+              <details className="cx-detail">
+                <summary>{t.product.description}</summary>
+                <RichText text={L(data.description, lang)} />
+              </details>
             </div>
           </div>
         </section>
@@ -231,6 +234,8 @@ export default function ProductPage() {
               <span className="cx-eyebrow">{c.techSpecs}</span>
               <Kinetic id="cx-specs-title" text={t.product.specs} className="cx-display" />
             </div>
+            <details className="cx-detail" open>
+            <summary>{t.product.specs}</summary>
             <dl className="cx-specs__list" data-fx="stagger">
               {specRows.map(([k, v], i) => (
                 <div key={`${k}-${i}`} className="cx-specs__row">
@@ -239,6 +244,7 @@ export default function ProductPage() {
                 </div>
               ))}
             </dl>
+            </details>
           </div>
         </section>
       ) : null}

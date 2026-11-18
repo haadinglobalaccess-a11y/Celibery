@@ -14,7 +14,7 @@ import { storeCopy } from '../storefront/copy';
 
 type Mode = 'all' | 'category' | 'search' | 'collection';
 
-function FiltersPanel({ facets, params, set }: { facets: Facets; params: URLSearchParams; set: (k: string, v: string | null) => void }) {
+function FiltersPanel({ facets, params, set, setRange }: { facets: Facets; params: URLSearchParams; set: (k: string, v: string | null) => void; setRange: (min: string, max: string) => void }) {
   const { t, lang } = useI18n();
   const list = (k: string) => (params.get(k) ?? '').split(',').filter(Boolean);
   const toggle = (k: string, v: string) => {
@@ -38,8 +38,7 @@ function FiltersPanel({ facets, params, set }: { facets: Facets; params: URLSear
             className="cx-price-range"
             onSubmit={(e) => {
               e.preventDefault();
-              set('minPrice', min || null);
-              set('maxPrice', max || null);
+              setRange(min, max);
             }}
           >
             <input className="cx-field" inputMode="numeric" aria-label={t.shop.min} placeholder={facets.price.max ? `${t.shop.min} ${Math.floor(facets.price.min / 100)}` : t.shop.min} value={min} onChange={(e) => setMin(e.target.value.replace(/[^\d.]/g, ''))} />
@@ -207,6 +206,15 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
     if (q) next.set('q', q);
     setParams(next);
   };
+  const setRange = (min: string, max: string) => {
+    const next = new URLSearchParams(params);
+    for (const [key, value] of [['minPrice', min], ['maxPrice', max]]) {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    }
+    next.delete('page');
+    setParams(next, { replace: true });
+  };
 
   // Filters depend on the category (Q18). "All products" and search only offer price + availability.
   const facets: Facets = mode === 'category' ? (cat.data?.facets ?? {}) : { price: { min: 0, max: 0 }, availability: true };
@@ -246,6 +254,15 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
               {title || ' '}
             </h1>
             {description ? <p className="cx-lead">{description}</p> : null}
+            {mode === 'search' ? (
+              <form role="search" className="cx-results-search" onSubmit={event => {
+                event.preventDefault();
+                set('q', String(new FormData(event.currentTarget).get('q') || '').trim() || null);
+              }}>
+                <input key={q} className="input" type="search" name="q" defaultValue={q} aria-label={t.nav.search} placeholder={t.nav.searchPlaceholder} />
+                <button className="cx-btn cx-btn--solid" type="submit" aria-label={t.nav.search}><Icon name="search" /></button>
+              </form>
+            ) : null}
           </div>
           {visual ? (
             <div className="cx-listhead__visual" aria-hidden="true">
@@ -264,7 +281,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
               <Icon name="filter" />
               <strong>{t.shop.filters}</strong>
             </div>
-            <FiltersPanel facets={facets} params={params} set={set} />
+            <FiltersPanel facets={facets} params={params} set={set} setRange={setRange} />
             {activeFilters ? (
               <button className="cx-btn cx-btn--ghost cx-btn--sm cx-filters__clear" onClick={clearFilters}>
                 {t.shop.clear}
@@ -346,7 +363,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
               </button>
             </div>
             <div className="drawer__body">
-              <FiltersPanel facets={facets} params={params} set={set} />
+              <FiltersPanel facets={facets} params={params} set={set} setRange={setRange} />
             </div>
             <div className="drawer__foot" style={{ display: 'flex', gap: 8 }}>
               <button className="cx-btn cx-btn--ghost" onClick={clearFilters}>

@@ -79,11 +79,11 @@ export default function Home() {
       <TheatreStage className="cx-stage">
       {/* 01 */}
       <CategoryUniverse data={data} />
+      <ExploreCollection data={data} />
       {/* 02 */}
       <FlagshipCampaigns data={data} />
       <CampaignGallery data={data} />
       {/* 03 */}
-      <ExploreCollection data={data} />
       {/* 04 */}
       <CategorySpotlights data={data} />
       {/* 05 */}

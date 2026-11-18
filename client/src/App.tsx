@@ -40,6 +40,7 @@ const TrackOrder = lazy(() => loadOrders().then((m) => ({ default: m.TrackOrder 
 const PolicyPage = lazy(() => loadContent().then((m) => ({ default: m.PolicyPage })));
 const CampaignPage = lazy(() => loadContent().then((m) => ({ default: m.CampaignPage })));
 const FaqPage = lazy(loadFaq);
+const CustomerInfo = lazy(() => import('./pages/CustomerInfo'));
 
 let prefetched = false;
 /** Downloads the secondary page chunks once the browser is idle after the first page load. */
@@ -102,6 +103,9 @@ export default function App() {
         <Route path="reset-password" element={<ResetPassword />} />
         <Route path="page/:slug" element={<PolicyPage />} />
         <Route path="faq" element={<FaqPage />} />
+        <Route path="about" element={<CustomerInfo mode="about" />} />
+        <Route path="support" element={<CustomerInfo mode="support" />} />
+        <Route path="contact" element={<CustomerInfo mode="contact" />} />
         <Route path="campaign/:slug" element={<CampaignPage />} />
         <Route path="account" element={<AccountLayout />}>
           <Route index element={<AccountOrders />} />

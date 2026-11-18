@@ -26,7 +26,7 @@ function Shell() {
       {hasSample ? <div className="sample-banner">{t.home.sampleNotice}</div> : null}
       <Header />
       <span key={`bar-${pathname}`} className="route-bar" aria-hidden="true" />
-      <main id="main" tabIndex={-1}>
+      <main id="main" className="storefront" tabIndex={-1}>
         {/* Keyed by path so each page plays the entrance transition */}
         <div key={pathname} className="page">
           {/* Secondary pages are lazy chunks: header and footer stay while one loads. */}

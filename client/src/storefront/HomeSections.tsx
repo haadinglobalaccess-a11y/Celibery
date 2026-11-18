@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
+import { useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArtFrame } from '../components/ArtFrame';
 import { ProductCard, ProductImage } from '../components/ProductCard';
@@ -76,11 +76,10 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
   return (
     <section className="cx-section cx-universe" aria-labelledby="cx-universe-title">
       <div className="container">
-        <Head id="cx-universe-title" eyebrow={c.universeEyebrow} title={t.home.categories} lead={c.universeLead} link={p('/shop')} linkLabel={t.nav.viewAll} />
+        <Head id="cx-universe-title" title={t.home.categories} link={p('/shop')} linkLabel={t.nav.viewAll} />
         <div className="cx-universe__grid">
           {data.categories.map((cat, i) => {
             const tone = toneFor(i);
-            const desc = L(cat.description, lang);
             const v = visualFor(data, cat);
             return (
               <Link
@@ -100,7 +99,7 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <strong className="cx-uni__name">{L(cat.name, lang)}</strong>
-                  {desc ? <span className="cx-uni__desc">{desc}</span> : cat.productCount ? <span className="cx-uni__desc">{t.premium.productsCount(cat.productCount)}</span> : null}
+                  {cat.productCount ? <span className="cx-uni__desc">{t.premium.productsCount(cat.productCount)}</span> : null}
                   <span className="cx-uni__cta">
                     {c.exploreCategory} <Arrow />
                   </span>
@@ -184,7 +183,8 @@ export function CampaignGallery({ data }: { data: HomeData }) {
   const c = storeCopy(lang);
   const linkFor = useLinkFor();
   const isPhone = useMediaQuery('(max-width: 639px)');
-  if (!data.campaigns.length && !data.lifestyleBanners.length) return null;
+  const banners = [...data.promoBanners, ...data.lifestyleBanners];
+  if (!data.campaigns.length && !banners.length) return null;
   return (
     <section className="cx-section cx-campaigns" aria-labelledby="cx-campaigns-title">
       <div className="container">
@@ -205,7 +205,7 @@ export function CampaignGallery({ data }: { data: HomeData }) {
               </span>
             </Link>
           ))}
-          {data.lifestyleBanners.map((b) => (
+          {banners.map((b) => (
             <Link key={b._id} to={linkFor(b.link)} className={`cx-campaign ${b.theme === 'light' ? 'cx-campaign--light' : ''}`} data-fx="split">
               <span className="cx-campaign__media">
                 {bannerVideo(b, isPhone) ? (
@@ -242,7 +242,7 @@ export function ExploreCollection({ data }: { data: HomeData }) {
   const c = storeCopy(lang);
   // Tabs are built only from data that exists: featured, best sellers, Admin collections, use cases.
   const tabs = useMemo(() => {
-    const list: { key: string; label: string; items?: ProductCardData[]; link?: string }[] = [];
+    const list: { key: string; label: string; items: ProductCardData[]; link?: string }[] = [];
     if (data.featured.length) list.push({ key: 'featured', label: t.home.featured, items: data.featured, link: p('/shop') });
     if (data.bestSellers.items.length) list.push({ key: 'best', label: t.home.bestSellers, items: data.bestSellers.items });
     for (const col of data.collections) {
@@ -251,24 +251,17 @@ export function ExploreCollection({ data }: { data: HomeData }) {
       if (col.kind === 'best_sellers' && data.bestSellers.items.length) continue;
       list.push({ key: `col-${col.slug}`, label: L(col.title, lang), items: col.products, link: p(`/collection/${col.slug}`) });
     }
-    for (const k of USE_CASES) list.push({ key: k, label: t.home.useCaseNames[k] ?? k, items: data.collections.find((x) => x.slug === k)?.products, link: p(`/collection/${k}`) });
+    for (const k of USE_CASES) {
+      const collection = data.collections.find((x) => x.slug === k);
+      if (collection?.products.length) list.push({ key: k, label: L(collection.title, lang) || t.home.useCaseNames[k] || k, items: collection.products, link: p(`/collection/${k}`) });
+    }
     return list;
   }, [data, t, lang, p]);
   const [tab, setTab] = useState(tabs[0]?.key ?? '');
-  const [fetched, setFetched] = useState<Record<string, ProductCardData[]>>({});
   const current = tabs.find((x) => x.key === tab) ?? tabs[0];
 
-  useEffect(() => {
-    // Use-case collections not included in /api/home are loaded on demand (same endpoint as before).
-    if (!current || current.items || fetched[current.key]) return;
-    import('../lib/api')
-      .then((m) => m.get<{ products: ProductCardData[] }>(`/api/collections/${current.key}`))
-      .then((col) => setFetched((s) => ({ ...s, [current.key]: col.products })))
-      .catch(() => setFetched((s) => ({ ...s, [current.key]: [] })));
-  }, [current, fetched]);
-
   if (!current) return null;
-  const items = current.items ?? fetched[current.key];
+  const items = current.items;
   return (
     <section className="cx-section cx-collection" aria-labelledby="cx-collection-title">
       <div className="container">

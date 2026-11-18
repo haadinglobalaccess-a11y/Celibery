@@ -175,6 +175,9 @@ export function Footer() {
           <div>
             <h3>{t.footer.help}</h3>
             <ul>
+              <li><Link to={p('/support')}>{lang === 'ar' ? 'مركز الدعم' : 'Support center'}</Link></li>
+              <li><Link to={p('/contact')}>{lang === 'ar' ? 'تواصل معنا' : 'Contact us'}</Link></li>
+              <li><Link to={p('/about')}>{lang === 'ar' ? 'عن سيليبري' : 'About CELIBERY'}</Link></li>
               <li>
                 <Link to={p('/track')}>{t.nav.track}</Link>
               </li>

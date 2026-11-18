@@ -18,13 +18,13 @@ export function PolicyPage() {
   if (error) return <ErrorState onRetry={reload} />;
   if (loading || !data) return <Spinner />;
   return (
-    <div className="container" style={{ paddingBottom: 64 }}>
+    <article className="container cx-content" style={{ paddingBottom: 64 }}>
       <div className="page-head">
         <Crumbs items={[{ label: t.common.home, to: p('/') }, { label: L(data.title, lang) }]} />
         <h1>{L(data.title, lang)}</h1>
       </div>
       <Markdown source={L(data.body, lang)} />
-    </div>
+    </article>
   );
 }
 

@@ -1,0 +1,96 @@
+/* Storefront only: keep Admin, hero playback and existing motion modules independent. */
+.storefront { --cx-pad: clamp(40px, 5vw, 80px); --cx-r-art: 14px; }
+.storefront .cx-display { font-size: clamp(1.65rem, 1.15rem + 2vw, 2.8rem); line-height: 1.15; letter-spacing: -.035em; }
+html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
+.storefront .cx-head { margin-bottom: 26px; gap: 20px; }
+.storefront .cx-lead { font-size: 1rem; line-height: 1.65; max-width: 48ch; }
+.storefront .cx-universe { background: #f5f7f8; }
+.storefront .cx-universe__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: none; gap: 12px; }
+.storefront .cx-universe__grid .cx-uni { grid-column: auto; grid-row: auto; min-height: 0; display: flex; flex-direction: column; border-radius: 14px; padding: 12px; gap: 8px; }
+.storefront .cx-universe__grid .cx-uni__visual { position: relative; inset: auto; width: 100%; height: auto; aspect-ratio: 1; margin: 0; }
+.storefront .cx-universe__grid .cx-uni__copy { position: relative; inset: auto; padding: 8px 0; width: 100%; max-width: none; }
+.storefront .cx-uni__name { font-size: clamp(.85rem, 1.4vw, 1.15rem); line-height: 1.4; }
+.storefront .cx-uni__desc { font-size: .75rem; margin-top: 4px; }
+.storefront .cx-uni__index { display: none; }
+.storefront .cx-uni__cta { margin-top: 8px; font-size: .75rem; }
+.storefront .cx-flag__inner { min-height: 0; padding-block: clamp(36px, 5vw, 72px); }
+.storefront .cx-flag__title { font-size: clamp(1.8rem, 3.3vw, 3.5rem); line-height: 1.15; }
+.storefront .cx-flag__desc { font-size: 1rem; line-height: 1.65; max-width: 45ch; }
+.storefront .cx-spot__inner { min-height: 0; padding-block: clamp(36px, 5vw, 72px); }
+.storefront .cx-spot__chapter { font-size: clamp(3rem, 6vw, 6rem); }
+.storefront .cx-listhead { padding-block: 24px 32px; }
+.storefront .cx-listhead h1 { font-size: clamp(1.9rem, 3vw, 3.25rem); line-height: 1.2; }
+.storefront .cx-results-search { display: flex; gap: 8px; margin-top: 20px; max-width: 560px; }
+.storefront .cx-results-search .input { flex: 1; min-width: 0; }
+.storefront .cx-listhead__visual, .storefront .cx-listhead__visual img { max-height: 220px; object-fit: contain; }
+.storefront .cx-card__body { padding: 14px 2px 0; }
+.storefront .cx-card__title { overflow-wrap: anywhere; }
+.storefront .cx-card__add, .storefront .cx-card__wish { min-width: 44px; min-height: 44px; }
+.storefront .cx-card__wish { top: 8px; inset-inline-end: 8px; }
+.storefront .cx-card__badges { top: 10px; inset-inline-start: 10px; }
+.storefront .cx-pdp__title { font-size: clamp(1.8rem, 2.8vw, 3rem); line-height: 1.2; }
+.storefront .cx-pdp__lead { font-size: 1rem; line-height: 1.7; }
+.storefront .cx-pdp__section { padding-block: clamp(32px, 5vw, 68px); }
+.storefront .cx-detail { min-width: 0; width: 100%; border-block: 1px solid var(--cx-line); }
+.storefront .cx-detail > summary { cursor: pointer; padding-block: 20px; font-weight: 650; min-height: 60px; }
+.storefront .cx-detail[open] > summary { margin-bottom: 12px; }
+.storefront .cx-detail > .cx-specs__list { padding-bottom: 20px; }
+.storefront .cx-content { max-width: 1000px; }
+.storefront .cx-content .page-head { padding-block: 30px; margin-bottom: 24px; border-bottom: 1px solid var(--cx-line); }
+.storefront .cx-content h1, .storefront .page-head h1 { font-size: clamp(1.9rem, 3vw, 3rem); line-height: 1.25; }
+.storefront .cx-content .prose { max-width: 75ch; line-height: 1.8; }
+.storefront .summary { background: #f5f7f8; border: 1px solid var(--cx-line); border-radius: 16px; box-shadow: none; }
+.storefront .cx-checkout .panel { border-radius: 16px; box-shadow: none; }
+.storefront .account > nav { border-radius: 12px; }
+.storefront .cx-info { padding-bottom: 64px; }
+.storefront .cx-info__story { display: grid; gap: 32px; align-items: center; margin-bottom: 40px; }
+.storefront .cx-info__story img { width: 100%; border-radius: 16px; object-fit: contain; }
+.storefront .cx-info__story .cx-btn { margin-top: 24px; }
+.storefront .cx-info__contacts, .storefront .cx-info__links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 32px; }
+.storefront .cx-info__card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px; background: #f5f7f8; border: 1px solid var(--cx-line); border-radius: 14px; min-height: 96px; overflow-wrap: anywhere; }
+.storefront .cx-info__contacts .cx-info__card { align-items: flex-start; flex-direction: column; }
+.storefront .cx-info__card:hover { border-color: var(--accent); }
+.storefront .faq-page__head { padding-block: 32px; }
+.storefront .faq-title--page { font-size: clamp(1.9rem, 3vw, 3rem); }
+.header .mega { max-height: calc(100dvh - 110px); overflow-y: auto; }
+.header .mega__cat { border-radius: 12px; }
+.header .mega__cat strong { line-height: 1.4; }
+.header .searchbox { max-width: 840px; margin-inline: auto; }
+.header .searchbox .input { min-height: 52px; }
+.header .search-categories { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; padding-block: 12px 0; }
+.header .search-categories a { min-height: 44px; display: inline-flex; align-items: center; font-size: .85rem; }
+.cx-footer .cx-footer__word { font-size: clamp(3rem, 12vw, 11rem); }
+@media (min-width: 960px) {
+  .storefront .cx-info__story { grid-template-columns: 1fr 1fr; }
+  .storefront .cx-universe__grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .storefront .cx-grid { gap: 30px 20px; }
+  .storefront .cx-pdp .cx-pdp__grid { gap: clamp(30px, 4vw, 64px); align-items: start; }
+}
+@media (max-width: 639px) {
+  .storefront .cx-info__contacts, .storefront .cx-info__links { grid-template-columns: minmax(0, 1fr); }
+  .storefront .cx-head { align-items: flex-start; gap: 12px; }
+  .storefront .cx-head > .cx-link { font-size: .8rem; flex-shrink: 0; }
+  .storefront .cx-universe__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .storefront .cx-universe__grid .cx-uni { padding: 10px; }
+  .storefront .cx-universe__grid .cx-uni__visual { aspect-ratio: 1.3; }
+  .storefront .cx-uni__cta { min-height: 24px; }
+  .storefront .cx-grid { gap: 24px 10px; }
+  .storefront .cx-card__title { font-size: .875rem; }
+  .storefront .cx-card__meta { font-size: .625rem; flex-wrap: wrap; }
+  .storefront .cx-card__foot { flex-wrap: wrap; gap: 8px; }
+  .storefront .cx-card .price__now { font-size: .9rem; }
+  .storefront .cx-card__add { margin-inline-start: auto; }
+  .storefront .cx-toolbar { flex-wrap: wrap; gap: 12px; }
+  .storefront .cx-toolbar__actions { flex: 1; justify-content: space-between; min-width: 0; }
+  .storefront .cx-select { min-width: 0; max-width: 62%; font-size: .8rem; }
+  .storefront .cx-listhead__inner { gap: 16px; }
+  .storefront .cx-listhead__visual, .storefront .cx-listhead__visual img { max-height: 150px; }
+  .storefront .cx-pdp__title { overflow-wrap: anywhere; }
+  .storefront .cx-buy { flex-wrap: wrap; }
+  .storefront .cx-buy__add { min-width: 120px; }
+  .storefront .cx-specs__row { gap: 12px; overflow-wrap: anywhere; }
+  .storefront .cx-content { padding-inline: 20px; }
+  .storefront .cx-content table { display: block; overflow-x: auto; }
+  .storefront .cx-pagehead { padding-block: 28px; }
+  .storefront .summary, .storefront .cx-checkout .panel { padding: 20px 16px; }
+}
