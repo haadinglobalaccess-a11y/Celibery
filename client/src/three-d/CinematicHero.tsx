@@ -82,7 +82,13 @@ export function CinematicHero({ data }: { data: HomeData }) {
       const raw = (phone && s.mobileVideo) || s.video;
       const video = classifyVideoUrl(raw);
       const poster = (phone && s.mobileImage) || s.poster || s.image;
-      return <div key={s.id} className={`campaign-slide ${s.product ? 'campaign-slide--product' : ''}`} data-active={i === index}>
+      // Phones without an Admin mobile video play the landscape desktop video: shown whole in a 16:9
+      // band (campaignHero.css) instead of cover-cropped to ~28% of its width; the slide's still, or
+      // the video's own thumbnail, fills the rest softly blurred.
+      const band = phone && !s.mobileVideo && !!video;
+      const ambient = band && !(s.image || s.mobileImage) ? stillImage(raw) : undefined;
+      return <div key={s.id} className={`campaign-slide ${s.product ? 'campaign-slide--product' : ''}`} data-active={i === index} data-mfit={band ? 'band' : undefined}>
+        {ambient && <img className="campaign-ambient" src={ambient} alt="" loading={i === index ? 'eager' : 'lazy'} decoding="async" />}
         {(s.image || s.mobileImage) && (i === index || i === (index + 1) % slides.length || i === (index - 1 + slides.length) % slides.length) && <picture>{s.mobileImage && <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(s.mobileImage, HERO_MOBILE_W) || s.mobileImage} sizes="100vw" />}<img key={poster} {...responsiveImg(((video && s.poster) || s.image || s.mobileImage)!, '100vw', HERO_W)} alt="" loading={i === index ? 'eager' : 'lazy'} {...{ fetchpriority: i === 0 ? 'high' : 'low' }} onError={e => { e.currentTarget.onerror = null; e.currentTarget.style.visibility = 'hidden'; }} /></picture>}
         {i === index && <CampaignPlayback key={`${s.id}:${visit}:${phone}:${raw || ''}:${reduced}:${saveData}`} source={!reduced && !saveData ? video : null} poster={cloudinaryAt(poster, phone ? 1200 : 2000)} playing={mediaPlaying}
           imageDurationMs={(s.durationSec ?? 5) * 1000} videoDurationMs={(s.videoDurationSec ?? 0) * 1000} fallbackMs={Math.max(2, s.videoFallbackSec ?? 20) * 1000}
