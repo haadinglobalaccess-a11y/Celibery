@@ -221,12 +221,6 @@ html[lang='ar'] .cx-lineup__name {
   letter-spacing: 0;
   line-height: 1.45;
 }
-.cx-lineup__count {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.8125rem;
-}
 .cx-lineup__go {
   flex: none;
   display: grid;
@@ -1038,4 +1032,142 @@ html[dir='rtl'] .icon--flip-rtl {
 .cx-scenes__stage--whole,
 .cx-scenes__stage.cx-scenes__stage--whole {
   aspect-ratio: 34 / 15;
+}
+
+/* ==========================================================================
+   FAQ (homepage preview and /faq page) — premium card accordion in the site's
+   card language: each question is a soft rounded card; the round + turns into
+   a dark − when open, and the open card lifts with a gentle shadow.
+   Same markup and behaviour as before (accessible accordion), styles only.
+   ========================================================================== */
+.storefront .faq-home {
+  background: var(--surface);
+  border-top: 0;
+}
+.storefront .faq-more {
+  min-height: 48px;
+  padding: 0 24px;
+  border: 1px solid rgb(17 17 17 / 0.2);
+  border-radius: 999px;
+  transition: background 220ms ease, color 220ms ease, border-color 220ms ease, gap 300ms var(--cx-ease, ease);
+}
+.storefront .faq-more:hover,
+.storefront .faq-more:focus-visible {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.storefront .faq-list {
+  display: grid;
+  gap: 12px;
+  border-top: 0;
+}
+.storefront .faq-list .faq-item {
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(17 17 17 / 0.04);
+  transition: box-shadow 350ms var(--cx-ease, ease), border-color 250ms ease, transform 350ms var(--cx-ease, ease);
+}
+.storefront .faq-page .faq-list .faq-item {
+  background: var(--surface);
+}
+.storefront .faq-list .faq-item:hover {
+  border-color: var(--line);
+}
+.storefront .faq-list .faq-item.is-open {
+  border-color: transparent;
+  box-shadow: 0 22px 48px -28px rgb(17 17 17 / 0.28), 0 1px 2px rgb(17 17 17 / 0.04);
+  transform: translateY(-1px);
+}
+.storefront .faq-list .faq-q__btn {
+  align-items: center;
+  padding: clamp(18px, 1.8vw, 24px) clamp(18px, 2vw, 28px);
+}
+.storefront .faq-list .faq-q__btn:hover .faq-q__text {
+  opacity: 1;
+  color: var(--ink);
+}
+.storefront .faq-list .faq-q__btn:focus-visible {
+  outline-offset: -2px;
+  border-radius: var(--r-lg);
+}
+/* round icon: + closed, − open (dark) */
+.storefront .faq-list .faq-q__icon {
+  width: 38px;
+  height: 38px;
+  margin-top: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink);
+  transition: background 300ms ease, color 300ms ease, transform 400ms var(--cx-ease, ease);
+}
+.storefront .faq-list .faq-q__icon::before,
+.storefront .faq-list .faq-q__icon::after {
+  left: 12px;
+  top: 18.25px;
+}
+.storefront .faq-list .faq-q__btn:hover .faq-q__icon {
+  background: var(--accent-soft);
+}
+.storefront .faq-list .faq-item.is-open .faq-q__icon {
+  background: var(--ink);
+  color: #fff;
+  transform: rotate(180deg);
+}
+.storefront .faq-list .faq-a__body {
+  padding: 0 clamp(18px, 2vw, 28px) clamp(20px, 2vw, 26px);
+  color: var(--ink-2);
+}
+[dir='rtl'] .storefront .faq-list .faq-a__body {
+  padding-inline: clamp(18px, 2vw, 28px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .storefront .faq-list .faq-item,
+  .storefront .faq-list .faq-q__icon { transition: none; }
+  .storefront .faq-list .faq-item.is-open { transform: none; }
+}
+
+/* ==========================================================================
+   Light sheen — when a section comes into view, a soft band of light passes
+   once across its pictures (product, category and range artwork, the lifestyle
+   photo). Subtle, one pass per reveal, replays when the section re-enters;
+   never with reduced motion.
+   ========================================================================== */
+.cx-art::after,
+.cx-scenes__stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / 0.12) 42%, rgb(255 255 255 / 0.38) 50%, rgb(255 255 255 / 0.12) 58%, transparent 70%);
+  translate: -100% 0;
+  opacity: 0;
+}
+.cx-theatre .fx-in .cx-art::after,
+.cx-theatre .fx-in.cx-art::after,
+.cx-theatre .cx-scenes__stage.fx-in::after {
+  animation: cx-sheen 1600ms cubic-bezier(0.4, 0, 0.3, 1) calc(var(--d, 0ms) + 380ms) both;
+}
+[dir='rtl'] .cx-theatre .fx-in .cx-art::after,
+[dir='rtl'] .cx-theatre .fx-in.cx-art::after,
+[dir='rtl'] .cx-theatre .cx-scenes__stage.fx-in::after {
+  animation-name: cx-sheen-rtl;
+}
+@keyframes cx-sheen {
+  0% { translate: -100% 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { translate: 100% 0; opacity: 0; }
+}
+@keyframes cx-sheen-rtl {
+  0% { translate: 100% 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { translate: -100% 0; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-art::after,
+  .cx-scenes__stage::after { display: none; }
 }
