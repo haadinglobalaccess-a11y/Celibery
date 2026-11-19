@@ -568,15 +568,16 @@ html[lang='ar'] .cx-range__name {
   font-size: 0.9375rem;
 }
 
-/* Product cards: the photo on the brand's Cloud stage, complete and uncropped. CELIBERY product
-   photos are real shots with their own light backgrounds; the dark campaign matte and its
-   half-transparent blurred copy painted dark bands beside them. Category artwork frames
-   (lineup, range, flagship) keep the matte + blurred fill that suits dark campaign art. */
+/* Product cards: the photo fills its frame edge to edge, like the category tiles — complete and
+   uncropped, with any margin filled by a soft, full-strength blur of the same photo (light product
+   shots extend into their own light background; no dark matte, so no dark bands, and no pale
+   strips beside portrait photos). */
 .cx-card .cx-art {
-  background: var(--surface);
+  background: var(--surface-2);
 }
 .cx-card .cx-art > .cx-art__fill {
-  display: none;
+  opacity: 1;
+  filter: blur(28px) saturate(1.05);
 }
 
 /* Footer: calmer, international hierarchy — sentence-case column headings, regular-weight links. */
@@ -928,5 +929,21 @@ html[dir='rtl'] .icon--flip-rtl {
 /* Homepage collection: tabs centred under the centred heading, on the same grey. */
 .cx-collection .cx-tabs {
   margin-inline: auto;
+  background: var(--surface-2);
+}
+/* No hairline frame inside the grey card: the photo itself is the inner surface (one card, not two). */
+.storefront .cx-card:not(.cx-card--dark) .cx-card__media {
+  box-shadow: none;
+}
+/* Light product cards behave like the category tiles on hover: the whole card lifts its shadow; the
+   frame never moves inside the card, no hairline returns, and the second photo sits on the same
+   light stage (not the dark campaign matte). */
+@media (hover: hover) and (pointer: fine) {
+  .storefront .cx-card:not(.cx-card--dark):hover .cx-card__media {
+    translate: none;
+    box-shadow: none;
+  }
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__img--alt {
   background: var(--surface-2);
 }

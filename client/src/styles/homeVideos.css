@@ -371,3 +371,123 @@ html[lang='ar'] .hv-card__title {
     opacity: 0;
   }
 }
+
+/* ==========================================================================
+   Premium film strip: all positions in ONE row of portrait (3:4) cards on
+   desktop, a swipeable row on tablets and phones. Presentation only —
+   players, posters, play/retry and Admin data are unchanged. Landscape
+   posters are centre-cropped to the portrait card; while playing, the
+   provider player fits the whole video inside the card.
+   ========================================================================== */
+.hv {
+  /* one quiet glow instead of two: calmer, more premium dark stage */
+  background:
+    radial-gradient(55% 45% at 50% 0%, rgb(0 177 192 / 0.1), transparent 70%),
+    var(--brand-midnight);
+}
+.hv__head {
+  margin-inline: auto;
+  text-align: center;
+}
+.hv__lead {
+  margin-inline: auto;
+}
+.hv__grid[data-count] {
+  display: flex;
+  gap: 14px;
+  margin-inline: calc(-1 * var(--s-4));
+  padding-inline: var(--s-4);
+  padding-bottom: 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--s-4);
+  scrollbar-width: none;
+}
+.hv__grid[data-count]::-webkit-scrollbar {
+  display: none;
+}
+.hv__grid[data-count] > .hv__slot {
+  flex: 0 0 68%;
+  scroll-snap-align: start;
+}
+.hv__grid[data-count] .hv-card__frame {
+  aspect-ratio: 3 / 4;
+}
+@media (min-width: 640px) {
+  .hv__grid[data-count] {
+    grid-auto-rows: auto;
+    margin-inline: calc(-1 * var(--s-6, 24px));
+    padding-inline: var(--s-6, 24px);
+    scroll-padding-inline: var(--s-6, 24px);
+  }
+  /* outranks the earlier :nth-child spans */
+  .hv .hv__grid[data-count] > .hv__slot:nth-child(n) {
+    flex-basis: 38%;
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .hv__grid[data-count] .hv-card {
+    position: relative;
+    height: auto;
+  }
+  .hv__grid[data-count] .hv-card__frame {
+    position: relative;
+    inset: auto;
+    aspect-ratio: 3 / 4;
+  }
+}
+@media (min-width: 1024px) {
+  .hv__grid[data-count] {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+  }
+  .hv__grid[data-count='1'] {
+    grid-template-columns: minmax(0, 340px);
+    justify-content: center;
+  }
+  .hv__grid[data-count='2'] {
+    grid-template-columns: repeat(2, minmax(0, 340px));
+    justify-content: center;
+  }
+  .hv__grid[data-count='3'] {
+    grid-template-columns: repeat(3, minmax(0, 340px));
+    justify-content: center;
+  }
+  /* outranks the earlier :nth-child spans */
+  .hv .hv__grid[data-count] > .hv__slot:nth-child(n) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+/* Posters shown whole inside the portrait card (landscape posters are no longer centre-cropped):
+   the poster sits centred, its blurred and dimmed copy fills the card around it, the caption rests
+   on the lower blur. While a video plays, the provider player fits the whole video as before. */
+.hv__grid[data-count] .hv-card__backdrop {
+  position: absolute;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  object-fit: cover;
+  filter: blur(26px) saturate(1.35) brightness(0.72);
+  pointer-events: none;
+}
+.hv__grid[data-count] .hv-card__poster,
+.hv__grid[data-count] .hv-card__preview {
+  object-fit: contain;
+}
+.hv__grid[data-count] .hv-card:hover .hv-card__poster,
+.hv__grid[data-count] .hv-card:hover .hv-card__preview {
+  transform: scale(1.03);
+}
+.hv__grid[data-count] .hv-card__play {
+  inset-block-start: 50%;
+}
+.hv__grid[data-count] .hv-card__shade {
+  background: linear-gradient(180deg, rgb(17 17 17 / 0.15) 0%, transparent 25%, transparent 55%, rgb(17 17 17 / 0.85) 100%);
+}

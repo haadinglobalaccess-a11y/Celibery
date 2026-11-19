@@ -166,7 +166,12 @@ function VideoCard({ video: v, index, active, onPlay }: { video: HomeVideoItem; 
         ) : (
           <>
             {hasPoster ? (
-              <img className="hv-card__poster" src={v.posterUrl} alt={alt.text} {...langAttrs(alt, lang)} loading="lazy" decoding="async" onError={() => setPosterFailed(true)} />
+              <>
+                {/* Soft, dimmed copy of the poster behind it: a landscape poster is shown whole in the
+                    portrait card and this fills the rest — no cropping, no black bars. */}
+                <img className="hv-card__backdrop" src={v.posterUrl} alt="" aria-hidden="true" loading="lazy" decoding="async" />
+                <img className="hv-card__poster" src={v.posterUrl} alt={alt.text} {...langAttrs(alt, lang)} loading="lazy" decoding="async" onError={() => setPosterFailed(true)} />
+              </>
             ) : (
               <span className="hv-card__placeholder" aria-hidden="true" />
             )}
