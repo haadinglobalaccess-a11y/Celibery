@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { Types } from 'mongoose';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { env } from '../src/config/env';
 import { Category, Discount, InventoryMovement, Order, Product, Review, Settings } from '../src/models';
@@ -103,6 +104,41 @@ describe('reviews', () => {
     expect(await Review.findById(mineB._id)).toBeNull();
     expect((await shop.get(`/api/products/${a.slug}`)).body.data.reviews.count).toBe(0);
     expect((await admin.delete(`/api/admin/reviews/${mineA._id}`)).status).toBe(200);
+  });
+
+  it('staff-entered reviews: real reviews from WhatsApp/Instagram, published with their source, counted, editable by staff only', async () => {
+    const p = await prod('DEMO-HP-WIRED');
+    const base = { productId: String(p._id), displayName: 'Ahmed K.', rating: 5, title: '', body: 'Excellent power bank, charges my phone 4 times.', lang: 'en', source: 'whatsapp', receivedAt: '2026-10-01T10:00:00.000Z' };
+    expect((await shop.post('/api/admin/reviews').send(base)).status).toBe(401);
+    expect((await admin.post('/api/admin/reviews').send({ ...base, source: 'customer' })).status).toBe(400); // never passed off as a site review
+    expect((await admin.post('/api/admin/reviews').send({ ...base, body: '' })).status).toBe(400);
+    expect((await admin.post('/api/admin/reviews').send({ ...base, rating: 6 })).status).toBe(400);
+    const made = await admin.post('/api/admin/reviews').send(base);
+    expect(made.status).toBe(201);
+    expect(made.body.data).toMatchObject({ status: 'approved', source: 'whatsapp', displayName: 'Ahmed K.' });
+    expect(new Date(made.body.data.createdAt).toISOString()).toBe('2026-10-01T10:00:00.000Z');
+    // A second one on the same product (each has its own reviewer key).
+    const second = await admin.post('/api/admin/reviews').send({ ...base, displayName: 'Sara', rating: 4, source: 'instagram', receivedAt: null });
+    expect(second.status).toBe(201);
+
+    const pub = (await shop.get(`/api/products/${p.slug}/reviews`)).body.data;
+    expect(pub).toHaveLength(2);
+    for (const r of pub) {
+      expect(r.verifiedPurchase).toBe(false); // no order behind it — never labelled verified
+      expect(['whatsapp', 'instagram']).toContain(r.source);
+      expect(r).not.toHaveProperty('evidenceUrl');
+    }
+    expect((await shop.get(`/api/products/${p.slug}`)).body.data.reviews).toMatchObject({ average: 4.5, count: 2 });
+
+    // Staff can correct their own entries, never a customer's review.
+    const fixed = await admin.put(`/api/admin/reviews/${second.body.data._id}`).send({ ...base, productId: undefined, displayName: 'Sara M.', rating: 5, source: 'instagram' });
+    expect(fixed.status).toBe(200);
+    expect(fixed.body.data).toMatchObject({ displayName: 'Sara M.', rating: 5 });
+    const customerReview = await Review.create({ product: p._id, customer: new Types.ObjectId(), order: new Types.ObjectId(), rating: 3, body: 'From the site', status: 'approved' });
+    expect(customerReview.source).toBe('customer');
+    expect((await admin.put(`/api/admin/reviews/${customerReview._id}`).send({ ...base, productId: undefined })).status).toBe(403);
+    const orders = await createStaff('order_manager');
+    expect((await orders.post('/api/admin/reviews').send(base)).status).toBe(403);
   });
 
   it('review photos: verified upload, owner-only, shown once approved', async () => {

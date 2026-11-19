@@ -29,7 +29,7 @@ const requiredLocalized = z.object({ ar: text(300, 1, 'Arabic is required'), en:
  * start with "//" or "/\" are refused — browsers treat them as another website (open redirect).
  */
 export const isSafeLink = (v: string) => v === '' || /^https?:\/\/[^\s/\\]+(?:[/?#][^\s]*)?$/i.test(v) || /^\/(?![/\\])[^\s]*$/.test(v);
-const url = z.string().trim().max(1000).refine(isSafeLink, 'Must be a URL (https://…) or a site path (/…)');
+export const url = z.string().trim().max(1000).refine(isSafeLink, 'Must be a URL (https://…) or a site path (/…)');
 const slug = z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,100}$/, 'Use lowercase letters, numbers and dashes');
 /** Product / category / collection image: a URL (external or uploaded) plus optional media-library metadata. */
 const image = z.object({

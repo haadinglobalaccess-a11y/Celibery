@@ -144,6 +144,8 @@ const ar = {
     average: (a: string) => `${a} من 5`,
     none: 'لا توجد تقييمات لهذا المنتج بعد.',
     verified: 'شراء موثّق',
+    /** Real reviews the store received elsewhere and entered with their source. */
+    sharedVia: { whatsapp: 'عبر واتساب', instagram: 'عبر إنستغرام', tiktok: 'عبر تيك توك', facebook: 'عبر فيسبوك', snapchat: 'عبر سناب شات', email: 'عبر البريد الإلكتروني', phone: 'عبر الهاتف', store: 'في المتجر', other: 'خارج الموقع' } as Record<string, string>,
     anonymous: 'عميل',
     write: 'اكتب تقييماً',
     loginPrompt: 'سجّل الدخول لتقييم منتج استلمته.',
@@ -671,6 +673,8 @@ const en: Dict = {
     average: (a: string) => `${a} out of 5`,
     none: 'No reviews for this product yet.',
     verified: 'Verified purchase',
+    /** Real reviews the store received elsewhere and entered with their source. */
+    sharedVia: { whatsapp: 'Shared on WhatsApp', instagram: 'Shared on Instagram', tiktok: 'Shared on TikTok', facebook: 'Shared on Facebook', snapchat: 'Shared on Snapchat', email: 'Shared by email', phone: 'Shared by phone', store: 'Shared in store', other: 'Shared with us' } as Record<string, string>,
     anonymous: 'Customer',
     write: 'Write a review',
     loginPrompt: 'Sign in to review a product you have received.',

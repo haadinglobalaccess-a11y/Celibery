@@ -10,7 +10,7 @@ import '../styles/phase5.css';
 import { Icon } from './Icon';
 import { Field } from './ui';
 
-type PublicReview = { id: string; rating: number; title: string; body: string; displayName: string; lang: 'ar' | 'en'; images: { url: string }[]; verifiedPurchase: boolean; createdAt: string; editedAt: string | null };
+type PublicReview = { id: string; rating: number; title: string; body: string; displayName: string; lang: 'ar' | 'en'; images: { url: string }[]; verifiedPurchase: boolean; source?: string; createdAt: string; editedAt: string | null };
 type Mine = { enabled: boolean; canReview: boolean; uploadsEnabled: boolean; review: (Omit<PublicReview, 'images'> & { status: string; images: { url: string; mediaId: string }[] }) | null };
 type Summary = { average: number; count: number; distribution?: Record<'1' | '2' | '3' | '4' | '5', number> };
 type Photo = { id: string; url: string };
@@ -178,6 +178,7 @@ export function ProductReviews({ slug, summary }: { slug: string; summary: Summa
                       {rv.displayName || r.anonymous} · {formatDate(rv.createdAt, lang)}
                     </small>
                     {rv.verifiedPurchase ? <span className="rv-verified"><Icon name="check" className="icon icon--inline" /> {r.verified}</span> : null}
+                    {!rv.verifiedPurchase && rv.source && rv.source !== 'customer' ? <span className="rv-source">{r.sharedVia[rv.source] ?? r.sharedVia.other}</span> : null}
                     {isCustomer && own?.id !== rv.id ? (
                       reported.has(rv.id) ? (
                         <small className="cx-muted">{r.reported}</small>
