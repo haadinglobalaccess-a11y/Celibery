@@ -1,7 +1,8 @@
 import { Schema, model, models, type InferSchemaType, type Model, Types } from 'mongoose';
 import { LocalizedSchema } from './common';
 
-export const HOME_VIDEO_POSITIONS = [1, 2, 3, 4] as const;
+/** Homepage video positions (the storefront shows four at a time on desktop; the rest are a click/swipe away). */
+export const HOME_VIDEO_POSITIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
 /**
  * One video of the homepage video showcase (Admin → Website → Homepage videos).
@@ -45,7 +46,7 @@ const HomeVideoSchema = new Schema(
     posterUrl: { type: String, default: '', trim: true, maxlength: 2000 },
     posterMedia: { type: Schema.Types.ObjectId, ref: 'MediaAsset', default: null },
     posterAlt: { type: LocalizedSchema, default: () => ({}) },
-    position: { type: Number, min: 1, max: HOME_VIDEO_POSITIONS.length, default: null, validate: { validator: (v: unknown) => v == null || Number.isInteger(v), message: 'Position must be 1–4' } },
+    position: { type: Number, min: 1, max: HOME_VIDEO_POSITIONS.length, default: null, validate: { validator: (v: unknown) => v == null || Number.isInteger(v), message: `Position must be 1–${HOME_VIDEO_POSITIONS.length}` } },
     /** Published (shown when placed) vs draft. */
     active: { type: Boolean, default: false },
     archived: { type: Boolean, default: false },

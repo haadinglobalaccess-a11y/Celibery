@@ -4,9 +4,12 @@ import path from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { env } from '../src/config/env';
 import { storage } from '../src/integrations/storage';
-import { HomeVideo, MediaAsset, Role } from '../src/models';
+import { HOME_VIDEO_POSITIONS, HomeVideo, MediaAsset, Role } from '../src/models';
 import { __setOEmbedFetchForTests } from '../src/modules/home-videos/home-video.service';
 import { client, createStaff, useDatabase } from './helpers';
+
+/** A full slots payload: the given ids first, the remaining positions empty. */
+const pad = (ids: (string | null)[]) => [...ids, ...Array<null>(HOME_VIDEO_POSITIONS.length - ids.length).fill(null)];
 
 /**
  * Homepage video showcase: the complete Admin → homepage workflow through the real API, with the
@@ -157,10 +160,10 @@ describe('homepage videos — admin workflow', () => {
   });
 
   it('8. reorder all four slots at once', async () => {
-    const r = await admin.put('/api/admin/home-videos/slots').send({ slots: [ids.file, ids.fb, ids.upload, ids.yt] });
+    const r = await admin.put('/api/admin/home-videos/slots').send({ slots: pad([ids.file, ids.fb, ids.upload, ids.yt]) });
     expect(r.status).toBe(200);
     expect((await publicVideos()).videos.map((x) => x.id)).toEqual([ids.file, ids.fb, ids.upload, ids.yt]);
-    expect((await admin.put('/api/admin/home-videos/slots').send({ slots: [ids.yt, ids.yt, null, null] })).status).toBe(400);
+    expect((await admin.put('/api/admin/home-videos/slots').send({ slots: pad([ids.yt, ids.yt]) })).status).toBe(400);
   });
 
   it('9. disabling hides it from the homepage; fewer than four leaves no placeholder', async () => {
@@ -173,7 +176,7 @@ describe('homepage videos — admin workflow', () => {
   it('archive frees the slot and hides the video; restore brings it back unplaced', async () => {
     await admin.patch(`/api/admin/home-videos/${ids.fb}/archive`).send({ archived: true });
     expect((await HomeVideo.findById(ids.fb).lean())).toMatchObject({ archived: true, active: false, position: null });
-    expect((await admin.put('/api/admin/home-videos/slots').send({ slots: [ids.fb, null, null, null] })).status).toBe(409);
+    expect((await admin.put('/api/admin/home-videos/slots').send({ slots: pad([ids.fb]) })).status).toBe(409);
     await admin.patch(`/api/admin/home-videos/${ids.fb}/archive`).send({ archived: false });
     expect((await HomeVideo.findById(ids.fb).lean())).toMatchObject({ archived: false, position: null });
   });
