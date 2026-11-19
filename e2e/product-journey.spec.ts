@@ -123,13 +123,13 @@ test.describe.serial('product information from product page to stored order', ()
     await expect(rows.filter({ hasText: PRODUCTS[0].name.en })).toContainText('SAR 118.00');
     await expect(rows.filter({ hasText: PRODUCTS[1].name.en })).toContainText('×1');
     await expect(rows.filter({ hasText: PRODUCTS[1].name.en })).toContainText('SAR 119.00');
-    await page.locator('input[name="name"]').fill('Journey Test');
-    await page.locator('input[name="email"]').fill('journey@test.local');
-    await page.locator('input[name="phone"]').fill('0551234567');
     await page.locator('input[name="fullName"]').fill('Journey Test');
+    await page.locator('input[name="email"]').fill('journey@test.local');
+    await page.locator('input[name="addrPhone"]').fill('0551234567');
     await page.locator('input[name="city"]').fill('Riyadh');
     await page.locator('input[name="district"]').fill('Al Olaya');
     await page.locator('input[name="street"]').fill('King Fahd Road');
+    await page.locator('.checkout-more').evaluate((d) => ((d as HTMLDetailsElement).open = true)); // optional details are collapsed
     await page.locator('input[name="postalCode"]').fill('12211');
     await page.getByTestId('pay-card').click();
     await expect(page.getByTestId('total')).toContainText('237.00');

@@ -84,6 +84,8 @@ export default function Checkout() {
   useEffect(() => {
     if (!isCustomer || !user) return;
     setContact((c) => ({ name: c.name || user.name, email: c.email || user.email, phone: c.phone || user.phone || '' }));
+    // One form: the account's name and mobile prefill the delivery details (a saved address replaces them).
+    setAddr((s) => ({ ...s, fullName: s.fullName || user.name, phone: s.phone || user.phone || '' }));
     get<Address[]>('/api/me/addresses')
       .then((list) => {
         setSaved(list);
@@ -161,6 +163,9 @@ export default function Checkout() {
       if (any) {
         restoredRef.current = true;
         setContact((cur) => ({ name: c.name || cur.name, email: c.email || cur.email, phone: c.phone || cur.phone }));
+        // Drafts saved by the earlier two-section form may hold the name/mobile only under contact.
+        if (!a.fullName) a.fullName = c.name;
+        if (!a.phone) a.phone = c.phone;
         setAddr((cur) => ({ ...cur, ...Object.fromEntries(keys.filter((k) => a[k]).map((k) => [k, a[k]])), _id: undefined }));
         setRestoredNote(true);
       }
@@ -178,7 +183,8 @@ export default function Checkout() {
 
   const draftPayload: DraftPayload = {
     items: cart.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-    contact,
+    // The checkout asks for name and mobile once (delivery details); the order's contact uses them.
+    contact: { name: addr.fullName, email: contact.email, phone: addr.phone },
     shippingAddress: { fullName: addr.fullName, phone: addr.phone, city: addr.city, district: addr.district, street: addr.street, buildingNumber: addr.buildingNumber, postalCode: addr.postalCode, shortAddress: addr.shortAddress },
     paymentMethod: method,
     discountCode: cart.discountCode,
@@ -196,10 +202,8 @@ export default function Checkout() {
   const validate = () => {
     const e: Record<string, string> = {};
     const req = t.common.required;
-    if (contact.name.trim().length < 2) e.name = req;
-    if (!emailRx.test(contact.email.trim())) e.email = req;
-    if (!phoneRx.test(contact.phone.replace(/\s/g, ''))) e.phone = t.checkout.phoneHint;
     if (addr.fullName.trim().length < 2) e.fullName = req;
+    if (!emailRx.test(contact.email.trim())) e.email = req;
     if (!phoneRx.test(addr.phone.replace(/\s/g, ''))) e.addrPhone = t.checkout.phoneHint;
     if (addr.city.trim().length < 2) e.city = req;
     if (addr.district.trim().length < 2) e.district = req;
@@ -218,12 +222,16 @@ export default function Checkout() {
       document.querySelector('[aria-invalid="true"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
+    // Cancel a queued autosave before the order is sent: arriving after the order has converted this
+    // checkout, it would open a new "in progress" one for a customer who has already ordered.
+    draftSync.reset();
     setBusy(true);
+    await draftSync.idle(); // a save already on its way finishes first (usually instant)
     try {
       const res = await post<{ order: OrderView; accessToken: string | null; redirectUrl: string | null; paymentError?: string }>('/api/checkout', {
         idempotencyKey: idemKey,
         items: cart.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-        contact: { name: contact.name.trim(), email: contact.email.trim(), phone: contact.phone.replace(/\s/g, '') },
+        contact: { name: addr.fullName.trim(), email: contact.email.trim(), phone: addr.phone.replace(/\s/g, '') },
         shippingAddress: {
           fullName: addr.fullName.trim(),
           phone: addr.phone.replace(/\s/g, ''),
@@ -266,6 +274,8 @@ export default function Checkout() {
       const err = e as ApiError;
       setServerError(errorText(err, t, lang));
       setBusy(false);
+      // The order was not placed: keep saving the checkout as before.
+      if (recoveryOn && !optedOut && interacted.current) draftSync.schedule(draftPayload);
     }
   };
 
@@ -288,35 +298,67 @@ export default function Checkout() {
       </div>
       <form className="cart-layout" onSubmit={submit} onChangeCapture={() => (interacted.current = true)} noValidate>
         <div>
+          {/* One short form: name and mobile are asked once (delivery details) and also used as the order
+              contact; only the fields a courier needs are required, the rest sit under "More details". */}
           <section className="panel">
             <h2>
-              <span className="step-num">1</span> {t.checkout.contact}
+              <span className="step-num">1</span> {t.checkout.address}
             </h2>
+            {saved.length ? (
+              <div className="address-cards">
+                <span className="label">{t.checkout.savedAddresses}</span>
+                {saved.map((s) => (
+                  <label key={s._id} className="pay-option">
+                    <input type="radio" name="saved" checked={addr._id === s._id} onChange={() => setAddr({ ...emptyAddress, ...s })} />
+                    <span>
+                      {s.fullName} — {s.city}, {s.district}, {s.street}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : null}
             <div className="form-grid form-grid--2">
-              <Field label={t.checkout.name} error={errors.name} className="span-2">
-                <input className="input" autoComplete="name" value={contact.name} aria-invalid={!!errors.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} name="name" />
+              <Field label={t.checkout.name} error={errors.fullName}>
+                <input className="input" autoComplete="shipping name" aria-invalid={!!errors.fullName} {...a('fullName')} name="fullName" />
               </Field>
-              <Field label={t.checkout.email} error={errors.email}>
+              <Field label={t.checkout.phone} error={errors.addrPhone} hint={t.checkout.phoneHint}>
+                <input className="input" type="tel" inputMode="tel" dir="ltr" autoComplete="shipping tel" aria-invalid={!!errors.addrPhone} {...a('phone')} name="addrPhone" />
+              </Field>
+              <Field label={t.checkout.email} error={errors.email} hint={storeCopy(lang).emailHint} className="span-2">
                 <input className="input" type="email" autoComplete="email" dir="ltr" value={contact.email} aria-invalid={!!errors.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} name="email" />
               </Field>
-              <Field label={t.checkout.phone} error={errors.phone} hint={t.checkout.phoneHint}>
-                <input
-                  className="input"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  dir="ltr"
-                  value={contact.phone}
-                  aria-invalid={!!errors.phone}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setContact({ ...contact, phone: v });
-                    setAddr((s) => (s.phone ? s : { ...s, phone: v }));
-                  }}
-                  name="phone"
-                />
+              <Field label={t.checkout.city} error={errors.city}>
+                <input className="input" list="sa-cities" autoComplete="shipping address-level2" aria-invalid={!!errors.city} {...a('city')} name="city" />
+                <datalist id="sa-cities">
+                  {cities.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+              </Field>
+              <Field label={t.checkout.district} error={errors.district}>
+                <input className="input" autoComplete="shipping address-level3" aria-invalid={!!errors.district} {...a('district')} name="district" />
+              </Field>
+              <Field label={t.checkout.street} error={errors.street} className="span-2">
+                <input className="input" autoComplete="shipping address-line1" aria-invalid={!!errors.street} {...a('street')} name="street" />
               </Field>
             </div>
+            <details className="checkout-more" open={Boolean(errors.postalCode || errors.shortAddress) || undefined}>
+              <summary>{storeCopy(lang).moreDetails}</summary>
+              <div className="form-grid form-grid--2">
+                <Field label={t.checkout.building}>
+                  <input className="input" inputMode="numeric" dir="ltr" {...a('buildingNumber')} name="buildingNumber" />
+                </Field>
+                <Field label={t.checkout.postal} error={errors.postalCode}>
+                  <input className="input" inputMode="numeric" dir="ltr" autoComplete="shipping postal-code" aria-invalid={!!errors.postalCode} {...a('postalCode')} name="postalCode" />
+                </Field>
+                <Field label={t.checkout.shortAddress} error={errors.shortAddress}>
+                  <input className="input" dir="ltr" aria-invalid={!!errors.shortAddress} {...a('shortAddress')} name="shortAddress" />
+                </Field>
+                <Field label={t.checkout.notes} className="span-2">
+                  <textarea className="textarea" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+                </Field>
+              </div>
+            </details>
             {restoredNote ? (
               <p className="alert alert--success" role="status" data-testid="draft-restored" style={{ marginTop: 12 }}>
                 {t.checkout.draftRestored}
@@ -351,59 +393,6 @@ export default function Checkout() {
                 ) : null}
               </p>
             ) : null}
-          </section>
-
-          <section className="panel">
-            <h2>
-              <span className="step-num">2</span> {t.checkout.address}
-            </h2>
-            {saved.length ? (
-              <div className="address-cards">
-                <span className="label">{t.checkout.savedAddresses}</span>
-                {saved.map((s) => (
-                  <label key={s._id} className="pay-option">
-                    <input type="radio" name="saved" checked={addr._id === s._id} onChange={() => setAddr({ ...emptyAddress, ...s })} />
-                    <span>
-                      {s.fullName} — {s.city}, {s.district}, {s.street}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            ) : null}
-            <div className="form-grid form-grid--2">
-              <Field label={t.checkout.name} error={errors.fullName}>
-                <input className="input" autoComplete="shipping name" aria-invalid={!!errors.fullName} {...a('fullName')} name="fullName" />
-              </Field>
-              <Field label={t.checkout.phone} error={errors.addrPhone}>
-                <input className="input" type="tel" dir="ltr" autoComplete="shipping tel" aria-invalid={!!errors.addrPhone} {...a('phone')} name="addrPhone" />
-              </Field>
-              <Field label={t.checkout.city} error={errors.city}>
-                <input className="input" list="sa-cities" autoComplete="shipping address-level2" aria-invalid={!!errors.city} {...a('city')} name="city" />
-                <datalist id="sa-cities">
-                  {cities.map((c) => (
-                    <option key={c} value={c} />
-                  ))}
-                </datalist>
-              </Field>
-              <Field label={t.checkout.district} error={errors.district}>
-                <input className="input" autoComplete="shipping address-level3" aria-invalid={!!errors.district} {...a('district')} name="district" />
-              </Field>
-              <Field label={t.checkout.street} error={errors.street} className="span-2">
-                <input className="input" autoComplete="shipping address-line1" aria-invalid={!!errors.street} {...a('street')} name="street" />
-              </Field>
-              <Field label={t.checkout.building}>
-                <input className="input" inputMode="numeric" dir="ltr" {...a('buildingNumber')} name="buildingNumber" />
-              </Field>
-              <Field label={t.checkout.postal} error={errors.postalCode}>
-                <input className="input" inputMode="numeric" dir="ltr" autoComplete="shipping postal-code" aria-invalid={!!errors.postalCode} {...a('postalCode')} name="postalCode" />
-              </Field>
-              <Field label={t.checkout.shortAddress} error={errors.shortAddress}>
-                <input className="input" dir="ltr" aria-invalid={!!errors.shortAddress} {...a('shortAddress')} name="shortAddress" />
-              </Field>
-              <Field label={t.checkout.notes} className="span-2">
-                <textarea className="textarea" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-              </Field>
-            </div>
             {isCustomer && !addr._id ? (
               <label className="check" style={{ marginTop: 12 }}>
                 <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} /> {t.checkout.saveAddress}
@@ -422,7 +411,7 @@ export default function Checkout() {
 
           <section className="panel">
             <h2>
-              <span className="step-num">3</span> {t.checkout.payment}
+              <span className="step-num">2</span> {t.checkout.payment}
             </h2>
             {settings?.payments?.sandbox ? <p className="alert alert--warning">{t.checkout.sandboxNote}</p> : null}
             {methods.length ? (

@@ -49,6 +49,8 @@ const copy = {
     rangeLead: 'Explore each CELIBERY category — from everyday charging to life on the road.',
     shopNow: 'Shop now',
     serviceBar: 'Customer services',
+    moreDetails: 'More details (optional)',
+    emailHint: 'For your order confirmation and tracking',
   },
   ar: {
     universeEyebrow: 'منتجات سيليبري',
@@ -93,6 +95,8 @@ const copy = {
     rangeLead: 'اكتشف فئات سيليبري — من الشحن اليومي إلى رحلاتك على الطريق.',
     shopNow: 'تسوّق الآن',
     serviceBar: 'خدمات العملاء',
+    moreDetails: 'تفاصيل إضافية (اختياري)',
+    emailHint: 'لإرسال تأكيد الطلب وتتبّعه',
   },
 };
 
