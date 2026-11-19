@@ -1,4 +1,5 @@
 import type { Lang } from '../lib/types';
+import { arCount, AR_PRODUCTS } from '../i18n/strings';
 
 /**
  * Presentation labels used only by the redesigned storefront sections (headings, CTA wording,
@@ -69,7 +70,7 @@ const copy = {
     storyEyebrow: 'قصتنا',
     closingEyebrow: 'ابقَ على اطلاع',
     closingCta: 'تصفح جميع المنتجات',
-    scenesTitle: 'صُمّمت لكل جزء من عالمك',
+    scenesTitle: 'مصممة لكل تفاصيل يومك',
     prev: 'السابق',
     next: 'التالي',
     overview: 'نظرة عامة',
@@ -78,9 +79,9 @@ const copy = {
     keyFacts: 'باختصار',
     services: 'التوصيل والعناية',
     bag: 'حقيبة التسوق',
-    items: (n: number) => (n === 1 ? 'منتج واحد' : `${n} منتجات`),
+    items: (n: number) => arCount(n, AR_PRODUCTS),
     saved: 'المنتجات المحفوظة',
-    savedCount: (n: number) => (n === 1 ? 'منتج محفوظ واحد' : `${n} منتجات محفوظة`),
+    savedCount: (n: number) => (n === 1 ? 'منتج محفوظ واحد' : n === 2 ? 'منتجان محفوظان' : `${arCount(n, AR_PRODUCTS)} محفوظة`),
     secureCheckout: 'دفع آمن',
     shopEyebrow: 'المتجر',
     categoryEyebrow: 'الفئة',

@@ -106,7 +106,7 @@ export default function FaqPage() {
               <FaqCategoryFilter categories={categories} value={cat} onChange={setCat} />
             </div>
             <p id="faq-count" className="faq-count" aria-live="polite">
-              {query || cat ? t.faq.results.replace('{n}', String(shown.length)) : ''}
+              {query || cat ? t.faq.results(shown.length) : ''}
             </p>
             {shown.length ? (
               <FaqAccordion key={`${cat}|${query}`} items={shown} allowMultiple={data.settings.allowMultipleOpen} openFromHash={!query && !cat} />

@@ -3,6 +3,30 @@
  * NOTE (Q12): the Arabic copy below is a draft prepared by the development team for review
  * by a native Saudi Arabic copywriter before launch — it is not final marketing copy.
  */
+/**
+ * Arabic counted noun with correct number agreement:
+ * 1 → «منتج واحد», 2 → dual «منتجان», 3–10 → plural «5 منتجات»,
+ * 11–99 → accusative singular «15 منتجاً», 0 / 100+ (remainder 0–2) → singular «100 منتج».
+ */
+export function arCount(n: number, f: { one: string; two: string; few: string; many: string; other: string }): string {
+  if (n === 1) return f.one;
+  if (n === 2) return f.two;
+  const r = n % 100;
+  if (r >= 3 && r <= 10) return `${n} ${f.few}`;
+  if (r >= 11) return `${n} ${f.many}`;
+  return `${n} ${f.other}`;
+}
+export const AR_PRODUCTS = { one: 'منتج واحد', two: 'منتجان', few: 'منتجات', many: 'منتجاً', other: 'منتج' };
+const AR_REVIEWS = { one: 'تقييم واحد', two: 'تقييمان', few: 'تقييمات', many: 'تقييماً', other: 'تقييم' };
+const AR_STARS = { one: 'نجمة واحدة', two: 'نجمتان', few: 'نجوم', many: 'نجمة', other: 'نجمة' };
+const AR_RESULTS = { one: 'نتيجة واحدة', two: 'نتيجتان', few: 'نتائج', many: 'نتيجة', other: 'نتيجة' };
+/** «ضمان سنة» / «ضمان سنتين» / «ضمان 6 أشهر» / «ضمان 18 شهراً». */
+function arWarranty(m: number): string {
+  const y = m / 12;
+  const unit = m >= 12 && m % 12 === 0 ? (y === 1 ? 'سنة' : y === 2 ? 'سنتين' : y <= 10 ? `${y} سنوات` : `${y} سنة`) : m === 1 ? 'شهر' : m === 2 ? 'شهرين' : m <= 10 ? `${m} أشهر` : `${m} شهراً`;
+  return `ضمان ${unit}`;
+}
+
 const ar = {
   brand: 'سيليبري',
   skipToContent: 'انتقل إلى المحتوى',
@@ -28,11 +52,7 @@ const ar = {
   service: {
     delivery: 'توصيل مجاني لكل المملكة',
     // Arabic number agreement: سنة / سنتين / 3–10 سنوات / 11+ سنة (and the same for أشهر).
-    warranty: (m: number) => {
-      const y = m / 12;
-      const unit = m >= 12 && m % 12 === 0 ? (y === 1 ? 'سنة' : y === 2 ? 'سنتين' : y <= 10 ? `${y} سنوات` : `${y} سنة`) : m === 1 ? 'شهر' : m === 2 ? 'شهرين' : m <= 10 ? `${m} أشهر` : `${m} شهراً`;
-      return `ضمان ${unit}`;
-    },
+    warranty: arWarranty,
     secure: 'دفع آمن',
     support: 'دعم عبر واتساب',
   },
@@ -49,14 +69,14 @@ const ar = {
     whyTitle: 'لماذا سيليبري؟',
     why: [
       { t: 'توصيل مجاني', d: 'توصيل مجاني لجميع مناطق المملكة.' },
-      { t: 'الضمان', d: 'ضمان على المنتجات وفق سياسة الضمان.' },
+      { t: 'الضمان', d: 'منتجاتنا مشمولة بالضمان حسب سياسة الضمان.' },
       { t: 'دفع محلي آمن', d: 'مدى، Apple Pay، فيزا، ماستركارد، STC Pay وتابي.' },
-      { t: 'دعم قريب منك', d: 'فريق دعم عبر واتساب بالعربية والإنجليزية.' },
+      { t: 'دعم بلغتك', d: 'فريق دعم عبر واتساب بالعربية والإنجليزية.' },
     ],
     useCases: 'لكل لحظة في يومك',
     useCaseNames: { 'for-travel': 'السفر', 'for-work': 'العمل', 'for-fitness': 'الرياضة', 'for-home': 'المنزل' } as Record<string, string>,
     storyTitle: 'قصة سيليبري',
-    storyFallback: 'سيليبري إنترناشونال علامة متخصصة في إكسسوارات الشحن والتقنية للسوق السعودي.',
+    storyFallback: 'سيليبري إنترناشونال علامة تجارية متخصصة في إكسسوارات الشحن والتقنية للسوق السعودي.',
     newsletterTitle: 'كن أول من يعرف',
     newsletterText: 'اشترك لتصلك العروض الموسمية والمنتجات الجديدة.',
     subscribe: 'اشترك',
@@ -80,7 +100,7 @@ const ar = {
     searchLabel: 'ابحث في الأسئلة',
     searchPlaceholder: 'ابحث عن سؤال…',
     clearSearch: 'مسح البحث',
-    results: '{n} نتيجة',
+    results: (n: number) => arCount(n, AR_RESULTS),
     noResults: 'لم نجد سؤالاً يطابق بحثك',
     noResultsHint: 'جرّب كلمة أخرى أو اختر فئة مختلفة.',
     empty: 'لا توجد أسئلة منشورة حالياً.',
@@ -93,7 +113,7 @@ const ar = {
     exploreEyebrow: 'الفئات الست',
     exploreTitle: 'استكشف المجموعة',
     exploreText: 'تنقّل بين الفئات واكتشف منتجات كل فئة.',
-    productsCount: (n: number) => (n === 1 ? 'منتج واحد' : n === 2 ? 'منتجان' : n <= 10 ? `${n} منتجات` : `${n} منتج`),
+    productsCount: (n: number) => arCount(n, AR_PRODUCTS),
     featuredEyebrow: 'مختارات',
     bundlesEyebrow: 'للسفر والعمرة والهدايا',
     addedTitle: 'تمت الإضافة إلى سلتك',
@@ -120,7 +140,7 @@ const ar = {
     description: 'الوصف',
     specs: 'المواصفات',
     warranty: 'الضمان',
-    warrantyText: (m: number) => `ضمان لمدة ${m} شهراً`,
+    warrantyText: arWarranty,
     shipping: 'الشحن والتوصيل',
     freeDelivery: 'توصيل مجاني لجميع مناطق المملكة',
     packaging: 'التغليف',
@@ -140,7 +160,7 @@ const ar = {
   },
   reviews: {
     title: 'آراء العملاء',
-    count: (n: number) => (n === 1 ? 'تقييم واحد' : `${n} تقييمات`),
+    count: (n: number) => arCount(n, AR_REVIEWS),
     average: (a: string) => `${a} من 5`,
     none: 'لا توجد تقييمات لهذا المنتج بعد.',
     verified: 'شراء موثّق',
@@ -150,14 +170,14 @@ const ar = {
     write: 'اكتب تقييماً',
     loginPrompt: 'سجّل الدخول لتقييم منتج استلمته.',
     login: 'تسجيل الدخول',
-    verifiedOnly: 'يمكن تقييم المنتج فقط بعد استلامه.',
+    verifiedOnly: 'لا يمكن تقييم المنتج إلا بعد استلامه.',
     rating: 'تقييمك',
-    star: (n: number) => (n === 1 ? 'نجمة واحدة' : `${n} نجوم`),
+    star: (n: number) => arCount(n, AR_STARS),
     titleLabel: 'العنوان (اختياري)',
     bodyLabel: 'رأيك في المنتج (اختياري)',
-    nameLabel: 'الاسم الظاهر (اختياري)',
+    nameLabel: 'الاسم المعروض (اختياري)',
     nameHint: 'اتركه فارغاً لإظهار اسمك الأول والحرف الأول من اسم العائلة.',
-    distribution: (stars: number, n: number) => `${stars} نجوم: ${n}`,
+    distribution: (stars: number, n: number) => `${arCount(stars, AR_STARS)}: ${n}`,
     yours: 'تقييمك',
     status: { pending: 'قيد المراجعة', approved: 'منشور', rejected: 'لم يُنشر', hidden: 'مخفي مؤقتاً' } as Record<string, string>,
     statusNote: 'تظهر التقييمات الجديدة والمعدّلة بعد مراجعتها.',
@@ -172,22 +192,22 @@ const ar = {
     addPhoto: 'إضافة صورة',
     removePhoto: 'إزالة الصورة',
     uploading: 'جارٍ الرفع…',
-    photoType: 'استخدم صورة JPEG أو PNG أو WebP بحجم 5 ميجابايت كحد أقصى.',
+    photoType: 'استخدم صورة JPEG أو PNG أو WebP بحجم أقصاه 5 ميجابايت.',
     photoAlt: (n: number) => `صورة العميل ${n}`,
     report: 'إبلاغ',
-    reportConfirm: 'الإبلاغ عن هذا التقييم كمحتوى غير مناسب؟',
+    reportConfirm: 'هل تريد الإبلاغ عن هذا التقييم لأنه غير مناسب؟',
     reported: 'شكراً، سنراجع هذا التقييم.',
     filterAll: 'الكل',
     submit: 'إرسال التقييم',
     chooseRating: 'اختر عدد النجوم.',
     thanks: 'شكراً لك! سيظهر تقييمك بعد مراجعته.',
     already: 'لقد قيّمت هذا المنتج مسبقاً.',
-    notVerified: 'يمكن فقط للعملاء الذين استلموا هذا المنتج تقييمه.',
+    notVerified: 'التقييم متاح فقط للعملاء الذين استلموا هذا المنتج.',
     failed: 'تعذّر إرسال التقييم. حاول مرة أخرى.',
   },
   shop: {
     title: 'كل المنتجات',
-    results: (n: number) => `${n} منتج`,
+    results: (n: number) => arCount(n, AR_PRODUCTS),
     sort: 'ترتيب',
     sortOptions: { featured: 'المميزة', newest: 'الأحدث', price_asc: 'السعر: من الأقل', price_desc: 'السعر: من الأعلى', name: 'الاسم' } as Record<string, string>,
     filters: 'التصفية',
@@ -227,14 +247,14 @@ const ar = {
     code: 'كود الخصم',
     applyCode: 'تطبيق',
     removeCode: 'إزالة',
-    changed: 'تغيّرت بعض المنتجات في سلتك. يرجى المراجعة.',
+    changed: 'تغيّرت بعض المنتجات في سلتك، يرجى مراجعتها.',
     unavailable: 'غير متوفر',
-    onlyLeft: (n: number) => `متبقي ${n} فقط`,
+    onlyLeft: (n: number) => `بقي ${n} فقط`,
   },
   offer: {
     percent: (v: number) => `خصم ${v}%`,
     amount: (a: string) => `خصم ${a}`,
-    minOrder: (a: string) => `للطلبات من ${a}`,
+    minOrder: (a: string) => `للطلبات بقيمة ${a} فأكثر`,
     members: 'للعملاء المسجّلين',
     firstOrder: 'لأول طلب',
     ends: (d: string) => `حتى ${d}`,
@@ -262,12 +282,12 @@ const ar = {
     more: 'اعرف المزيد',
   },
   errors: {
-    generic: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+    generic: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
     network: 'تعذّر الاتصال. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.',
     unavailable: 'الخدمة غير متاحة مؤقتاً. يرجى المحاولة بعد قليل.',
     rateLimited: 'طلبات كثيرة خلال وقت قصير. انتظر قليلاً ثم حاول مرة أخرى.',
     validation: 'بعض البيانات غير صحيحة. يرجى مراجعة الحقول.',
-    notFound: 'لم يتم العثور على المطلوب.',
+    notFound: 'لم نعثر على ما تبحث عنه.',
     signInRequired: 'يرجى تسجيل الدخول للمتابعة.',
     forbidden: 'ليست لديك صلاحية لهذا الإجراء.',
     invalidLogin: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
@@ -298,7 +318,7 @@ const ar = {
       minOrder: (amount: string) => `الحد الأدنى للطلب لاستخدام هذا الكود ${amount}.`,
       alreadyUsed: 'لقد استخدمت كود الخصم هذا من قبل.',
       notApplicable: 'كود الخصم لا ينطبق على منتجات سلتك.',
-      betterOffer: 'لم يُطبّق الكود لأن سلتك تحصل على عرض أفضل.',
+      betterOffer: 'لم نطبّق الكود لأن على سلتك عرضاً أفضل منه.',
       signIn: 'هذا العرض للعملاء المسجّلين — سجّل الدخول لاستخدامه.',
       firstOrder: 'هذا العرض لأول طلب فقط.',
     },
@@ -322,7 +342,7 @@ const ar = {
   currency: {
     label: 'العملة',
     auto: (code: string) => `تلقائي حسب الدولة (${code})`,
-    chargeNote: (code: string, amount: string) => `الأسعار بعملة ${code} تقريبية وفق سعر الصرف الحالي. يتم تحصيل طلبك بالريال السعودي: ${amount}.`,
+    chargeNote: (code: string, amount: string) => `الأسعار بعملة ${code} تقريبية حسب سعر الصرف الحالي، ويُحصَّل مبلغ طلبك بالريال السعودي: ${amount}.`,
   },
   checkout: {
     title: 'إتمام الشراء',
@@ -338,7 +358,7 @@ const ar = {
     street: 'الشارع',
     building: 'رقم المبنى',
     postal: 'الرمز البريدي',
-    shortAddress: 'العنوان المختصر (اختياري)',
+    shortAddress: 'العنوان الوطني المختصر (اختياري)',
     notes: 'ملاحظات للتوصيل (اختياري)',
     saveAddress: 'احفظ هذا العنوان في حسابي',
     delivery: 'التوصيل',
@@ -352,28 +372,28 @@ const ar = {
       cod: 'الدفع عند الاستلام',
     } as Record<string, string>,
     noMethods: 'الدفع الإلكتروني غير متاح حالياً. يرجى التواصل معنا عبر واتساب.',
-    sandboxNote: 'وضع التجربة: لا يتم خصم أي مبالغ حقيقية.',
+    sandboxNote: 'وضع التجربة: لن تُخصم أي مبالغ حقيقية.',
     placeOrder: 'تأكيد الطلب والدفع',
     placeOrderCod: 'تأكيد الطلب',
     shippingPaused: 'التوصيل متوقف مؤقتاً. يرجى المحاولة لاحقاً.',
     cityUnavailable: 'لا نوصل إلى هذه المدينة حالياً. يرجى اختيار عنوان آخر أو التواصل معنا.',
     zoneDelivery: (zone: string, eta: string) => `منطقة التوصيل: ${zone}${eta ? ` · ${eta}` : ''}`,
-    codBelowMin: 'الدفع عند الاستلام متاح للطلبات من مبلغ أعلى.',
+    codBelowMin: 'الدفع عند الاستلام غير متاح لهذا المبلغ، ويتوفر للطلبات الأعلى قيمة.',
     codAboveMax: 'الدفع عند الاستلام غير متاح لهذا المبلغ. يرجى اختيار طريقة دفع إلكترونية.',
     codCity: 'الدفع عند الاستلام غير متاح في هذه المدينة حالياً.',
-    freeFrom: (amount: string) => `توصيل مجاني للطلبات من ${amount}`,
+    freeFrom: (amount: string) => `توصيل مجاني للطلبات بقيمة ${amount} فأكثر`,
     processing: 'جارٍ المعالجة…',
     agree: 'بإتمام الطلب فإنك توافق على الشروط والأحكام وسياسة الخصوصية.',
     summary: 'ملخص الطلب',
-    guestNote: 'يمكنك الشراء كزائر أو',
-    loginLink: 'تسجيل الدخول',
+    guestNote: 'أكمل طلبك بدون حساب، أو',
+    loginLink: 'سجّل دخولك',
     draftNotice: 'نحفظ ما تُدخله هنا تلقائياً حتى تتمكن من إكمال طلبك لاحقاً. لا نحفظ بيانات البطاقة أبداً.',
     draftOptOut: 'لا تحفظ بياناتي',
-    draftOptedOut: 'لن يتم حفظ بيانات إتمام الطلب على هذا الجهاز.',
+    draftOptedOut: 'لن نحفظ بيانات طلبك على هذا الجهاز.',
     draftOptIn: 'احفظ تقدّمي',
     draftSaving: 'جارٍ الحفظ…',
     draftSaved: 'تم الحفظ',
-    draftOffline: 'غير متصل — سيتم الحفظ عند عودة الاتصال',
+    draftOffline: 'غير متصل — سنحفظ بياناتك عند عودة الاتصال',
     draftRestored: 'استعدنا البيانات التي أدخلتها سابقاً.',
     paymentError: 'تعذر بدء الدفع. يمكنك إعادة المحاولة من صفحة الطلب.',
   },
@@ -382,11 +402,11 @@ const ar = {
     success: 'تم تأكيد طلبك',
     successText: 'شكراً لك! أرسلنا تفاصيل الطلب إلى بريدك الإلكتروني.',
     codSuccess: 'تم استلام طلبك',
-    codSuccessText: 'سيتم الدفع عند الاستلام. سنتواصل معك بخصوص التوصيل.',
+    codSuccessText: 'ستدفع عند الاستلام، وسنتواصل معك بخصوص التوصيل.',
     failed: 'لم يكتمل الدفع',
-    failedText: 'لم يتم خصم أي مبلغ. يمكنك المحاولة مرة أخرى.',
+    failedText: 'لم يُخصم أي مبلغ من حسابك. يمكنك المحاولة مرة أخرى.',
     pending: 'الدفع قيد المعالجة',
-    pendingText: 'سنقوم بتحديث حالة طلبك فور تأكيد الدفع.',
+    pendingText: 'سنحدّث حالة طلبك فور تأكيد الدفع.',
     retry: 'إعادة محاولة الدفع',
     orderNumber: 'رقم الطلب',
     viewOrder: 'عرض الطلب',
@@ -394,7 +414,7 @@ const ar = {
   },
   sandbox: {
     title: 'بوابة الدفع التجريبية',
-    text: 'هذه صفحة محاكاة لبوابة الدفع لأغراض التطوير والاختبار فقط. لا يتم خصم أي مبالغ.',
+    text: 'هذه الصفحة تحاكي بوابة الدفع لأغراض التطوير والاختبار فقط، ولن تُخصم أي مبالغ.',
     amount: 'المبلغ',
     method: 'طريقة الدفع',
     pay: 'محاكاة دفع ناجح',
@@ -408,7 +428,7 @@ const ar = {
       processing: 'قيد التجهيز',
       shipped: 'تم الشحن',
       delivered: 'تم التوصيل',
-      cancelled: 'ملغي',
+      cancelled: 'ملغى',
       returned: 'مُرتجع',
       paid: 'تم الدفع',
       refund: 'استرداد',
@@ -417,7 +437,7 @@ const ar = {
       pending: 'بانتظار الدفع',
       paid: 'مدفوع',
       failed: 'فشل الدفع',
-      expired: 'منتهي',
+      expired: 'انتهت المهلة',
       refunded: 'مسترد',
       partially_refunded: 'مسترد جزئياً',
       cod_pending: 'الدفع عند الاستلام',
@@ -471,7 +491,7 @@ const ar = {
     edit: 'تعديل',
     delete: 'حذف',
     default: 'افتراضي',
-    makeDefault: 'تعيين كافتراضي',
+    makeDefault: 'اجعله العنوان الافتراضي',
     save: 'حفظ',
     saved: 'تم الحفظ',
     cancel: 'إلغاء',
@@ -505,7 +525,7 @@ const ar = {
     error: 'حدث خطأ',
     retry: 'إعادة المحاولة',
     notFound: 'الصفحة غير موجودة',
-    notFoundText: 'ربما تم نقل الصفحة أو حذفها.',
+    notFoundText: 'ربما نُقلت الصفحة أو حُذفت.',
     home: 'الرئيسية',
     back: 'رجوع',
     required: 'مطلوب',
@@ -530,7 +550,7 @@ const ar = {
     cancelConfirm: 'هل تريد إلغاء طلب الإرجاع؟',
     refund: (amount: string) => `المبلغ المسترد: ${amount}`,
     reasonNote: (note: string) => `السبب: ${note}`,
-    reasons: { defective: 'منتج معيب', wrong_item: 'وصلني منتج خاطئ', not_as_described: 'غير مطابق للوصف', damaged_in_delivery: 'تلف أثناء التوصيل', changed_mind: 'غيّرت رأيي', other: 'سبب آخر' } as Record<string, string>,
+    reasons: { defective: 'منتج معيب', wrong_item: 'وصلني منتج خاطئ', not_as_described: 'غير مطابق للوصف', damaged_in_delivery: 'وصلني تالفاً', changed_mind: 'غيّرت رأيي', other: 'سبب آخر' } as Record<string, string>,
     status: { requested: 'قيد المراجعة', approved: 'تمت الموافقة — أرسل المنتجات', rejected: 'مرفوض', received: 'تم استلام المنتجات', refunded: 'تم رد المبلغ', cancelled: 'ملغى' } as Record<string, string>,
   },
 };
@@ -609,7 +629,7 @@ const en: Dict = {
     searchLabel: 'Search the FAQs',
     searchPlaceholder: 'Search a question…',
     clearSearch: 'Clear search',
-    results: '{n} results',
+    results: (n: number) => (n === 1 ? '1 result' : `${n} results`),
     noResults: 'No question matches your search',
     noResultsHint: 'Try another word or choose a different category.',
     empty: 'There are no published questions yet.',

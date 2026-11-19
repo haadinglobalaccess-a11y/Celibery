@@ -67,8 +67,8 @@ const L = {
   ar: {
     store: 'سيليبري إنترناشونال',
     currency: 'ر.س',
-    pay: { card: 'بطاقة ائتمان / مدى', applepay: 'Apple Pay', stcpay: 'STC Pay', tabby: 'تابي (الدفع بالتقسيط)', cod: 'الدفع عند الاستلام' } as Record<string, string>,
-    status: { pending: 'بانتظار الدفع', confirmed: 'مؤكد', processing: 'قيد التجهيز', shipped: 'تم الشحن', delivered: 'تم التوصيل', cancelled: 'ملغي', returned: 'مرتجع' } as Record<string, string>,
+    pay: { card: 'مدى / فيزا / ماستركارد', applepay: 'Apple Pay', stcpay: 'STC Pay', tabby: 'تابي (قسّمها على 4 دفعات)', cod: 'الدفع عند الاستلام' } as Record<string, string>,
+    status: { pending: 'بانتظار الدفع', confirmed: 'مؤكد', processing: 'قيد التجهيز', shipped: 'تم الشحن', delivered: 'تم التوصيل', cancelled: 'ملغى', returned: 'مرتجع' } as Record<string, string>,
     noTracking: 'سيُرسل رقم التتبع عند شحن الطلب',
     product: 'المنتج',
     qty: 'الكمية',
@@ -87,7 +87,7 @@ const L = {
     shipTo: 'عنوان الشحن',
     tracking: 'رقم التتبع',
     view: 'عرض طلبك',
-    more: (n: number) => `+ ${n} منتجات أخرى`,
+    more: (n: number) => (n === 1 ? '+ منتج آخر' : n === 2 ? '+ منتجان آخران' : n <= 10 ? `+ ${n} منتجات أخرى` : `+ ${n} منتجاً آخر`),
   },
 } as const;
 
