@@ -295,21 +295,8 @@ html[lang='ar'] .campaign-copy .cine__title {
 /* Refined luxury spacing below fullscreen hero */
 .campaign-hero-slider + .section { margin-top: 64px; }
 
-/* Align CELIBERY logo and desktop navigation on one center line */
-@media (min-width: 960px) {
-  .header__bar { align-items: center; }
-  .header__bar > a:first-of-type { display: inline-flex; align-items: center; align-self: center; line-height: 1; }
-  .header__bar > a:first-of-type .logo { display: inline-flex; align-items: center; line-height: 1; }
-  .header__bar > a:first-of-type .logo img { display: block; }
-  .header__nav { align-self: center; }
-}
+/* Logo/nav centre-line alignment lives with the logo sizing in styles/celibery.css (.header__brand). */
 
-/* Fine-tune CELIBERY logo vertical alignment */
-@media (min-width: 960px) { .header__bar > a:first-of-type .logo { transform: translateY(2px); } }
-
-/* Refined premium hero headline */
-.campaign-copy .cine__title { font-size: clamp(3.1rem, 5.2vw, 5.8rem); font-weight: 650; }
-@media (max-width: 639px) { .campaign-copy .cine__title { font-size: clamp(2.5rem, 9vw, 3.5rem); font-weight: 650; } }
 
 /* UGREEN-inspired refined editorial headline */
 .campaign-copy .cine__title { font-size: clamp(2.4rem, 3.8vw, 4.2rem); font-weight: 550; line-height: 1.08; letter-spacing: -.035em; text-transform: none; max-width: 620px; }

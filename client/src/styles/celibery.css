@@ -256,7 +256,7 @@ html[dir='rtl'] .cx-chev--prev {
 .cx-input:focus {
   outline: none;
   border-color: var(--cx-ink);
-  box-shadow: 0 0 0 4px rgb(11 11 12 / 0.08);
+  box-shadow: 0 0 0 4px rgb(17 17 17 / 0.08);
 }
 
 /* Tags (badges) */
@@ -298,7 +298,7 @@ html[dir='rtl'] .cx-chev--prev {
   padding-block: var(--cx-pad);
 }
 .is-dark {
-  color: #f5f5f7;
+  color: var(--on-dark);
 }
 .cx-home {
   overflow-x: clip;
@@ -493,12 +493,12 @@ html[lang='ar'] .cx-card__title {
 }
 .cx-card__add:disabled {
   background: var(--cx-cloud-2);
-  color: #a1a1a6;
+  color: var(--muted-2);
   cursor: not-allowed;
 }
 /* Dark card */
 .cx-card--dark {
-  color: #f5f5f7;
+  color: var(--on-dark);
 }
 .cx-card--dark .cx-card__media {
   box-shadow:
@@ -797,7 +797,7 @@ html[lang='ar'] .cx-uni__name {
   background:
     radial-gradient(60% 70% at 70% 50%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 70%),
     var(--cx-night);
-  color: #f5f5f7;
+  color: var(--on-dark);
 }
 /* Same light, kept behind the product when the layout is mirrored. */
 .cx-flag--dark.cx-flag--flip {
@@ -1790,7 +1790,7 @@ html[lang='ar'] .cx-fgroup h3 {
 .cx-select:focus {
   outline: none;
   border-color: var(--cx-ink);
-  box-shadow: 0 0 0 4px rgb(11 11 12 / 0.08);
+  box-shadow: 0 0 0 4px rgb(17 17 17 / 0.08);
 }
 .cx-chips {
   display: flex;
@@ -2745,7 +2745,7 @@ html[lang='ar'] .cx-checkout .summary h2 {
 }
 .cx-checkout .pay-option:has(input:checked) {
   border-color: var(--cx-ink);
-  box-shadow: 0 0 0 3px rgb(11 11 12 / 0.07);
+  box-shadow: 0 0 0 3px rgb(17 17 17 / 0.07);
 }
 .cx-checkout .info-row {
   border-radius: 16px;
@@ -3102,7 +3102,7 @@ html[lang='ar'] .cx-footer h3 {
 }
 /* Branded placeholder drawings (no product photo yet) sit on the light stage they were drawn for. */
 .cx-art[data-kind='cutout'] {
-  background: #f3f3f4;
+  background: var(--brand-cloud);
 }
 /* Group proportion: when every artwork in a row is landscape (or every one portrait), the row's
    frames take that proportion together; mixed rows stay square. Decided once images report their
@@ -3538,11 +3538,11 @@ html[lang='ar'] .cx-gal__name strong {
 
 /* ---- precision split (liquid chrome panels) ---- */
 [data-fx='split'] {
-  --fx-panel: linear-gradient(100deg, #111114 0%, #2b2b31 42%, #9a9aa3 50%, #2b2b31 58%, #111114 100%);
+  --fx-panel: linear-gradient(100deg, var(--brand-midnight) 0%, var(--brand-graphite) 42%, var(--on-dark-muted) 50%, var(--brand-graphite) 58%, var(--brand-midnight) 100%);
 }
 .cx-spot:not(.is-dark) [data-fx='split'],
 .cx-campaign--light[data-fx='split'] {
-  --fx-panel: linear-gradient(100deg, #e9e9ee 0%, #f8f8fa 42%, #ffffff 50%, #f8f8fa 58%, #e9e9ee 100%);
+  --fx-panel: linear-gradient(100deg, var(--surface-2) 0%, var(--brand-cloud) 42%, var(--brand-white) 50%, var(--brand-cloud) 58%, var(--surface-2) 100%);
 }
 .cx-theatre [data-fx='split']::before,
 .cx-theatre .cx-spot__hero[data-fx='split']::after,
@@ -4164,18 +4164,71 @@ html[dir='rtl'] .drawer.drawer--3d {
    Loaded last on purpose: aligns shared pieces with tokens.css.
    ===================================================================== */
 
-/* Logo: the supplied wordmark, sized by height so its 4.5:1 ratio is kept. */
+/* Logo: the supplied wordmark, sized by height so its 4.5:1 ratio is kept.
+   Header sizes — desktop 32px tall (144px wide), tablet/phone 22px (99px), and on phones
+   narrower than 390px the width tracks the viewport (76–99px) so the bar never has to squash it. */
 .logo--brand {
   letter-spacing: 0;
   line-height: 0;
 }
 .logo--brand img {
+  display: block;
   height: 28px;
   width: auto;
+}
+
+/* The header logo link is a flex box of its own: no inline line box below the image, so the
+   wordmark sits on the bar's exact centre line (and on the nav's) at every width. It never
+   shrinks — a shrinking flex item squeezed the 4.5:1 wordmark to ~2.2:1 on 320px phones. */
+.header__brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.header__brand .logo {
+  display: flex;
+  align-items: center;
+}
+.header__bar > .mobile-only {
+  flex-shrink: 0;
+}
+@media (min-width: 960px) {
+  .header .logo--brand img {
+    height: 32px;
+  }
 }
 @media (max-width: 959px) {
   .header .logo--brand img {
     height: 22px;
+  }
+}
+
+/* Small phones (< 390px): the menu button, logo and five header actions need ~350px but only
+   ~288px is available at 320px. Tighten the bar instead of letting flexbox crush the logo. */
+@media (max-width: 389px) {
+  .header__bar {
+    gap: 6px;
+    padding-inline: 12px;
+  }
+  .header .logo--brand img {
+    width: clamp(76px, 26vw, 99px);
+    height: auto;
+  }
+  .header__bar > .mobile-only,
+  .header .header__actions > .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .header .header__actions {
+    gap: 2px;
+  }
+  .header .header__actions .lang-switch {
+    margin-inline-end: 0;
+    padding-inline: 8px;
+  }
+  .header .header__actions > .lang-switch:first-child {
+    margin-inline-end: 4px; /* keeps the language and currency pills from touching */
   }
 }
 .cx-footer .logo--brand img,

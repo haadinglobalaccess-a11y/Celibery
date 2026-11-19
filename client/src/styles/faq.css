@@ -250,7 +250,7 @@ html[lang='ar'] .faq-q__btn {
 }
 .faq-chip:hover {
   color: var(--cx-ink);
-  border-color: rgb(11 11 12 / 0.24);
+  border-color: rgb(17 17 17 / 0.24);
 }
 .faq-chip[aria-pressed='true'] {
   background: var(--cx-ink);
@@ -305,7 +305,7 @@ html[lang='ar'] .faq-q__btn {
   padding: 16px 0;
   padding-inline-start: 32px;
   border: 0;
-  border-bottom: 1px solid rgb(11 11 12 / 0.2);
+  border-bottom: 1px solid rgb(17 17 17 / 0.2);
   border-radius: 0;
   background: transparent;
   color: var(--cx-ink);

@@ -27,7 +27,7 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!assets/|placeholders/|media/|favicon.svg).*)",
+      "source": "/((?!assets/|placeholders/|media/|brand/|favicon.ico|site.webmanifest).*)",
       "destination": "/index.html"
     }
   ],

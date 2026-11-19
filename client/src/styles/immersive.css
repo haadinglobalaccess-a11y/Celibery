@@ -688,7 +688,7 @@
     translate 600ms var(--ease-cinema);
 }
 .dark .card--3d .card__media {
-  background: #1c1c20;
+  background: var(--dark-2);
 }
 .dark .card--3d .card__media img {
   mix-blend-mode: normal;
@@ -1721,7 +1721,7 @@ a.order-card:hover {
 
 /* CELIBERY OUR STORY — SHOW THE COMPLETE ADMIN-UPLOADED IMAGE */
 .story__media--3d {
-  background: #050609;
+  background: var(--brand-midnight);
 }
 .story__media--3d img {
   width: 100%;
@@ -1739,7 +1739,7 @@ a.order-card:hover {
 
 /* CELIBERY OUR STORY — PREMIUM INSET IMAGE FRAME */
 .story__media--3d {
-  background: #050609;
+  background: var(--brand-midnight);
   overflow: hidden;
   border-radius: var(--r-xl);
 }

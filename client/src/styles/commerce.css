@@ -14,12 +14,14 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
 .storefront .cx-uni__index { display: none; }
 .storefront .cx-uni__cta { margin-top: 8px; font-size: .75rem; }
 .storefront .cx-flag__inner { min-height: 0; padding-block: clamp(36px, 5vw, 72px); }
-.storefront .cx-flag__title { font-size: clamp(1.8rem, 3.3vw, 3.5rem); line-height: 1.15; }
+/* Fluid from phone to desktop (28px at 320 → 47.5px at 1440, as before on desktop). */
+.storefront .cx-flag__title { font-size: clamp(1.75rem, 1.17rem + 2vw, 3.5rem); line-height: 1.15; }
 .storefront .cx-flag__desc { font-size: 1rem; line-height: 1.65; max-width: 45ch; }
 .storefront .cx-spot__inner { min-height: 0; padding-block: clamp(36px, 5vw, 72px); }
 .storefront .cx-spot__chapter { font-size: clamp(3rem, 6vw, 6rem); }
 .storefront .cx-listhead { padding-block: 24px 32px; }
-.storefront .cx-listhead h1 { font-size: clamp(1.9rem, 3vw, 3.25rem); line-height: 1.2; }
+/* Category / shop / bundles title: 28px on phones, scaling with the viewport (was flat 30.4px up to ~1000px); desktop unchanged. */
+.storefront .cx-listhead h1 { font-size: clamp(1.75rem, 1.05rem + 1.83vw, 3.25rem); line-height: 1.2; }
 .storefront .cx-results-search { display: flex; gap: 8px; margin-top: 20px; max-width: 560px; }
 .storefront .cx-results-search .input { flex: 1; min-width: 0; }
 .storefront .cx-listhead__visual, .storefront .cx-listhead__visual img { max-height: 220px; object-fit: contain; }
@@ -28,7 +30,8 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
 .storefront .cx-card__add, .storefront .cx-card__wish { min-width: 44px; min-height: 44px; }
 .storefront .cx-card__wish { top: 8px; inset-inline-end: 8px; }
 .storefront .cx-card__badges { top: 10px; inset-inline-start: 10px; }
-.storefront .cx-pdp__title { font-size: clamp(1.8rem, 2.8vw, 3rem); line-height: 1.2; }
+/* Product name: 24px on phones so the price and buy box stay close; desktop unchanged (40px at 1440, 48px at 1920). */
+.storefront .cx-pdp__title { font-size: clamp(1.5rem, 1.1rem + 1.58vw, 3rem); line-height: 1.2; }
 .storefront .cx-pdp__lead { font-size: 1rem; line-height: 1.7; }
 .storefront .cx-pdp__section { padding-block: clamp(32px, 5vw, 68px); }
 .storefront .cx-detail { min-width: 0; width: 100%; border-block: 1px solid var(--cx-line); }
