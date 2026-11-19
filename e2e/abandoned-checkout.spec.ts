@@ -35,8 +35,8 @@ test.describe.serial('abandoned checkout tracking', () => {
     const admin = await adminApi(playwright, info.project.use.baseURL!);
     await startCheckout(page);
     // 2. Name and phone only.
-    await page.locator('input[name="name"]').fill('Draft Guest One');
-    await page.locator('input[name="phone"]').fill('0551231231');
+    await page.locator('input[name="fullName"]').fill('Draft Guest One');
+    await page.locator('input[name="addrPhone"]').fill('0551231231');
     await saved(page);
     await expect.poll(async () => (await findDraft(admin, 'Draft Guest One'))?.contact.phone).toBe('0551231231');
     expect((await findDraft(admin, 'Draft Guest One'))!.status).toBe('in_progress');
@@ -49,13 +49,12 @@ test.describe.serial('abandoned checkout tracking', () => {
     await saved(page);
     await page.reload();
     await expect(page.getByTestId('draft-restored')).toBeVisible();
-    await expect(page.locator('input[name="name"]')).toHaveValue('Draft Guest One');
+    await expect(page.locator('input[name="fullName"]')).toHaveValue('Draft Guest One');
     await expect(page.locator('input[name="email"]')).toHaveValue('draft.one@test.local');
     await expect(page.locator('input[name="street"]')).toHaveValue('Draft Street 1');
 
     // 7–8. Complete and place the order (sandbox card).
-    await page.locator('input[name="fullName"]').fill('Draft Guest One');
-    await page.locator('input[name="addrPhone"]').fill('0551231231');
+    await page.locator('.checkout-more').evaluate((d) => ((d as HTMLDetailsElement).open = true)); // optional details are collapsed
     await page.locator('input[name="postalCode"]').fill('12211');
     await page.getByTestId('pay-card').click();
     await page.getByTestId('place-order').click();
@@ -72,7 +71,7 @@ test.describe.serial('abandoned checkout tracking', () => {
   test('3 & 4. offline, then the device shuts down: nothing is lost and it syncs on the next visit', async ({ page, context, playwright }, info) => {
     const admin = await adminApi(playwright, info.project.use.baseURL!);
     await startCheckout(page);
-    await page.locator('input[name="name"]').fill('Draft Offline Two');
+    await page.locator('input[name="fullName"]').fill('Draft Offline Two');
     await page.locator('input[name="email"]').fill('draft.two@test.local');
     await saved(page);
     // Connection lost while typing the address.
@@ -91,7 +90,7 @@ test.describe.serial('abandoned checkout tracking', () => {
     const again = await context.newPage();
     await again.goto('/en/checkout');
     await expect(again.locator('input[name="street"]')).toHaveValue('Offline Street 2');
-    await expect(again.locator('input[name="name"]')).toHaveValue('Draft Offline Two');
+    await expect(again.locator('input[name="fullName"]')).toHaveValue('Draft Offline Two');
     await expect.poll(async () => (await findDraft(admin, 'Draft Offline Two'))?.shippingAddress.street, { timeout: 10_000 }).toBe('Offline Street 2');
     const d = (await findDraft(admin, 'Draft Offline Two'))!;
     expect(d.shippingAddress.city).toBe('Jeddah');
@@ -103,7 +102,7 @@ test.describe.serial('abandoned checkout tracking', () => {
   test('the customer can opt out: the saved copy is deleted and nothing more is saved', async ({ page, playwright }, info) => {
     const admin = await adminApi(playwright, info.project.use.baseURL!);
     await startCheckout(page);
-    await page.locator('input[name="name"]').fill('Draft Optout Three');
+    await page.locator('input[name="fullName"]').fill('Draft Optout Three');
     await saved(page);
     await expect.poll(async () => Boolean(await findDraft(admin, 'Draft Optout Three'))).toBe(true);
     await page.getByTestId('draft-optout').click();
@@ -140,7 +139,8 @@ test.describe.serial('abandoned checkout tracking', () => {
 
     await page.getByTestId('drafts-filter-in_progress').click();
     await page.getByRole('link', { name: 'Draft Offline Two' }).click();
-    await expect(page.getByTestId('draft-missing')).toContainText('Recipient name');
+    // One-form checkout: the name typed is also the recipient name, so the mobile is what this draft still lacks.
+    await expect(page.getByTestId('draft-missing')).toContainText('Recipient phone');
     await expect(page.getByText('Offline Street 2')).toBeVisible();
     await expect(page.getByTestId('draft-items')).toBeVisible();
   });

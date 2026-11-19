@@ -137,7 +137,25 @@ class DraftSync {
     this.timer = setTimeout(() => void this.flush(), DEBOUNCE_MS);
   }
 
-  async flush(): Promise<void> {
+  /** Resolves once no save is on its way to the server (used before the order is placed), or after
+   *  `maxMs` so a stalled network never holds up the order. */
+  idle(maxMs = 3000): Promise<void> {
+    if (!this.current) return Promise.resolve();
+    return Promise.race([this.current, new Promise<void>((r) => setTimeout(r, maxMs))]);
+  }
+  private current: Promise<void> | null = null;
+
+  flush(): Promise<void> {
+    const run = this.flushNow();
+    if (!this.current) {
+      this.current = run.finally(() => {
+        this.current = null;
+      });
+    }
+    return run;
+  }
+
+  private async flushNow(): Promise<void> {
     clearTimeout(this.timer);
     if (this.inFlight) {
       this.again = true;
@@ -207,6 +225,7 @@ class DraftSync {
   reset() {
     clearTimeout(this.timer);
     clearTimeout(this.retryTimer);
+    this.again = false; // no follow-up save once an in-flight one returns
     this.setStatus('idle');
   }
 }

@@ -91,13 +91,13 @@ test.describe.serial('complete shopping flow (required end-to-end test)', () => 
     await page.goto('/en/p/demo-wall-charger-65w');
     await page.getByTestId('add-to-cart').click();
     await page.goto('/en/checkout');
-    await page.locator('input[name="name"]').fill('Fahad Al-Test');
-    await page.locator('input[name="email"]').fill('fahad@test.local');
-    await page.locator('input[name="phone"]').fill('0551234567');
     await page.locator('input[name="fullName"]').fill('Fahad Al-Test');
+    await page.locator('input[name="email"]').fill('fahad@test.local');
+    await page.locator('input[name="addrPhone"]').fill('0551234567');
     await page.locator('input[name="city"]').fill('Riyadh');
     await page.locator('input[name="district"]').fill('Al Olaya');
     await page.locator('input[name="street"]').fill('King Fahd Road');
+    await page.locator('.checkout-more').evaluate((d) => ((d as HTMLDetailsElement).open = true)); // optional details are collapsed
     await page.locator('input[name="postalCode"]').fill('12211');
     await page.getByTestId('pay-card').click();
     await expect(page.getByTestId('summary')).toContainText('Free');

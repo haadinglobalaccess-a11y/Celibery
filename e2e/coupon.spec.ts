@@ -42,13 +42,13 @@ async function applyCode(page: Page, code: string) {
 }
 
 async function fillCheckout(page: Page) {
-  await page.locator('input[name="name"]').fill('Coupon Tester');
-  await page.locator('input[name="email"]').fill('coupon@test.local');
-  await page.locator('input[name="phone"]').fill('0551234567');
   await page.locator('input[name="fullName"]').fill('Coupon Tester');
+  await page.locator('input[name="email"]').fill('coupon@test.local');
+  await page.locator('input[name="addrPhone"]').fill('0551234567');
   await page.locator('input[name="city"]').fill('Riyadh');
   await page.locator('input[name="district"]').fill('Al Olaya');
   await page.locator('input[name="street"]').fill('King Fahd Road');
+  await page.locator('.checkout-more').evaluate((d) => ((d as HTMLDetailsElement).open = true)); // optional details are collapsed
   await page.locator('input[name="postalCode"]').fill('12211');
   await page.getByTestId('pay-card').click();
 }
@@ -134,7 +134,7 @@ test.describe.serial('discount codes in the storefront', () => {
     await page.waitForTimeout(500);
     expect(checkoutCalls).toBe(0);
     // Entered details survive (no page reload).
-    await expect(page.locator('input[name="name"]')).toHaveValue('Coupon Tester');
+    await expect(page.locator('input[name="fullName"]')).toHaveValue('Coupon Tester');
 
     // Remove restores the full price on checkout too.
     await page.locator('.code-form').getByRole('button', { name: 'Remove' }).click();
