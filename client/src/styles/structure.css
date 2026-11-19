@@ -293,13 +293,8 @@ html[dir='rtl'] .header .mx__cat[aria-current='true'] .icon {
 .cx-range__grid[data-rest='1'] .cx-range__tile--sm {
   grid-column: span 12;
 }
-.cx-range--white {
-  background: var(--paper);
-}
-.cx-range--ice {
-  background: var(--accent-soft);
-}
-.cx-range--mist {
+/* One tone for every tile (the Car Essentials grey): the range reads as one calm, premium set. */
+.cx-range__tile {
   background: var(--surface-2);
 }
 .cx-range__copy {

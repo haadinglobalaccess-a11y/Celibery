@@ -97,7 +97,6 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
 /* ───────────────────────── 04 · Category range — bento grid ───────────────────────── */
 /** One section for the whole range instead of a full chapter per category: two large tiles, then the
  *  rest in a row. Name, Admin description and visual are the category's own; the CTA opens its page. */
-const RANGE_TONES = ['white', 'ice', 'mist', 'white', 'ice', 'mist'] as const;
 
 export function CategoryRange({ data }: { data: HomeData }) {
   const { lang, p } = useI18n();
@@ -118,7 +117,7 @@ export function CategoryRange({ data }: { data: HomeData }) {
               <Link
                 key={cat._id}
                 to={p(`/c/${cat.slug}`)}
-                className={`cx-range__tile cx-range__tile--${i < 2 ? 'lg' : 'sm'} cx-range--${RANGE_TONES[i % RANGE_TONES.length]}`}
+                className={`cx-range__tile cx-range__tile--${i < 2 ? 'lg' : 'sm'}`}
                 aria-labelledby={`cx-range-${cat.slug}`}
                 data-fx="rise"
                 style={{ '--d': `${(i % 4) * 90}ms` } as CSSProperties}
