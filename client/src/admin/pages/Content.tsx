@@ -170,10 +170,10 @@ function HomepageSettings() {
           </label>
         </div>
       </Card>
-      <Card title="Lifestyle scenes">
+      <Card title="Lifestyle scene">
         <p className="muted" style={{ fontSize: 13 }}>
-          A wide lifestyle photo with tabs underneath (for example Home · Office · Car · Travel). Each tab is a banner with the placement <strong>Lifestyle scene</strong> in the Banners tab: its title is the tab name, its
-          description the text under the photo, plus a button label and link. Sort order sets the tab order. The section is hidden while no scene is active.
+          One wide lifestyle photo under a centred title, with optional text and a button below it. Add the photo in the Banners tab as a banner with the placement <strong>Lifestyle scene</strong>. The section is hidden
+          while no scene is active.
         </p>
         <p className="muted" style={{ fontSize: 13 }}>
           Photo sizes: <strong>desktop 2400 × 1060 px</strong> (ratio about 2.27 : 1, landscape) · <strong>mobile 1600 × 1000 px</strong> (16 : 10, optional — without it the desktop photo is centre-cropped). Keep the
@@ -181,7 +181,7 @@ function HomepageSettings() {
         </p>
         <div className="form-grid form-grid--2">
           <label className="check span-2">
-            <input type="checkbox" checked={h.scenesEnabled} onChange={(e) => setH({ ...h, scenesEnabled: e.target.checked })} /> Show the lifestyle scenes section
+            <input type="checkbox" checked={h.scenesEnabled} onChange={(e) => setH({ ...h, scenesEnabled: e.target.checked })} /> Show the lifestyle scene section
           </label>
           <LocInput label="Section title (empty = “Made for every part of your world”)" value={h.scenesTitle} onChange={(v) => setH({ ...h, scenesTitle: v })} />
         </div>
@@ -198,6 +198,7 @@ function Banners() {
   const [err, setErr] = useState<unknown>(null);
   if (error) return <ErrorState message={error.message} />;
   if (loading || !data) return <Spinner />;
+  const scene = edit?.placement === 'scene';
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setErr(null);
@@ -262,7 +263,7 @@ function Banners() {
             ))}
           </tbody>
         </table></div>
-        {!data.length ? <p className="muted">No banners yet. Hero banners replace the animated product slider; lifestyle banners appear mid-page; lifestyle scenes are the tabs of the homepage scenes section.</p> : null}
+        {!data.length ? <p className="muted">No banners yet. Hero banners replace the animated product slider; lifestyle banners appear mid-page; a lifestyle scene is the one photo of the homepage scene section.</p> : null}
       </Card>
       {edit ? (
         <Modal title={edit._id ? 'Edit banner' : 'New banner'} onClose={() => setEdit(null)} wide>
@@ -276,53 +277,65 @@ function Banners() {
                 <option value="lifestyle">Lifestyle banner</option>
                 <option value="promo">Promo</option>
                 <option value="campaign">Campaign</option>
-                <option value="scene">Lifestyle scene (homepage scenes tabs)</option>
+                <option value="scene">Lifestyle scene (one photo section)</option>
               </select>
             </F>
-            {edit.placement === 'scene' ? (
+            {scene ? (
               <p className="muted span-2" style={{ fontSize: 13, margin: 0 }}>
-                <strong>Lifestyle scene:</strong> Title = tab name (e.g. HOME, OFFICE, CAR) · Description = text under the photo · Button label + Link = the button. Photo: desktop <strong>2400 × 1060 px</strong>, mobile
-                (optional) <strong>1600 × 1000 px</strong>. Duration, video and theme are not used.
+                <strong>Lifestyle scene — one photo.</strong> Desktop photo <strong>2400 × 1060 px</strong> (about 2.27 : 1); mobile photo (optional) <strong>1600 × 1000 px</strong>. Text and button are optional and appear under the
+                photo. Only one scene is shown: if several are active, the first one is used.
               </p>
             ) : null}
-            <F label="Theme">
-              <select className="select" value={edit.theme} onChange={(e) => setEdit({ ...edit, theme: e.target.value })}>
-                <option value="dark">Dark text overlay</option>
-                <option value="light">Light</option>
-              </select>
-            </F>
-            <LocInput label="Title" value={edit.title} onChange={(v) => setEdit({ ...edit, title: v })} />
-            <F label="Image duration (seconds)" hint="Display this image for the specified number of seconds. Use a positive number."><input className="input" type="number" min="0" step="any" required value={edit.durationSec ?? 5} onChange={e => setEdit({ ...edit, durationSec: Number(e.target.value) })} /></F>
-            <F label="Video duration (seconds)" hint="0 = complete original video. A positive value advances at that playback time, or sooner if the video ends."><input className="input" type="number" min="0" step="any" required value={edit.videoDurationSec ?? 0} onChange={e => setEdit({ ...edit, videoDurationSec: Number(e.target.value) })} /></F>
-            <F label="Video fallback (seconds)" hint="Recovery window for failures or unavailable provider tracking; separate from normal video duration."><input className="input" type="number" min="2" max="300" step="0.5" value={edit.videoFallbackSec ?? 20} onChange={e => setEdit({ ...edit, videoFallbackSec: Number(e.target.value) })} /></F>
-            <LocInput label="Description" value={edit.description} onChange={v => setEdit({ ...edit, description: v })} textarea />
-            <LocInput label="Subtitle" value={edit.subtitle} onChange={(v) => setEdit({ ...edit, subtitle: v })} />
-            <LocInput label="Button label" value={edit.ctaLabel} onChange={(v) => setEdit({ ...edit, ctaLabel: v })} />
+            {!scene ? (
+              <F label="Theme">
+                <select className="select" value={edit.theme} onChange={(e) => setEdit({ ...edit, theme: e.target.value })}>
+                  <option value="dark">Dark text overlay</option>
+                  <option value="light">Light</option>
+                </select>
+              </F>
+            ) : null}
+            <LocInput label={scene ? 'Photo description (for screen readers and search; not shown)' : 'Title'} value={edit.title} onChange={(v) => setEdit({ ...edit, title: v })} />
+            {!scene ? (
+              <>
+                <F label="Image duration (seconds)" hint="Display this image for the specified number of seconds. Use a positive number."><input className="input" type="number" min="0" step="any" required value={edit.durationSec ?? 5} onChange={e => setEdit({ ...edit, durationSec: Number(e.target.value) })} /></F>
+                <F label="Video duration (seconds)" hint="0 = complete original video. A positive value advances at that playback time, or sooner if the video ends."><input className="input" type="number" min="0" step="any" required value={edit.videoDurationSec ?? 0} onChange={e => setEdit({ ...edit, videoDurationSec: Number(e.target.value) })} /></F>
+                <F label="Video fallback (seconds)" hint="Recovery window for failures or unavailable provider tracking; separate from normal video duration."><input className="input" type="number" min="2" max="300" step="0.5" value={edit.videoFallbackSec ?? 20} onChange={e => setEdit({ ...edit, videoFallbackSec: Number(e.target.value) })} /></F>
+              </>
+            ) : null}
+            <LocInput label={scene ? 'Text under the photo (optional)' : 'Description'} value={edit.description} onChange={v => setEdit({ ...edit, description: v })} textarea />
+            {!scene ? <LocInput label="Subtitle" value={edit.subtitle} onChange={(v) => setEdit({ ...edit, subtitle: v })} /> : null}
+            <LocInput label={scene ? 'Button label (optional)' : 'Button label'} value={edit.ctaLabel} onChange={(v) => setEdit({ ...edit, ctaLabel: v })} />
             <F label="Link" hint="Site path like /c/power-banks (language is added automatically) or a full URL">
               <input className="input" value={edit.link} onChange={(e) => setEdit({ ...edit, link: e.target.value })} />
             </F>
-            <F label="Sort order">
-              <input className="input" type="number" value={edit.sortOrder} onChange={(e) => setEdit({ ...edit, sortOrder: Number(e.target.value) })} />
-            </F>
+            {!scene ? (
+              <F label="Sort order">
+                <input className="input" type="number" value={edit.sortOrder} onChange={(e) => setEdit({ ...edit, sortOrder: Number(e.target.value) })} />
+              </F>
+            ) : null}
             <MediaField label="Image — desktop, Arabic site" kind="image" value={edit.imageUrl.ar} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, ar: url } })} />
             <MediaField label="Image — desktop, English site" kind="image" value={edit.imageUrl.en} onChange={(url) => setEdit({ ...edit, imageUrl: { ...edit.imageUrl, en: url } })} hint="Use the same image for both languages if it contains no text." />
             <MediaField label="Image — mobile, Arabic (optional)" kind="image" value={edit.mobileImageUrl.ar} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, ar: url } })} />
             <MediaField label="Image — mobile, English (optional)" kind="image" value={edit.mobileImageUrl.en} onChange={(url) => setEdit({ ...edit, mobileImageUrl: { ...edit.mobileImageUrl, en: url } })} />
-            <MediaField
-              label="Video (optional — plays instead of the image)"
-              kind="video"
-              value={edit.videoUrl ?? ''}
-              poster={edit.posterUrl}
-              onChange={(url, a) => setEdit({ ...edit, videoUrl: url, posterUrl: a?.posterUrl && !edit.posterUrl ? a.posterUrl : edit.posterUrl })}
-            />
-            <MediaField label="Video — mobile (optional)" kind="video" value={edit.mobileVideoUrl ?? ''} onChange={(url) => setEdit({ ...edit, mobileVideoUrl: url })} />
-            <MediaField label="Video poster image" kind="image" value={edit.posterUrl ?? ''} onChange={(url) => setEdit({ ...edit, posterUrl: url })} hint="Shown while the video loads and to visitors who prefer reduced motion. Defaults to the desktop image." />
-            <F label="Starts">
-              <input className="input" type="datetime-local" value={dateIn(edit.startsAt)} onChange={(e) => setEdit({ ...edit, startsAt: dateOut(e.target.value) })} />
-            </F>
-            <F label="Ends">
-              <input className="input" type="datetime-local" value={dateIn(edit.endsAt)} onChange={(e) => setEdit({ ...edit, endsAt: dateOut(e.target.value) })} />
-            </F>
+            {!scene ? (
+              <>
+                <MediaField
+                  label="Video (optional — plays instead of the image)"
+                  kind="video"
+                  value={edit.videoUrl ?? ''}
+                  poster={edit.posterUrl}
+                  onChange={(url, a) => setEdit({ ...edit, videoUrl: url, posterUrl: a?.posterUrl && !edit.posterUrl ? a.posterUrl : edit.posterUrl })}
+                />
+                <MediaField label="Video — mobile (optional)" kind="video" value={edit.mobileVideoUrl ?? ''} onChange={(url) => setEdit({ ...edit, mobileVideoUrl: url })} />
+                <MediaField label="Video poster image" kind="image" value={edit.posterUrl ?? ''} onChange={(url) => setEdit({ ...edit, posterUrl: url })} hint="Shown while the video loads and to visitors who prefer reduced motion. Defaults to the desktop image." />
+                <F label="Starts">
+                  <input className="input" type="datetime-local" value={dateIn(edit.startsAt)} onChange={(e) => setEdit({ ...edit, startsAt: dateOut(e.target.value) })} />
+                </F>
+                <F label="Ends">
+                  <input className="input" type="datetime-local" value={dateIn(edit.endsAt)} onChange={(e) => setEdit({ ...edit, endsAt: dateOut(e.target.value) })} />
+                </F>
+              </>
+            ) : null}
             <label className="check">
               <input type="checkbox" checked={edit.active} onChange={(e) => setEdit({ ...edit, active: e.target.checked })} /> Active
             </label>

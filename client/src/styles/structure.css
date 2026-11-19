@@ -949,8 +949,8 @@ html[dir='rtl'] .icon--flip-rtl {
 }
 
 /* ==========================================================================
-   Lifestyle scenes (.cx-scenes) — a wide lifestyle image per scene, tabs
-   underneath switch image, text and button. Image ratios: desktop 34:15
+   Lifestyle scene (.cx-scenes) — ONE wide lifestyle photo, optional text and
+   button below. Image ratios: desktop 34:15
    (≈2.27:1, e.g. 2400×1060), phones 16:10 (a separate mobile image is used
    when the Admin adds one; otherwise the desktop image is centre-cropped).
    ========================================================================== */
@@ -991,69 +991,12 @@ html[dir='rtl'] .icon--flip-rtl {
   opacity: 1;
 }
 
-.cx-scenes__tabs {
-  display: flex;
-  justify-content: center;
-  gap: clamp(20px, 3vw, 40px);
-  margin-top: clamp(16px, 2vw, 24px);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.cx-scenes__tabs::-webkit-scrollbar {
-  display: none;
-}
-.cx-scenes__tab {
-  position: relative;
-  flex: none;
-  padding: 10px 2px 12px;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color 200ms ease;
-}
-html[lang='ar'] .cx-scenes__tab {
-  letter-spacing: 0;
-  font-size: 0.9375rem;
-}
-.cx-scenes__tab::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transition: transform 300ms var(--cx-ease, ease);
-}
-.cx-scenes__tab:hover {
-  color: var(--ink);
-}
-.cx-scenes__tab[aria-selected='true'] {
-  color: var(--ink);
-  font-weight: 700;
-}
-.cx-scenes__tab[aria-selected='true']::after {
-  transform: scaleX(1);
-}
-.cx-scenes__tab:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-
 .cx-scenes__panel {
   display: grid;
   justify-items: center;
   gap: 24px;
   max-width: 640px;
-  margin: clamp(16px, 2vw, 24px) auto 0;
+  margin: clamp(24px, 3vw, 36px) auto 0;
   text-align: center;
   animation: cx-scene-in 500ms var(--cx-ease, ease) both;
 }
@@ -1087,7 +1030,12 @@ html[lang='ar'] .cx-scenes__tab {
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cx-scenes__image,
-  .cx-scenes__tab::after { transition: none; }
+  .cx-scenes__image { transition: none; }
   .cx-scenes__panel { animation: none; }
+}
+/* No separate mobile photo: keep the desktop photo's own shape on every screen, so a photo with text
+   in it is never cropped on phones. */
+.cx-scenes__stage--whole,
+.cx-scenes__stage.cx-scenes__stage--whole {
+  aspect-ratio: 34 / 15;
 }

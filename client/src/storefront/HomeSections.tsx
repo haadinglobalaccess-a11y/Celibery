@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react';
+import { useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArtFrame } from '../components/ArtFrame';
 import { ProductCard } from '../components/ProductCard';
@@ -509,81 +509,49 @@ export function ClosingCampaign({ data }: { data: HomeData }) {
   );
 }
 
-/* Lifestyle scenes: one wide lifestyle image per scene; the tabs under it switch the image, the text
-   and the button. Admin → Website content: the Homepage tab sets the title and turns the section on
-   or off; each scene is a Banner with the placement "Lifestyle scene". Hidden when none is active. */
+/* Lifestyle scene: ONE wide lifestyle photo under a centred title, with optional text and button
+   below (like UGREEN's scene section). Admin → Website content: the Homepage tab sets the title and
+   turns the section on or off; the photo is the first active Banner with the placement "Lifestyle
+   scene" (lowest sort order). Hidden when there is none. */
 export function LifestyleScenes({ data }: { data: HomeData }) {
   const { lang } = useI18n();
   const c = storeCopy(lang);
   const linkFor = useLinkFor();
-  const [active, setActive] = useState(0);
-  const scenes = (data.scenes?.items ?? []).filter((b) => L(b.imageUrl, lang) || b.imageUrl?.en || b.imageUrl?.ar);
-  if (data.scenes?.enabled === false || !scenes.length) return null;
-  const at = Math.min(active, scenes.length - 1);
-  const scene = scenes[at];
+  const scene = (data.scenes?.items ?? []).find((b) => L(b.imageUrl, lang) || b.imageUrl?.en || b.imageUrl?.ar);
+  if (data.scenes?.enabled === false || !scene) return null;
   const title = L(data.scenes?.title, lang) || c.scenesTitle;
   const text = L(scene.description, lang) || L(scene.subtitle, lang);
   const cta = L(scene.ctaLabel, lang);
   const href = scene.link ? linkFor(scene.link) : '';
   const external = /^https?:\/\//i.test(href);
-  const imageOf = (b: (typeof scenes)[number]) => L(b.imageUrl, lang) || b.imageUrl.en || b.imageUrl.ar;
-  // Arrow keys move between tabs (reading direction aware); Home/End jump to the ends.
-  const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
-    const rtl = lang === 'ar';
-    const step = e.key === 'ArrowRight' ? (rtl ? -1 : 1) : e.key === 'ArrowLeft' ? (rtl ? 1 : -1) : 0;
-    const next = e.key === 'Home' ? 0 : e.key === 'End' ? scenes.length - 1 : step ? (at + step + scenes.length) % scenes.length : -1;
-    if (next < 0) return;
-    e.preventDefault();
-    setActive(next);
-    (e.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus();
-  };
+  const image = L(scene.imageUrl, lang) || scene.imageUrl.en || scene.imageUrl.ar;
+  const mobile = L(scene.mobileImageUrl, lang) || scene.mobileImageUrl?.en || scene.mobileImageUrl?.ar;
   return (
     <section className="cx-section cx-scenes" aria-labelledby="cx-scenes-title" data-testid="home-scenes">
       <div className="container">
         <Head id="cx-scenes-title" title={title} center />
-        <div className="cx-scenes__stage" data-fx="rise">
-          {scenes.map((b, i) => {
-            const mobile = L(b.mobileImageUrl, lang) || b.mobileImageUrl?.en || b.mobileImageUrl?.ar;
-            return (
-              <picture key={b._id} className="cx-scenes__image" data-active={i === at} aria-hidden={i !== at}>
-                {mobile ? <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(mobile, [480, 800, 1200]) || mobile} sizes="100vw" /> : null}
-                <img {...responsiveImg(imageOf(b), '(max-width: 1440px) 100vw, 1360px')} alt={i === at ? L(b.title, lang) : ''} loading="lazy" decoding="async" />
-              </picture>
-            );
-          })}
+        <div className={`cx-scenes__stage${mobile ? "" : " cx-scenes__stage--whole"}`} data-fx="rise">
+          <picture className="cx-scenes__image" data-active="true">
+            {mobile ? <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(mobile, [480, 800, 1200]) || mobile} sizes="100vw" /> : null}
+            <img {...responsiveImg(image, '(max-width: 1440px) 100vw, 1360px')} alt={L(scene.title, lang)} loading="lazy" decoding="async" />
+          </picture>
         </div>
-        <div className="cx-scenes__tabs" role="tablist" aria-label={c.scenesTabs}>
-          {scenes.map((b, i) => (
-            <button
-              key={b._id}
-              type="button"
-              role="tab"
-              id={`cx-scene-tab-${i}`}
-              aria-selected={i === at}
-              aria-controls="cx-scene-panel"
-              tabIndex={i === at ? 0 : -1}
-              className="cx-scenes__tab"
-              onClick={() => setActive(i)}
-              onKeyDown={onKey}
-            >
-              {L(b.title, lang) || String(i + 1)}
-            </button>
-          ))}
-        </div>
-        <div className="cx-scenes__panel" id="cx-scene-panel" role="tabpanel" aria-labelledby={`cx-scene-tab-${at}`} key={scene._id}>
-          {text ? <p className="cx-scenes__text">{text}</p> : null}
-          {cta && href ? (
-            external ? (
-              <a className="cx-scenes__cta" href={href} target="_blank" rel="noopener noreferrer">
-                {cta} <Arrow />
-              </a>
-            ) : (
-              <Link className="cx-scenes__cta" to={href}>
-                {cta} <Arrow />
-              </Link>
-            )
-          ) : null}
-        </div>
+        {text || (cta && href) ? (
+          <div className="cx-scenes__panel">
+            {text ? <p className="cx-scenes__text">{text}</p> : null}
+            {cta && href ? (
+              external ? (
+                <a className="cx-scenes__cta" href={href} target="_blank" rel="noopener noreferrer">
+                  {cta} <Arrow />
+                </a>
+              ) : (
+                <Link className="cx-scenes__cta" to={href}>
+                  {cta} <Arrow />
+                </Link>
+              )
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </section>
   );
