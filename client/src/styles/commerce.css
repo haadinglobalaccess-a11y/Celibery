@@ -95,6 +95,15 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
   font-size: 16px; /* no iOS zoom on focus */
   border: 0;
   appearance: none;
+  /* The opened list takes its colours from the select: set them explicitly, otherwise over the
+     hero (white header text) the options were white on white and only the hovered one showed. */
+  color: #111111;
+  background: #ffffff;
+  color-scheme: light;
+}
+.currency-switch__select option {
+  color: #111111;
+  background: #ffffff;
 }
 .currency-switch:has(.currency-switch__select:focus-visible) {
   outline: 2px solid var(--accent);
