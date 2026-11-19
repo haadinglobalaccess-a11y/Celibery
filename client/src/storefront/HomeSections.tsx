@@ -428,11 +428,17 @@ export function BrandStory({ data }: { data: HomeData }) {
   const c = storeCopy(lang);
   return (
     <section className="cx-story is-dark" id="story" aria-labelledby="cx-story-title">
-      <span className="cx-story__word ltr" aria-hidden="true">
-        CELIBERY
-      </span>
       <div className="container cx-story__inner">
         <div className="cx-story__copy">
+          {/* Brand signature above the story copy, centred in this column: the full name in outline, its
+              two E's the lightning-cut letters from the official logo (public/brand/story-e*.png). */}
+          <div className="cx-story__sign ltr" aria-hidden="true" data-fx="rise">
+            <span>C</span>
+            <span className="cx-story__e cx-story__e--1" />
+            <span>LIB</span>
+            <span className="cx-story__e cx-story__e--2" />
+            <span>RY</span>
+          </div>
           <span className="cx-eyebrow" data-fx="rise">
             {t.nav.ourStory || c.storyEyebrow}
           </span>

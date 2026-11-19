@@ -1103,21 +1103,6 @@ html[lang='ar'] .cx-why__item h3 {
     gap: clamp(48px, 6vw, 96px);
   }
 }
-.cx-story__word {
-  position: absolute;
-  inset-inline: 0;
-  top: 4%;
-  text-align: center;
-  font-size: clamp(4rem, 17vw, 17rem);
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1px rgb(255 255 255 / 0.16);
-  z-index: -1;
-  pointer-events: none;
-  white-space: nowrap;
-}
 .cx-story__copy {
   max-width: 620px;
 }
@@ -3122,12 +3107,7 @@ html[dir='rtl'] .cx-pdp .gallery__frame[data-dir='prev'] {
       animation-timeline: view();
       animation-range: entry 0% exit 100%;
     }
-    .cx-theatre .cx-story__word.fx-in {
-      animation: fx-drift linear both;
-      animation-timeline: view();
-      animation-range: entry 0% exit 100%;
     }
-  }
 }
 @keyframes fx-depth {
   from {
@@ -3241,8 +3221,7 @@ html[dir='rtl'] .cx-pdp .gallery__frame[data-dir='prev'] {
     .cx-flag__media {
       will-change: transform;
     }
-    .cx-flag__model,
-    .cx-story__word {
+    .cx-flag__model {
       will-change: translate;
     }
   }
