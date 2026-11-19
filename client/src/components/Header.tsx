@@ -14,7 +14,7 @@ import { useWishlist } from '../state/wishlist';
 import { CartPeek } from './CartPeek';
 import { storeCopy } from '../storefront/copy';
 import { CurrencySelect } from './CurrencySelect';
-import { Chevron, Icon } from './Icon';
+import { Chevron, Icon, InlineArrow } from './Icon';
 import { Logo } from './Logo';
 import { Price } from './ui';
 
@@ -299,13 +299,13 @@ function Announcement({ fallback }: { fallback: string }) {
     const to = /^\/(ar|en)(\/|$)/.test(link) ? link : p(link);
     return (
       <Link className="announce announce--link" to={to}>
-        {text} <span aria-hidden="true">→</span>
+        {text} <span className="cx-arrow" aria-hidden="true"><InlineArrow /></span>
       </Link>
     );
   }
   return /^https:\/\//.test(link) ? (
     <a className="announce announce--link" href={link} rel="noopener noreferrer">
-      {text} <span aria-hidden="true">→</span>
+      {text} <span className="cx-arrow" aria-hidden="true"><InlineArrow /></span>
     </a>
   ) : (
     <div className="announce">{text}</div>

@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArtFrame } from '../components/ArtFrame';
 import { ProductCard } from '../components/ProductCard';
+import { InlineArrow } from '../components/Icon';
 import { PayLogos, Price } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { post } from '../lib/api';
@@ -34,7 +35,7 @@ const visualFor = (data: HomeData, c: Category) => {
 function Arrow() {
   return (
     <span className="cx-arrow" aria-hidden="true">
-      →
+      <InlineArrow />
     </span>
   );
 }

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Icon } from '../components/Icon';
 import { Crumbs, ErrorState, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { L } from '../lib/format';
@@ -49,7 +50,7 @@ export default function CustomerInfo({ mode }: { mode: 'about' | 'support' | 'co
         [p('/page/warranty'), t.footer.warranty],
         [p('/page/returns'), t.footer.returns],
         [p('/account'), t.nav.account],
-      ].map(([href, label]) => <Link className="cx-info__card" key={href} to={href}><strong>{label}</strong><span aria-hidden="true">↗</span></Link>)}
+      ].map(([href, label]) => <Link className="cx-info__card" key={href} to={href}><strong>{label}</strong><Icon name="external" className="icon icon--inline icon--flip-rtl" /></Link>)}
     </nav>
   </article>;
 }

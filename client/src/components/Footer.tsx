@@ -122,56 +122,62 @@ export function Footer() {
             </Link>
           ))}
         </nav>
-        <div className="footer__grid cx-footer__grid">
-          <div className="cx-footer__brand">
+        {/* Main area: brand + contact on the start side, three link columns beside it. */}
+        <div className="cx-foot">
+          <div className="cx-foot__brand">
             <Logo onDark />
-            <p>{L(b?.name, lang)}</p>
-            {L(b?.address, lang) ? <p>{L(b?.address, lang)}</p> : null}
-            <ul>
+            <p className="cx-foot__tagline">{t.home.heroSubtitle}</p>
+            {L(b?.name, lang) ? <p className="cx-foot__name">{L(b?.name, lang)}</p> : null}
+            {L(b?.address, lang) ? <p className="cx-foot__address">{L(b?.address, lang)}</p> : null}
+            <ul className="cx-foot__contact">
               {wa ? (
                 <li>
                   <a href={wa} target="_blank" rel="noopener noreferrer">
-                    {t.common.whatsapp}: <span className="ltr">+{b?.whatsappNumber.replace(/\D/g, '')}</span>
+                    <Icon name="chat" />
+                    <span>
+                      {t.common.whatsapp}: <span className="ltr">+{b?.whatsappNumber.replace(/\D/g, '')}</span>
+                    </span>
                   </a>
                 </li>
               ) : (
-                <li>{t.common.whatsappMissing}</li>
+                <li>
+                  <Icon name="chat" />
+                  <span>{t.common.whatsappMissing}</span>
+                </li>
               )}
               {b?.email ? (
                 <li>
-                  <a href={`mailto:${b.email}`} className="ltr">
-                    {b.email}
+                  <a href={`mailto:${b.email}`}>
+                    <Icon name="mail" />
+                    <span className="ltr">{b.email}</span>
                   </a>
                 </li>
               ) : null}
               {b?.phone ? (
                 <li>
-                  <a href={`tel:${b.phone}`} className="ltr">
-                    {b.phone}
+                  <a href={`tel:${b.phone}`}>
+                    <Icon name="phone" />
+                    <span className="ltr">{b.phone}</span>
                   </a>
                 </li>
               ) : null}
               {L(b?.supportHours, lang) ? (
                 <li>
-                  {t.footer.hours}: {L(b?.supportHours, lang)}
+                  <Icon name="clock" />
+                  <span>
+                    {t.footer.hours}: {L(b?.supportHours, lang)}
+                  </span>
                 </li>
               ) : null}
             </ul>
             {social.length ? (
-              <div className="footer__social" aria-label={t.a11y.social}>
+              <div className="footer__social cx-foot__social" aria-label={t.a11y.social}>
                 {social.map(([k, v]) => {
                   const platform = k.toLowerCase();
                   const label = socialLabels[platform];
                   if (!label || typeof v !== 'string' || !v.trim()) return null;
                   return (
-                    <a
-                      key={platform}
-                      href={v}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={label}
-                      title={label}
-                    >
+                    <a key={platform} href={v} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}>
                       <SocialIcon platform={platform} />
                     </a>
                   );
@@ -179,61 +185,46 @@ export function Footer() {
               </div>
             ) : null}
           </div>
-          <div>
-            <h3>{t.footer.shop}</h3>
-            <ul>
-              {(home?.categories ?? []).map((c) => (
-                <li key={c._id}>
-                  <Link to={p(`/c/${c.slug}`)}>{L(c.name, lang)}</Link>
+          <div className="cx-foot__cols">
+            <div>
+              <h3>{t.footer.shop}</h3>
+              <ul>
+                {(home?.categories ?? []).map((c) => (
+                  <li key={c._id}>
+                    <Link to={p(`/c/${c.slug}`)}>{L(c.name, lang)}</Link>
+                  </li>
+                ))}
+                <li>
+                  <Link to={p('/bundles')}>{t.nav.bundles}</Link>
                 </li>
-              ))}
-              <li>
-                <Link to={p('/bundles')}>{t.nav.bundles}</Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3>{t.footer.help}</h3>
-            <ul>
-              <li><Link to={p('/support')}>{lang === 'ar' ? 'مركز الدعم' : 'Support center'}</Link></li>
-              <li><Link to={p('/contact')}>{lang === 'ar' ? 'تواصل معنا' : 'Contact us'}</Link></li>
-              <li><Link to={p('/about')}>{lang === 'ar' ? 'عن سيليبري' : 'About CELIBERY'}</Link></li>
-              <li>
-                <Link to={p('/track')}>{t.nav.track}</Link>
-              </li>
-              <li>
-                <Link to={p('/account')}>{t.nav.account}</Link>
-              </li>
-              <li>
-                <Link to={p('/page/shipping')}>{t.footer.shipping}</Link>
-              </li>
-              <li>
-                <Link to={p('/page/returns')}>{t.footer.returns}</Link>
-              </li>
-              <li>
-                <Link to={p('/page/refunds')}>{t.footer.refunds}</Link>
-              </li>
-              <li>
-                <Link to={p('/page/warranty')}>{t.footer.warranty}</Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3>{t.footer.policies}</h3>
-            <ul>
-              <li>
-                <Link to={p('/page/privacy')}>{t.footer.privacy}</Link>
-              </li>
-              <li>
-                <Link to={p('/page/terms')}>{t.footer.terms}</Link>
-              </li>
-            </ul>
-            <h3 className="cx-footer__sub">{t.footer.payments}</h3>
-            <PayLogos />
+              </ul>
+            </div>
+            <div>
+              <h3>{t.footer.help}</h3>
+              <ul>
+                <li><Link to={p('/support')}>{lang === 'ar' ? 'مركز الدعم' : 'Support center'}</Link></li>
+                <li><Link to={p('/contact')}>{lang === 'ar' ? 'تواصل معنا' : 'Contact us'}</Link></li>
+                <li><Link to={p('/about')}>{lang === 'ar' ? 'عن سيليبري' : 'About CELIBERY'}</Link></li>
+                <li><Link to={p('/track')}>{t.nav.track}</Link></li>
+                <li><Link to={p('/account')}>{t.nav.account}</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3>{t.footer.policies}</h3>
+              <ul>
+                <li><Link to={p('/page/shipping')}>{t.footer.shipping}</Link></li>
+                <li><Link to={p('/page/returns')}>{t.footer.returns}</Link></li>
+                <li><Link to={p('/page/refunds')}>{t.footer.refunds}</Link></li>
+                <li><Link to={p('/page/warranty')}>{t.footer.warranty}</Link></li>
+                <li><Link to={p('/page/privacy')}>{t.footer.privacy}</Link></li>
+                <li><Link to={p('/page/terms')}>{t.footer.terms}</Link></li>
+              </ul>
+            </div>
           </div>
         </div>
-        <div className="cx-footer__word ltr" aria-hidden="true">
-          CELIBERY
+        <div className="cx-foot__pay">
+          <h3 className="cx-foot__label">{t.footer.payments}</h3>
+          <PayLogos />
         </div>
         <div className="footer__legal cx-footer__legal">
           <span>

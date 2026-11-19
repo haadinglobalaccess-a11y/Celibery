@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ProductImage } from '../components/ProductCard';
+import { InlineArrow } from '../components/Icon';
 import { EmptyState, Quantity } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { formatPrice, L } from '../lib/format';
@@ -213,7 +214,7 @@ export default function CartPage() {
           })}
           <Link to={p('/shop')} className="cx-link cx-bag__continue">
             <span className="cx-arrow cx-arrow--back" aria-hidden="true">
-              ←
+              <InlineArrow back />
             </span>{' '}
             {t.cart.continue}
           </Link>

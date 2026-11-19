@@ -555,8 +555,7 @@ html[lang='ar'] .cx-range__name {
 }
 
 /* Footer: calmer, international hierarchy — sentence-case column headings, regular-weight links. */
-.footer.cx-footer h3,
-.footer.cx-footer .cx-footer__sub {
+.footer.cx-footer h3 {
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0;
@@ -609,4 +608,206 @@ html[lang='ar'] .cx-range__name {
 }
 .checkout-more > .form-grid {
   margin-top: 8px;
+}
+
+/* ---------- Payment brand badges ----------
+   Each badge already carries its own white card and hairline edge (96×64), so no extra chip is
+   drawn around it; one size everywhere, a little larger in the footer. */
+.pay-brand-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pay-brand-logos img,
+.cx-footer .pay-brand-logos img {
+  display: block;
+  box-sizing: border-box;
+  width: auto;
+  height: 28px;
+  max-width: none;
+  padding: 0;
+  border-radius: 4px;
+  background: none;
+}
+.cx-footer .pay-brand-logos img {
+  height: 30px;
+}
+/* Checkout payment options: small badges at the end of each row. */
+.pay-option .pay-brand-logos {
+  gap: 4px;
+  margin-inline-start: auto;
+}
+.pay-option .pay-brand-logos img {
+  height: 24px;
+}
+.pay-option .pay-logos > .icon {
+  width: 24px;
+  height: 24px;
+  color: var(--muted);
+}
+
+/* ---------- Inline icons (arrows, stars, check, close, external) ----------
+   Text-sized SVGs that replaced →, ←, ★, ✓, × and ↗ characters: one stroke family, crisp at any size. */
+.icon.icon--inline {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.18em;
+  stroke-width: 2;
+}
+.icon.icon--star {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+.rv-dist__label .icon--star {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-inline-start: 2px;
+  vertical-align: -0.05em;
+}
+html[dir='rtl'] .icon--flip-rtl {
+  transform: scaleX(-1);
+}
+
+/* =====================================================================
+   Footer — premium layout (Footer.tsx: .cx-foot*)
+   Midnight Black, no glow; brand + contact | Shop · Help · Policies;
+   payment badges and legal line in a quiet bottom band.
+   ===================================================================== */
+.footer.cx-footer {
+  padding-top: clamp(56px, 7vw, 96px);
+  background: var(--brand-midnight);
+}
+.cx-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 44px;
+  padding-bottom: clamp(40px, 5vw, 64px);
+}
+@media (min-width: 960px) {
+  .cx-foot {
+    grid-template-columns: minmax(260px, 1fr) minmax(0, 1.9fr);
+    gap: clamp(48px, 7vw, 120px);
+  }
+}
+.cx-foot__brand .logo--brand img {
+  height: 30px;
+}
+.cx-foot__tagline {
+  max-width: 36ch;
+  margin: 20px 0 0;
+  color: var(--on-dark-muted);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+.cx-foot__name {
+  margin: 20px 0 0;
+  color: var(--on-dark);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.cx-foot__address {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+}
+.footer.cx-footer .cx-foot__contact {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+}
+.cx-foot__contact li,
+.footer.cx-footer .cx-foot__contact a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--on-dark-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.footer.cx-footer .cx-foot__contact a:hover {
+  color: var(--paper);
+}
+.cx-foot__contact .icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+.footer.cx-footer .cx-foot__social {
+  gap: 10px;
+  margin-top: 24px;
+}
+.footer.cx-footer .cx-foot__social a {
+  transition:
+    background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease-out);
+}
+.footer.cx-footer .cx-foot__social a:hover {
+  transform: translateY(-2px);
+}
+.cx-foot__cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+}
+.footer.cx-footer .cx-foot__cols h3 {
+  margin: 0 0 18px;
+}
+.footer.cx-footer .cx-foot__cols ul {
+  display: grid;
+  gap: 12px;
+}
+.footer.cx-footer .cx-foot__cols a {
+  display: inline-block;
+  transition: color var(--dur) var(--ease);
+}
+.cx-foot__pay {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  padding-block: 24px;
+  border-top: 1px solid var(--dark-line);
+}
+.footer.cx-footer .cx-foot__pay .cx-foot__label {
+  margin: 0;
+  color: var(--on-dark-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.footer.cx-footer .cx-footer__legal {
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-top: 0;
+  padding-block: 22px 32px;
+  border-top: 1px solid var(--dark-line);
+  color: rgb(255 255 255 / 0.5);
+  font-size: 0.8125rem;
+}
+@media (max-width: 767px) {
+  .cx-foot__cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 20px;
+  }
+  .cx-foot__cols > :last-child {
+    grid-column: 1 / -1;
+  }
+  .footer.cx-footer .cx-foot__cols ul {
+    gap: 2px;
+  }
+  /* comfortable tap targets on phones */
+  .footer.cx-footer .cx-foot__cols a {
+    padding-block: 7px;
+  }
+  .cx-foot__pay {
+    justify-content: flex-start;
+  }
+  .footer.cx-footer .cx-footer__legal {
+    flex-direction: column;
+  }
 }
