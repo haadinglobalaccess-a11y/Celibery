@@ -173,64 +173,91 @@ html[dir='rtl'] .header .mx__cat[aria-current='true'] .icon {
   }
 }
 
-/* ---------- Homepage: category lineup ---------- */
+/* ---------- Homepage: category lineup ----------
+   Same tile language as the range below (Car Essentials grey card, artwork in a rounded frame,
+   dark text), so the homepage keeps one colour story. Desktop 3 × 2, tablet 2 columns, phones a
+   swipeable row of large cards. The artwork is complete, never cropped (ArtFrame fills any margin
+   with a soft copy of the same art). */
 .storefront .cx-lineup {
   background: var(--surface);
 }
 .cx-lineup__track {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
 }
 .cx-lineup__card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 12px 20px;
-  border-radius: var(--r-md);
-  background: var(--paper);
+  gap: 16px;
+  padding: clamp(14px, 1.4vw, 20px);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
   color: var(--ink);
-  text-align: center;
-  transition:
-    transform var(--dur-slow) var(--ease-out),
-    box-shadow var(--dur-slow) var(--ease-out);
-}
-.cx-lineup__media {
-  width: 100%;
-  margin-bottom: 12px;
+  transition: box-shadow var(--dur-slow) var(--ease-out);
 }
 .cx-lineup__media .cx-art {
-  aspect-ratio: 1;
-  border-radius: var(--r-sm);
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-md);
 }
 .cx-lineup__media .cx-art > img {
-  transition: transform var(--dur-slow) var(--ease-out);
+  transition: transform 900ms var(--ease-out);
+}
+.cx-lineup__copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-inline: 4px;
 }
 .cx-lineup__name {
-  font-size: 1rem;
+  display: block;
+  font-size: clamp(1.0625rem, 0.95rem + 0.45vw, 1.3125rem);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+html[lang='ar'] .cx-lineup__name {
+  letter-spacing: 0;
+  line-height: 1.45;
 }
 .cx-lineup__count {
+  display: block;
+  margin-top: 2px;
   color: var(--muted);
   font-size: 0.8125rem;
 }
+.cx-lineup__go {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
 @media (hover: hover) and (pointer: fine) {
   .cx-lineup__card:hover {
-    transform: translateY(-4px);
     box-shadow: var(--shadow-md);
   }
   .cx-lineup__card:hover .cx-art > img {
-    transform: scale(1.05);
+    transform: scale(1.04);
+  }
+  .cx-lineup__card:hover .cx-lineup__go {
+    background: var(--ink);
+    color: var(--paper);
   }
 }
-@media (max-width: 1199px) {
+@media (max-width: 1023px) {
   .cx-lineup__track {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
   }
 }
-/* Phones: one swipeable row, the next card peeking in so the row reads as scrollable. */
+/* Phones: one swipeable row of large cards, the next one peeking in. */
 @media (max-width: 639px) {
   .cx-lineup__track {
     display: flex;
@@ -248,11 +275,14 @@ html[dir='rtl'] .header .mx__cat[aria-current='true'] .icon {
     display: none;
   }
   .cx-lineup__card {
-    flex: 0 0 40%;
+    flex: 0 0 78%;
+    gap: 12px;
+    border-radius: var(--r-md);
     scroll-snap-align: start;
   }
-  .cx-lineup__name {
-    font-size: 0.9375rem;
+  .cx-lineup__go {
+    width: 36px;
+    height: 36px;
   }
 }
 

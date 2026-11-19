@@ -81,10 +81,18 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
             return (
               <Link key={cat._id} to={p(`/c/${cat.slug}`)} className="cx-lineup__card" data-testid="category-tile" data-fx="rise" style={{ '--d': `${i * 70}ms` } as CSSProperties}>
                 <span className="cx-lineup__media" aria-hidden="true">
-                  <ArtFrame src={v.url} image={v.image} category={cat.slug} sizes="(max-width: 639px) 44vw, (max-width: 1199px) 30vw, 200px" />
+                  <ArtFrame src={v.url} image={v.image} category={cat.slug} sizes="(max-width: 639px) 80vw, (max-width: 1023px) 46vw, 420px" />
                 </span>
-                <strong className="cx-lineup__name">{L(cat.name, lang)}</strong>
-                {cat.productCount ? <span className="cx-lineup__count">{t.premium.productsCount(cat.productCount)}</span> : null}
+                {/* Name, count and arrow under the artwork, as on the range tiles. */}
+                <span className="cx-lineup__copy">
+                  <span>
+                    <strong className="cx-lineup__name">{L(cat.name, lang)}</strong>
+                    {cat.productCount ? <span className="cx-lineup__count">{t.premium.productsCount(cat.productCount)}</span> : null}
+                  </span>
+                  <span className="cx-lineup__go cx-arrow" aria-hidden="true">
+                    <InlineArrow />
+                  </span>
+                </span>
               </Link>
             );
           })}
