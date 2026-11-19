@@ -3513,8 +3513,8 @@ html[dir='rtl'] .drawer.drawer--3d {
     padding-inline: 12px;
   }
   .header .logo--brand img {
-    width: clamp(76px, 26vw, 99px);
-    height: auto;
+    /* 17–22px tall (the 4.5:1 wordmark: 76–99px wide); by height so any uploaded shape scales evenly */
+    height: clamp(17px, 5.78vw, 22px);
   }
   .header__bar > .mobile-only,
   .header .header__actions > .icon-btn {

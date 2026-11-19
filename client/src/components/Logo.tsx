@@ -14,9 +14,11 @@ export function Logo({ onDark = false }: { onDark?: boolean }) {
   const s = useSettings();
   const src = onDark ? s?.brand?.logoDarkUrl || s?.brand?.logoUrl : s?.brand?.logoUrl || s?.brand?.logoDarkUrl;
   if (src) {
+    // Trimmed to its artwork and given the brand-logo sizing, so an uploaded logo sits on the header's
+    // centre line and draws at the same size as the bundled wordmark, whatever padding the file has.
     return (
-      <span className="logo">
-        <img src={cloudinaryAt(src, 480)} alt="CELIBERY International" decoding="async" />
+      <span className="logo logo--brand logo--upload">
+        <img src={cloudinaryAt(src, 480, { trim: true })} alt="CELIBERY International" decoding="async" />
       </span>
     );
   }
