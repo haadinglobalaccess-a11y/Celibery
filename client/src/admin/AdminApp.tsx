@@ -9,6 +9,7 @@ import { ResetPasswordForm } from '../pages/AuthPages';
 import { useAuth } from '../state/auth';
 import './admin.css';
 import './design.css';
+import './luxury.css';
 import { cachedApi, useAttention } from './data';
 import { AdminLangScope, readAdminLang, saveAdminLang, useAT, type AdminLang } from './i18n';
 import { AIcon } from './icons';
