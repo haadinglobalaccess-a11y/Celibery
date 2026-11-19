@@ -332,10 +332,11 @@ export const homePayload = () => cached('home', loadHomePayload);
 async function loadHomePayload() {
   const settings = await cachedSettings();
   const low = settings?.commerce?.lowStockThreshold ?? 5;
-  const [heroBanners, lifestyleBanners, promoBanners, categories, featured, flagship, best, collections, campaigns] = await Promise.all([
+  const [heroBanners, lifestyleBanners, promoBanners, sceneBanners, categories, featured, flagship, best, collections, campaigns] = await Promise.all([
     Banner.find({ placement: 'hero', active: true, ...activeWindow() }).sort({ sortOrder: 1, _id: 1 }).lean(),
     Banner.find({ placement: 'lifestyle', active: true, ...activeWindow() }).sort({ sortOrder: 1 }).lean(),
     Banner.find({ placement: 'promo', active: true, ...activeWindow() }).sort({ sortOrder: 1 }).lean(),
+    Banner.find({ placement: 'scene', active: true, ...activeWindow() }).sort({ sortOrder: 1, _id: 1 }).limit(8).lean(),
     listCategories(),
     Product.find({ status: 'active', featured: true }).select(PUBLIC_PRODUCT_FIELDS).sort({ sortOrder: 1 }).limit(8).lean(),
     // Flagship: ONLY products the Admin selected (never Featured or Best Sellers), active, with a photo, in Admin order.
@@ -393,6 +394,12 @@ async function loadHomePayload() {
     campaigns,
     brandStory: { text: settings?.homepage?.brandStory ?? { ar: '', en: '' }, imageUrl: settings?.homepage?.brandStoryImageUrl ?? '' },
     newsletterEnabled: settings?.homepage?.newsletterEnabled ?? true,
+    // Lifestyle scenes (Admin → Website content: Homepage settings + 'Lifestyle scene' banners).
+    scenes: {
+      enabled: settings?.homepage?.scenesEnabled !== false,
+      title: settings?.homepage?.scenesTitle ?? { ar: '', en: '' },
+      items: sceneBanners,
+    },
     // Admin → Website → FAQ management: published, homepage-selected questions only.
     faq: await homepageFaq(),
   };
