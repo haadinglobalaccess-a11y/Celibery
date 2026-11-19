@@ -4,7 +4,7 @@ import { escapeRegex } from '../../lib/http';
 import { logger } from '../../lib/logger';
 import { bumpPublicCacheVersion } from '../../lib/public-cache';
 import { storage } from '../../integrations/storage';
-import { MediaAsset, Order, Product, Review, User, getSettings } from '../../models';
+import { MediaAsset, Order, Product, REVIEW_SOURCES, Review, User, getSettings } from '../../models';
 import { completeUpload, createUpload, deleteMedia, receiveLocalPart } from '../admin/media.service';
 
 /**
@@ -58,8 +58,8 @@ async function removeImages(images: { mediaId?: unknown }[]) {
   }
 }
 
-const PUBLIC_FIELDS = 'rating title body displayName lang images order createdAt editedAt';
-const toPublic = (r: { _id: unknown; rating: number; title?: string | null; body?: string | null; displayName?: string | null; lang?: string | null; images?: { url: string }[] | null; order?: unknown; createdAt?: Date; editedAt?: Date | null }) => ({
+const PUBLIC_FIELDS = 'rating title body displayName lang images order source createdAt editedAt';
+const toPublic = (r: { _id: unknown; rating: number; title?: string | null; body?: string | null; displayName?: string | null; lang?: string | null; images?: { url: string }[] | null; order?: unknown; source?: string | null; createdAt?: Date; editedAt?: Date | null }) => ({
   id: String(r._id),
   rating: r.rating,
   title: r.title ?? '',
@@ -69,6 +69,8 @@ const toPublic = (r: { _id: unknown; rating: number; title?: string | null; body
   images: (r.images ?? []).map((i) => ({ url: i.url })),
   // Backed by the delivered order the review was written against (never shown otherwise).
   verifiedPurchase: Boolean(r.order),
+  // 'customer' = written on this site; otherwise where the store received it (shown with the review).
+  source: r.source ?? 'customer',
   createdAt: r.createdAt,
   editedAt: r.editedAt ?? null,
 });
@@ -231,4 +233,79 @@ export async function adminDelete(id: string) {
   if (!r) throw notFound('Review');
   await removeImages(r.images ?? []);
   return { deleted: true };
+}
+
+// ---- Staff-entered reviews (real customer reviews received on WhatsApp, Instagram, by phone…) ----
+
+export type StaffReviewInput = {
+  productId: string;
+  displayName: string;
+  rating: number;
+  title: string;
+  body: string;
+  lang: 'ar' | 'en';
+  source: Exclude<(typeof REVIEW_SOURCES)[number], 'customer'>;
+  receivedAt?: Date | null;
+  evidenceUrl: string;
+  imageUrls: string[];
+};
+
+/**
+ * A real review a customer gave the store outside the site, entered by staff. It is published at
+ * once, counts in ratings like any approved review, is never labelled "verified purchase" (there is
+ * no order) and always shows where it came from (e.g. "Shared on WhatsApp").
+ */
+export async function adminCreate(input: StaffReviewInput, staffId: string) {
+  const p = await Product.findById(input.productId).select('_id').lean();
+  if (!p) throw notFound('Product');
+  const now = new Date();
+  const doc = await Review.create({
+    product: p._id,
+    customer: new Types.ObjectId(), // unique reviewer key — not a user account
+    order: null,
+    source: input.source,
+    rating: input.rating,
+    title: input.title,
+    body: input.body,
+    lang: input.lang,
+    displayName: input.displayName,
+    images: input.imageUrls.slice(0, MAX_IMAGES).map((url) => ({ url })),
+    evidenceUrl: input.evidenceUrl,
+    addedBy: staffId,
+    status: 'approved',
+    moderatedBy: staffId,
+    moderatedAt: now,
+  });
+  // Show the date the customer actually gave the review (never in the future).
+  if (input.receivedAt && input.receivedAt < now) {
+    await Review.collection.updateOne({ _id: doc._id }, { $set: { createdAt: input.receivedAt } });
+  }
+  bumpPublicCacheVersion();
+  return Review.findById(doc._id).lean();
+}
+
+/** Corrects a staff-entered review (customer-written reviews are never edited by staff). */
+export async function adminUpdate(id: string, input: Omit<StaffReviewInput, 'productId'>) {
+  const r = await Review.findById(id).select('source').lean();
+  if (!r) throw notFound('Review');
+  if (!r.source || r.source === 'customer') throw forbidden('Reviews written by customers cannot be edited');
+  await Review.updateOne(
+    { _id: id },
+    {
+      $set: {
+        source: input.source,
+        rating: input.rating,
+        title: input.title,
+        body: input.body,
+        lang: input.lang,
+        displayName: input.displayName,
+        images: input.imageUrls.slice(0, MAX_IMAGES).map((url) => ({ url })),
+        evidenceUrl: input.evidenceUrl,
+        editedAt: new Date(),
+      },
+    },
+  );
+  if (input.receivedAt && input.receivedAt < new Date()) await Review.collection.updateOne({ _id: new Types.ObjectId(id) }, { $set: { createdAt: input.receivedAt } });
+  bumpPublicCacheVersion();
+  return Review.findById(id).lean();
 }

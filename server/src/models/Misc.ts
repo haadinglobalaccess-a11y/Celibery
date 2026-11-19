@@ -30,12 +30,22 @@ export type NewsletterDoc = InferSchemaType<typeof NewsletterSchema> & { _id: Ty
 export const NewsletterSubscription: Model<NewsletterDoc> =
   (models.NewsletterSubscription as Model<NewsletterDoc>) || model<NewsletterDoc>('NewsletterSubscription', NewsletterSchema);
 
-/** Reviews may only be written by customers with a delivered order for the product (Q19). */
+/** Where a review came from: written on the site by a customer with a delivered order, or a real customer
+ * review the store received elsewhere (WhatsApp, Instagram…) and staff entered with its source shown. */
+export const REVIEW_SOURCES = ['customer', 'whatsapp', 'instagram', 'tiktok', 'facebook', 'snapchat', 'email', 'phone', 'store', 'other'] as const;
+
+/** Site reviews may only be written by customers with a delivered order for the product (Q19). */
 const ReviewSchema = new Schema(
   {
     product: { type: Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
+    /** The customer's user id for site reviews; for staff-entered reviews a unique reviewer key (not a user). */
     customer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    order: { type: Schema.Types.ObjectId, ref: 'Order', required: true },
+    /** Delivered order behind a site review (shown as "verified purchase"); none for staff-entered reviews. */
+    order: { type: Schema.Types.ObjectId, ref: 'Order', required: [function (this: { source?: string }) { return !this.source || this.source === 'customer'; }, 'Order is required'] },
+    source: { type: String, enum: REVIEW_SOURCES, default: 'customer' },
+    /** Staff-entered reviews: who entered it, and a screenshot of the original message (staff only, never public). */
+    addedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    evidenceUrl: { type: String, default: '', maxlength: 2000 },
     rating: { type: Number, required: true, min: 1, max: 5 },
     title: { type: String, default: '', maxlength: 120 },
     body: { type: String, default: '', maxlength: 2000 },

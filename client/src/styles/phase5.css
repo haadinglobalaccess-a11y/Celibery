@@ -252,3 +252,14 @@
     transition: none;
   }
 }
+/* Source of a real review the store received elsewhere (e.g. "Shared on WhatsApp"). */
+.rv-source {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-2, #eaeef0);
+  color: var(--muted, #5f686d);
+  font-size: 0.75rem;
+  font-weight: 600;
+}

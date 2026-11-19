@@ -5,7 +5,8 @@ import { ah, ok } from '../../lib/http';
 import { requireCustomer, requirePermission } from '../../middleware/auth';
 import { limiter, reviewLimiter } from '../../middleware/security';
 import { q, validate } from '../../middleware/validate';
-import { idParam, objectId, text } from '../admin/admin.schemas';
+import { idParam, objectId, text, url } from '../admin/admin.schemas';
+import { REVIEW_SOURCES } from '../../models';
 import * as svc from './review.service';
 
 const slugParam = z.object({ slug: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{1,120}$/) });
@@ -72,6 +73,37 @@ adminReviewRoutes.get(
   ah(async (req, res) => {
     const x = q(req, adminQuery);
     return ok(res, await svc.adminList({ ...x, reported: Boolean(x.reported) }));
+  }),
+);
+// Staff-entered reviews: real customer reviews received on WhatsApp, Instagram, by phone…
+const staffReviewInput = z.object({
+  displayName: text(60, 1, 'Enter the customer name to show'),
+  rating: z.number().int().min(1, 'Choose a rating from 1 to 5').max(5, 'Choose a rating from 1 to 5'),
+  title: text(120).default(''),
+  body: text(2000, 1, 'Paste the review text'),
+  lang: z.enum(['ar', 'en']).default('ar'),
+  source: z.enum(REVIEW_SOURCES.filter((s) => s !== 'customer') as [Exclude<(typeof REVIEW_SOURCES)[number], 'customer'>, ...Exclude<(typeof REVIEW_SOURCES)[number], 'customer'>[]]),
+  receivedAt: z.coerce.date().nullable().optional(),
+  evidenceUrl: url.default(''),
+  imageUrls: z.array(url.refine((u: string) => u.length > 0, "Image link is empty")).max(3).default([]),
+});
+adminReviewRoutes.post(
+  '/',
+  validate(staffReviewInput.extend({ productId: objectId })),
+  ah(async (req, res) => {
+    const r = await svc.adminCreate(req.body, req.user!.id);
+    await audit(req, 'create', 'review', String(r?._id ?? ''), `staff-entered (${req.body.source}) ${req.body.rating}★`);
+    return ok(res, r, 201);
+  }),
+);
+adminReviewRoutes.put(
+  '/:id',
+  validate(idParam, 'params'),
+  validate(staffReviewInput),
+  ah(async (req, res) => {
+    const r = await svc.adminUpdate(req.params.id, req.body);
+    await audit(req, 'update', 'review', req.params.id, `staff-entered (${req.body.source}) ${req.body.rating}★`);
+    return ok(res, r);
   }),
 );
 adminReviewRoutes.patch(

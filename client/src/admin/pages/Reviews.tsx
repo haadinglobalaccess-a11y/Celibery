@@ -1,14 +1,17 @@
-import { useState } from 'react';
-import { ApiError, del, patch, qs } from '../../lib/api';
+import { useState, type FormEvent } from 'react';
+import { ApiError, del, patch, post, put, qs } from '../../lib/api';
 import { useApi, useDebounced } from '../../lib/hooks';
 import type { Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
-import { AHead, dt, EmptyState, ErrorPanel, Pager, SkeletonTable } from '../kit';
+import { AHead, dt, EmptyState, ErrorBox, ErrorPanel, F, Modal, Pager, ProductPicker, SkeletonTable } from '../kit';
+import { MediaField } from '../media';
 
 /**
- * Admin → Reviews. Every review comes from a signed-in customer with a delivered order for the
- * product (the order is shown); staff can approve, reject, hide or delete — never write or edit
- * customer reviews. Only approved reviews are public and counted. Actions are audit-logged.
+ * Admin → Reviews. Site reviews come from signed-in customers with a delivered order (shown as
+ * verified purchases); staff approve, reject, hide or delete them but never edit them. Staff can
+ * also enter REAL reviews customers gave on WhatsApp, Instagram, by phone… — published with their
+ * source shown ("Shared on WhatsApp"), never labelled verified. Only approved reviews are public
+ * and counted. Actions are audit-logged.
  */
 type Row = {
   _id: string;
@@ -27,7 +30,23 @@ type Row = {
   product?: { _id: string; sku: string; slug: string; name: Localized } | null;
   customer?: { name: string; email: string } | null;
   order?: { orderNumber: string } | null;
+  source?: string;
+  evidenceUrl?: string;
 };
+
+const SOURCES: [string, string][] = [
+  ['whatsapp', 'WhatsApp'],
+  ['instagram', 'Instagram'],
+  ['tiktok', 'TikTok'],
+  ['facebook', 'Facebook'],
+  ['snapchat', 'Snapchat'],
+  ['email', 'Email'],
+  ['phone', 'Phone call'],
+  ['store', 'In store'],
+  ['other', 'Other'],
+];
+const sourceLabel = (s?: string) => SOURCES.find(([k]) => k === s)?.[1] ?? 'Other';
+const isStaffEntered = (r: Row) => Boolean(r.source && r.source !== 'customer');
 type Payload = { items: Row[]; total: number; page: number; pages: number; counts: Record<string, number> };
 
 const STATUS_LABEL: Record<Row['status'], string> = { pending: 'Pending', approved: 'Published', rejected: 'Rejected', hidden: 'Hidden' };
@@ -44,6 +63,7 @@ export function ReviewsModeration() {
   const { data, error, loading, reload } = useApi<Payload>(`/api/admin/reviews${qs({ status: status || undefined, rating: rating || undefined, reported: reported ? '1' : undefined, q: query || undefined, page, r: nonce })}`);
   const toast = useToast();
   const [busy, setBusy] = useState('');
+  const [editing, setEditing] = useState<Row | 'new' | null>(null);
 
   const act = async (r: Row, next: 'approved' | 'rejected' | 'hidden') => {
     const note = next === 'approved' ? '' : (window.prompt(next === 'rejected' ? 'Reason for rejecting (internal, optional):' : 'Why is it hidden? (internal, optional)') ?? null);
@@ -84,10 +104,16 @@ export function ReviewsModeration() {
 
   return (
     <div className="a-page" data-testid="admin-reviews">
-      <AHead title="Reviews" />
+      <AHead title="Reviews">
+        <button type="button" className="btn btn--primary btn--sm" onClick={() => setEditing('new')} data-testid="review-add">
+          + Add customer review
+        </button>
+      </AHead>
       <p className="a-muted" style={{ marginTop: -8 }}>
-        Only customers with a delivered order can review a product, so every review is a verified purchase. New and edited reviews wait here; only published reviews appear on the store and count in ratings.
+        Reviews written on the site come from customers with a delivered order (verified purchase); new and edited ones wait here. Use <strong>Add customer review</strong> for real reviews customers sent on WhatsApp, Instagram or by phone —
+        they are published with their source shown (for example “Shared on WhatsApp”). Only published reviews appear on the store and count in ratings.
       </p>
+      {editing ? <StaffReviewForm row={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={() => (setEditing(null), setNonce((n) => n + 1))} /> : null}
       <div className="a-card a-card--flush">
         <div className="a-filterbar" role="search">
           <div className="a-filterbar__tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -159,7 +185,23 @@ export function ReviewsModeration() {
                   ({r.product.sku}) ·{' '}
                 </>
               ) : null}
-              Shown as “{r.displayName || 'Customer'}” · {r.customer?.name} &lt;{r.customer?.email}&gt; · verified order {r.order?.orderNumber ?? '—'}
+              {isStaffEntered(r) ? (
+                <>
+                  Shown as “{r.displayName || 'Customer'}” · <strong>Shared on {sourceLabel(r.source)}</strong> (entered by staff)
+                  {r.evidenceUrl ? (
+                    <>
+                      {' '}·{' '}
+                      <a href={r.evidenceUrl} target="_blank" rel="noreferrer">
+                        original message
+                      </a>
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  Shown as “{r.displayName || 'Customer'}” · {r.customer?.name} &lt;{r.customer?.email}&gt; · verified order {r.order?.orderNumber ?? '—'}
+                </>
+              )}
             </p>
             {r.reports?.length ? (
               <p className="a-muted" style={{ fontSize: 12 }}>
@@ -182,6 +224,11 @@ export function ReviewsModeration() {
                   Reject
                 </button>
               ) : null}
+              {isStaffEntered(r) ? (
+                <button className="btn btn--outline btn--sm" disabled={busy === r._id} onClick={() => setEditing(r)}>
+                  Edit
+                </button>
+              ) : null}
               <button className="btn btn--ghost btn--sm" style={{ color: 'var(--danger, #b42318)' }} disabled={busy === r._id} onClick={() => remove(r)}>
                 Delete
               </button>
@@ -191,5 +238,131 @@ export function ReviewsModeration() {
         {data && data.pages > 1 ? <Pager page={data.page} pages={data.pages} onPage={setPage} /> : null}
       </div>
     </div>
+  );
+}
+
+/** Enter (or correct) a real review a customer gave on WhatsApp, Instagram, by phone… */
+function StaffReviewForm({ row, onClose, onSaved }: { row: Row | null; onClose: () => void; onSaved: () => void }) {
+  const toast = useToast();
+  const [productIds, setProductIds] = useState<string[]>(row?.product?._id ? [row.product._id] : []);
+  const [displayName, setDisplayName] = useState(row?.displayName ?? '');
+  const [rating, setRating] = useState(row?.rating ?? 5);
+  const [title, setTitle] = useState(row?.title ?? '');
+  const [body, setBody] = useState(row?.body ?? '');
+  const [lang, setLang] = useState<'ar' | 'en'>(row?.lang === 'en' ? 'en' : 'ar');
+  const [source, setSource] = useState(row?.source && row.source !== 'customer' ? row.source : 'whatsapp');
+  const [receivedAt, setReceivedAt] = useState(row?.createdAt ? row.createdAt.slice(0, 10) : '');
+  const [evidenceUrl, setEvidenceUrl] = useState(row?.evidenceUrl ?? '');
+  const [photos, setPhotos] = useState<string[]>([...(row?.images ?? []).map((i) => i.url), '', '', ''].slice(0, 3));
+  const [err, setErr] = useState<unknown>(null);
+  const [saving, setSaving] = useState(false);
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    if (!row && !productIds.length) {
+      setErr(new Error('Choose the product this review is about'));
+      return;
+    }
+    setSaving(true);
+    const payload = {
+      displayName: displayName.trim(),
+      rating,
+      title: title.trim(),
+      body: body.trim(),
+      lang,
+      source,
+      receivedAt: receivedAt ? new Date(`${receivedAt}T12:00:00`).toISOString() : null,
+      evidenceUrl,
+      imageUrls: photos.filter(Boolean),
+    };
+    try {
+      if (row) await put(`/api/admin/reviews/${row._id}`, payload);
+      else await post('/api/admin/reviews', { ...payload, productId: productIds[productIds.length - 1] });
+      toast(row ? 'Review updated' : 'Review published');
+      onSaved();
+    } catch (ex) {
+      setErr(ex);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal title={row ? 'Edit customer review' : 'Add a customer review'} onClose={onClose} wide>
+      <form className="form-grid form-grid--2" onSubmit={save} data-testid="staff-review-form">
+        <p className="a-muted span-2" style={{ margin: 0, fontSize: 13 }}>
+          Copy a real review a customer sent you — on WhatsApp, Instagram, by phone or in store — in the customer’s own words and with their rating. It is published right away, with its source shown to shoppers (for example “Shared on
+          WhatsApp”), and counts in the product rating.
+        </p>
+        <div className="span-2">
+          <ErrorBox error={err} />
+        </div>
+        {row ? (
+          <p className="span-2" style={{ margin: 0 }}>
+            Product: <strong>{row.product?.name?.en || row.product?.name?.ar}</strong> <span className="a-muted ltr">({row.product?.sku})</span>
+          </p>
+        ) : (
+          <ProductPicker label="Product" value={productIds.slice(-1)} onChange={(ids) => setProductIds(ids.slice(-1))} />
+        )}
+        <F label="Customer name to show" hint="As the customer is happy to be shown, e.g. “Ahmed K.”">
+          <input className="input" required maxLength={60} value={displayName} onChange={(e) => setDisplayName(e.target.value)} data-testid="staff-review-name" />
+        </F>
+        <F label="Where the customer shared it">
+          <select className="select" value={source} onChange={(e) => setSource(e.target.value)} data-testid="staff-review-source">
+            {SOURCES.map(([k, label]) => (
+              <option key={k} value={k}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </F>
+        <div className="field">
+          <span className="label">Rating the customer gave</span>
+          <div role="radiogroup" aria-label="Rating" style={{ display: 'flex', gap: 4 }}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={rating === n}
+                aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                onClick={() => setRating(n)}
+                style={{ fontSize: 28, lineHeight: 1, padding: 2, border: 0, background: 'none', cursor: 'pointer', color: n <= rating ? '#e0a100' : '#d5d9de' }}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+        </div>
+        <F label="Date the customer gave it (optional)">
+          <input className="input" type="date" max={new Date().toISOString().slice(0, 10)} value={receivedAt} onChange={(e) => setReceivedAt(e.target.value)} />
+        </F>
+        <F label="Language of the review">
+          <select className="select" value={lang} onChange={(e) => setLang(e.target.value === 'en' ? 'en' : 'ar')}>
+            <option value="ar">Arabic</option>
+            <option value="en">English</option>
+          </select>
+        </F>
+        <F label="Title (optional)">
+          <input className="input" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} dir={lang === 'ar' ? 'rtl' : 'ltr'} />
+        </F>
+        <F label="Review text (the customer’s words)" span>
+          <textarea className="input" required rows={5} maxLength={2000} value={body} onChange={(e) => setBody(e.target.value)} dir={lang === 'ar' ? 'rtl' : 'ltr'} data-testid="staff-review-body" />
+        </F>
+        <MediaField label="Screenshot of the original message (staff only, optional)" kind="image" value={evidenceUrl} onChange={(u) => setEvidenceUrl(u)} hint="Kept as a record; never shown on the store." />
+        {photos.map((url, i) => (
+          <MediaField key={i} label={`Customer photo ${i + 1} (optional, shown with the review)`} kind="image" value={url} onChange={(u) => setPhotos(photos.map((x, j) => (j === i ? u : x)))} />
+        ))}
+        <div className="span-2" style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn--primary" disabled={saving} data-testid="staff-review-save">
+            {saving ? 'Saving…' : row ? 'Save changes' : 'Publish review'}
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
