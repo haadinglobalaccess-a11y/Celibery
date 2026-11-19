@@ -77,14 +77,19 @@ export function cloudinarySrcSet(url: string | undefined | null, widths: number[
  * at a known size). Same stored file, resized/re-encoded by Cloudinary; any other URL is returned
  * unchanged. Measured 16 Nov 2026: the uploaded logo and category images were downloaded as 0.5–2.4 MB
  * originals on every page view while displayed at 40–600 CSS px.
+ *
+ * `trim` first crops the file's uniform (transparent or white) margins (Cloudinary `e_trim`), so an
+ * image sized by height — the header logo — is centred on its artwork, not on padding baked into the
+ * upload. Measured 19 Nov 2026: the uploaded logo had 26px of margin above and 37px below its artwork
+ * (480×165), so it sat ~1.5px high in the mobile header and drew 40% smaller than its CSS height.
  */
-export function cloudinaryAt(url: string, width: number): string;
-export function cloudinaryAt(url: string | undefined | null, width: number): string | undefined;
-export function cloudinaryAt(url: string | undefined | null, width: number): string | undefined {
+export function cloudinaryAt(url: string, width: number, opts?: { trim?: boolean }): string;
+export function cloudinaryAt(url: string | undefined | null, width: number, opts?: { trim?: boolean }): string | undefined;
+export function cloudinaryAt(url: string | undefined | null, width: number, opts?: { trim?: boolean }): string | undefined {
   if (!url) return url ?? undefined;
   const m = CLOUDINARY_UPLOAD.exec(url);
   if (!m || /^[a-z]{1,3}_/.test(m[2])) return url;
-  return `${m[1]}c_limit,w_${width},f_auto,q_auto/${m[2]}`;
+  return `${m[1]}${opts?.trim ? 'e_trim/' : ''}c_limit,w_${width},f_auto,q_auto/${m[2]}`;
 }
 
 /**

@@ -502,3 +502,17 @@ html[lang='ar'] .cx-range__name {
     flex: none;
   }
 }
+
+/* ---------- Admin-uploaded logo ----------
+   Uses the brand-logo sizing (celibery.css); an unusually wide upload is contained, never stretched. */
+.header .logo--upload img {
+  max-width: 160px;
+  object-fit: contain;
+}
+
+/* Optical centring: the lightning bolt reaches further below the letters than above them, so the
+   CELIBERY lettering sits ~2.8% above the image's centre (measured on both the bundled wordmark and
+   the uploaded logo). Nudging by that share puts the lettering on the header icons' centre line. */
+.header .logo--brand img {
+  translate: 0 2.8%;
+}
