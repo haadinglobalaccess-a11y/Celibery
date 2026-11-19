@@ -31,6 +31,12 @@ function pick(v: Localized | undefined, lang: Lang): { text: string; lang: Lang 
 }
 const langAttrs = (p: { lang: Lang }, page: Lang) => (p.lang === page ? {} : { lang: p.lang, dir: p.lang === 'ar' ? 'rtl' : 'ltr' });
 
+/** YouTube's portrait thumbnail for an automatic YouTube poster (exists for Shorts / vertical videos). */
+const youtubePortraitPoster = (poster: string) => {
+  const m = /^https:\/\/i\.ytimg\.com\/vi\/([A-Za-z0-9_-]{11})\//.exec(poster || '');
+  return m ? `https://i.ytimg.com/vi/${m[1]}/oardefault.jpg` : null;
+};
+
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 
 export function HomeVideos() {
@@ -149,6 +155,11 @@ function VideoCard({ video: v, index, active, onPlay }: { video: HomeVideoItem; 
   const description = pick(v.description, lang);
   const alt = pick(v.posterAlt, lang);
   const [posterFailed, setPosterFailed] = useState(false);
+  // A poster that is not (nearly) the card's 9:16 shape is shown whole over its own soft copy — never cropped.
+  const [posterWhole, setPosterWhole] = useState(false);
+  // YouTube Shorts: YouTube's own portrait (9:16) thumbnail fits the card exactly; videos without one
+  // (regular landscape videos) fall back to the saved poster, shown whole.
+  const [posterSrc, setPosterSrc] = useState(() => youtubePortraitPoster(v.posterUrl) ?? v.posterUrl);
   const [frameFailed, setFrameFailed] = useState(false);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -174,11 +185,11 @@ function VideoCard({ video: v, index, active, onPlay }: { video: HomeVideoItem; 
     setAttempt((n) => n + 1);
     onPlay();
   };
-  const hasPoster = Boolean(v.posterUrl) && !posterFailed;
+  const hasPoster = Boolean(posterSrc) && !posterFailed;
   const provider = PROVIDER_LABEL[v.provider];
 
   return (
-    <article className={`hv-card ${active ? 'is-playing' : ''} ${failed ? 'is-failed' : ''}`} data-fit={v.fit} aria-label={label}>
+    <article className={`hv-card ${active ? 'is-playing' : ''} ${failed ? 'is-failed' : ''}`} data-fit={posterWhole ? 'contain' : v.fit} aria-label={label}>
       <div className="hv-card__frame" ref={frameRef}>
         {active && !failed ? (
           embedSrc ? (
@@ -215,12 +226,15 @@ function VideoCard({ video: v, index, active, onPlay }: { video: HomeVideoItem; 
               <>
                 {/* Soft copy of the poster: shown only when the Admin sets the poster to "fit whole"
                     (contain), filling the card around it — no black bars. */}
-                <img className="hv-card__backdrop" src={v.posterUrl} alt="" aria-hidden="true" loading="lazy" decoding="async" />
-                <img className="hv-card__poster" src={v.posterUrl} alt={alt.text} {...langAttrs(alt, lang)} loading="lazy" decoding="async" onError={() => setPosterFailed(true)} />
+                <img className="hv-card__backdrop" src={posterSrc} alt="" aria-hidden="true" loading="lazy" decoding="async" />
+                <img className="hv-card__poster" src={posterSrc} alt={alt.text} {...langAttrs(alt, lang)} loading="lazy" decoding="async"
+                  onError={() => (posterSrc !== v.posterUrl ? setPosterSrc(v.posterUrl) : setPosterFailed(true))}
+                  onLoad={(e) => { const i = e.currentTarget; if (i.naturalWidth && Math.abs(i.naturalWidth / i.naturalHeight - 9 / 16) / (9 / 16) > 0.08) setPosterWhole(true); }} />
               </>
             ) : v.fileUrl && !frameFailed ? (
               // No poster for a direct video link: show a frame from the video itself (loads only its start).
-              <video className="hv-card__poster" src={`${v.fileUrl.split('#')[0]}#t=1`} muted playsInline preload="metadata" aria-hidden="true" tabIndex={-1} onError={() => setFrameFailed(true)} />
+              <video className="hv-card__poster" src={`${v.fileUrl.split('#')[0]}#t=1`} muted playsInline preload="metadata" aria-hidden="true" tabIndex={-1} onError={() => setFrameFailed(true)}
+                onLoadedMetadata={(e) => { const m = e.currentTarget; if (m.videoWidth && Math.abs(m.videoWidth / m.videoHeight - 9 / 16) / (9 / 16) > 0.08) setPosterWhole(true); }} />
             ) : (
               <span className="hv-card__placeholder" aria-hidden="true" />
             )}
