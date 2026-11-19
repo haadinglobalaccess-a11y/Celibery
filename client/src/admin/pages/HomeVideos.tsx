@@ -8,7 +8,7 @@ import { MediaField, MediaPicker, fmtBytes, useMediaConfig, type MediaAsset } fr
 import { AHead, Card, dt, EmptyState, ErrorBox, ErrorPanel, F, LocInput, Modal, SkeletonTable, usePerms } from '../kit';
 
 /**
- * Admin → Website → Homepage videos. Four positions on the homepage, each filled with a saved,
+ * Admin → Website → Homepage videos. Up to eight positions on the homepage (count from the server), each filled with a saved,
  * published video. Videos come from a link (YouTube, Vimeo, Facebook, direct .mp4/.webm) or an
  * uploaded file (media library → object storage). Everything the homepage shows is read from
  * /api/home/videos, i.e. from what is saved here. Permission: content:write; uploading and

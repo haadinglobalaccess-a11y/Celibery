@@ -10,7 +10,7 @@ import '../styles/homeVideos.css';
 import { Kinetic } from './motion';
 
 /**
- * Homepage video showcase — four Admin-managed positions (Admin → Website → Homepage videos).
+ * Homepage video showcase — up to eight Admin-managed positions, four in view on desktop with previous/next (Admin → Website → Homepage videos).
  * Every title, description, poster and source comes from /api/home/videos; nothing is hard-coded,
  * and the section is not rendered at all when the Admin has no published video placed.
  *
@@ -37,7 +37,7 @@ export function HomeVideos() {
   const { t, lang } = useI18n();
   const { data } = useCached<HomeVideoSectionData>('/api/home/videos');
   const [playing, setPlaying] = useState<string | null>(null);
-  const videos = data?.enabled ? data.videos.slice(0, 4) : [];
+  const videos = data?.enabled ? data.videos.slice(0, 8) : [];
   const c = storeCopy(lang);
 
   // Previous/next controls for the row (shown only while the cards overflow it; RTL-aware).
