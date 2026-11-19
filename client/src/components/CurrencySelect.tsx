@@ -5,7 +5,7 @@ import { setCurrency, useCurrency } from '../state/currency';
 /**
  * Header currency selector: a small pill showing the current code (same look as the language
  * switch), with a native <select> over it, so it opens the platform picker on phones and is fully
- * keyboard/screen-reader accessible. "Automatic" returns to country-based detection.
+ * keyboard/screen-reader accessible. No "Automatic by country" line: the country currency is the default.
  */
 export function CurrencySelect() {
   const { t, lang } = useI18n();
@@ -22,12 +22,12 @@ export function CurrencySelect() {
       <select
         className="currency-switch__select"
         aria-label={`${t.currency.label}: ${c.code}`}
-        value={c.mode === 'manual' ? c.code : 'auto'}
-        onChange={(e) => setCurrency(e.target.value === 'auto' ? null : e.target.value)}
+        value={c.code}
+        onChange={(e) => setCurrency(e.target.value)}
         data-testid="currency-select"
       >
-        <option value="auto">{t.currency.auto(c.detected)}</option>
-        {c.available.map((code) => (
+        {/* Currencies only: the visitor's country currency is simply shown as selected. */}
+        {(c.available.includes(c.code) ? c.available : [c.code, ...c.available]).map((code) => (
           <option key={code} value={code}>
             {label(code)}
           </option>

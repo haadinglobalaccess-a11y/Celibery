@@ -18,7 +18,8 @@ import { BASE_CURRENCY, formatMoney, validRate } from '../lib/currency';
  */
 
 const PREF_KEY = 'celibery.currency.pref.v1';
-const CTX_KEY = 'celibery.currency.ctx.v1';
+// v2: earlier detections behind Railway's Singapore edge could be wrong (SGD in Pakistan) — re-detect once.
+const CTX_KEY = 'celibery.currency.ctx.v2';
 const REFRESH_AFTER_MS = 60 * 60_000;
 const CODE_RX = /^[A-Z]{3}$/;
 

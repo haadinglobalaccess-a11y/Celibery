@@ -517,6 +517,8 @@ export function LifestyleScenes({ data }: { data: HomeData }) {
   const { lang } = useI18n();
   const c = storeCopy(lang);
   const linkFor = useLinkFor();
+  // The frame takes the loaded photo's own shape (desktop or mobile photo), so it is never cropped.
+  const [ratio, setRatio] = useState<number | null>(null);
   const scene = (data.scenes?.items ?? []).find((b) => L(b.imageUrl, lang) || b.imageUrl?.en || b.imageUrl?.ar);
   if (data.scenes?.enabled === false || !scene) return null;
   const title = L(data.scenes?.title, lang) || c.scenesTitle;
@@ -530,10 +532,19 @@ export function LifestyleScenes({ data }: { data: HomeData }) {
     <section className="cx-section cx-scenes" aria-labelledby="cx-scenes-title" data-testid="home-scenes">
       <div className="container">
         <Head id="cx-scenes-title" title={title} center />
-        <div className={`cx-scenes__stage${mobile ? "" : " cx-scenes__stage--whole"}`} data-fx="rise">
+        <div className={`cx-scenes__stage${mobile ? '' : ' cx-scenes__stage--whole'}`} data-fx="rise" style={ratio ? { aspectRatio: String(ratio) } : undefined}>
           <picture className="cx-scenes__image" data-active="true">
             {mobile ? <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(mobile, [480, 800, 1200]) || mobile} sizes="100vw" /> : null}
-            <img {...responsiveImg(image, '(max-width: 1440px) 100vw, 1360px')} alt={L(scene.title, lang)} loading="lazy" decoding="async" />
+            <img
+              {...responsiveImg(image, '(max-width: 1440px) 100vw, 1360px')}
+              alt={L(scene.title, lang)}
+              loading="lazy"
+              decoding="async"
+              onLoad={(e) => {
+                const i = e.currentTarget;
+                if (i.naturalWidth && i.naturalHeight) setRatio(i.naturalWidth / i.naturalHeight);
+              }}
+            />
           </picture>
         </div>
         {text || (cta && href) ? (

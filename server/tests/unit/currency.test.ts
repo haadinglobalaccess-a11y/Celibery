@@ -169,6 +169,19 @@ describe('visitor country detection', () => {
     expect(calls).toHaveLength(1);
   });
 
+  it('uses the original visitor address from X-Forwarded-For, not the hosting edge (Railway showed SGD in Pakistan)', async () => {
+    mutableEnv.GEO_IP_LOOKUP_URL = 'https://geo.test/{ip}';
+    const calls: string[] = [];
+    __setGeoFetchForTests((url) => {
+      calls.push(url);
+      return json({ country: url.endsWith('139.135.53.158') ? 'PK' : 'SG' });
+    });
+    expect(await detectCountry(req({ 'x-forwarded-for': '139.135.53.158, 34.87.10.20' }, '34.87.10.20'), { vercel: false })).toEqual({ country: 'PK', source: 'ip-lookup' });
+    // private hops are skipped; no header → req.ip as before
+    expect((await detectCountry(req({ 'x-forwarded-for': '10.0.0.5, 139.135.53.158' }, '10.0.0.5'), { vercel: false })).country).toBe('PK');
+    expect(calls.every((u) => u.endsWith('139.135.53.158'))).toBe(true);
+  });
+
   it('lookup failure → unknown country, no exception', async () => {
     mutableEnv.GEO_IP_LOOKUP_URL = 'https://geo.test/{ip}';
     __setGeoFetchForTests(() => Promise.reject(new Error('timeout')));
