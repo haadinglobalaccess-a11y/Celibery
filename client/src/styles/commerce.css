@@ -19,8 +19,8 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
 .storefront .cx-card__add, .storefront .cx-card__wish { min-width: 44px; min-height: 44px; }
 .storefront .cx-card__wish { top: 8px; inset-inline-end: 8px; }
 .storefront .cx-card__badges { top: 10px; inset-inline-start: 10px; }
-/* Product name: 24px on phones so the price and buy box stay close; desktop unchanged (40px at 1440, 48px at 1920). */
-.storefront .cx-pdp__title { font-size: clamp(1.5rem, 1.1rem + 1.58vw, 3rem); line-height: 1.2; }
+/* Product name: 24px on phones; capped at 36px on desktop so long names stay within two lines beside the gallery. */
+.storefront .cx-pdp__title { font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2.25rem); line-height: 1.2; }
 .storefront .cx-pdp__lead { font-size: 1rem; line-height: 1.7; }
 .storefront .cx-pdp__section { padding-block: clamp(32px, 5vw, 68px); }
 .storefront .cx-detail { min-width: 0; width: 100%; border-block: 1px solid var(--cx-line); }
