@@ -277,7 +277,6 @@ const USE_CASES = ['for-travel', 'for-work', 'for-fitness', 'for-home'];
 
 export function ExploreCollection({ data }: { data: HomeData }) {
   const { t, lang, p } = useI18n();
-  const c = storeCopy(lang);
   // Tabs are built only from data that exists: featured, best sellers, Admin collections, use cases.
   const tabs = useMemo(() => {
     const list: { key: string; label: string; items: ProductCardData[]; link?: string }[] = [];
@@ -303,7 +302,7 @@ export function ExploreCollection({ data }: { data: HomeData }) {
   return (
     <section className="cx-section cx-collection" aria-labelledby="cx-collection-title">
       <div className="container">
-        <Head id="cx-collection-title" eyebrow={c.collectionEyebrow} title={t.premium.exploreTitle} link={current.link} linkLabel={current.link ? t.nav.viewAll : undefined} />
+        <Head id="cx-collection-title" title={t.premium.exploreTitle} link={current.link} linkLabel={current.link ? t.nav.viewAll : undefined} center />
         <div className="cx-tabs" role="tablist" aria-label={t.premium.exploreTitle} data-fx="rise">
           {tabs.map((x) => (
             <button key={x.key} type="button" role="tab" id={`cx-tab-${x.key}`} aria-selected={x.key === current.key} aria-controls="cx-collection-panel" onClick={() => setTab(x.key)}>

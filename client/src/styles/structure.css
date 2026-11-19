@@ -892,3 +892,41 @@ html[dir='rtl'] .icon--flip-rtl {
 .cx-story__copy .cx-story__sign {
   display: block;
 }
+
+/* ---------- Product cards: the same grey card language ----------
+   Light product cards (homepage collection, category / search / related grids) sit in the Car
+   Essentials grey card like the category and range tiles: photo in a rounded frame, details below.
+   Dark-section cards (.cx-card--dark, e.g. bundles) keep their own look. Badges and the wishlist
+   button move in with the card padding so they stay on the photo's corners. */
+.storefront .cx-card:not(.cx-card--dark) {
+  padding: 12px 12px 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  transition: box-shadow var(--dur-slow) var(--ease-out);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__media {
+  border-radius: var(--r-md);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__body {
+  padding: 14px 4px 0;
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__badges {
+  top: 22px;
+  inset-inline-start: 22px;
+  inset-inline-end: 72px;
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__wish {
+  top: 20px;
+  inset-inline-end: 20px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .storefront .cx-card:not(.cx-card--dark):hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+/* Homepage collection: tabs centred under the centred heading, on the same grey. */
+.cx-collection .cx-tabs {
+  margin-inline: auto;
+  background: var(--surface-2);
+}
