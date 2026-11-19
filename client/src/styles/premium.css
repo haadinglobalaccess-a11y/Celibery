@@ -160,30 +160,6 @@ html[dir='rtl'] .link-arrow::after {
     transform: translateY(-10px) scaleY(0.97);
   }
 }
-.mega__cat {
-  animation: fade-up 600ms var(--ease-out-expo) backwards;
-  animation-delay: calc(80ms + var(--i, 0) * 45ms);
-  transition:
-    background var(--dur) var(--ease),
-    transform var(--dur) var(--ease-out-expo);
-}
-.mega__cat:hover {
-  transform: translateY(-2px);
-}
-.mega__cat img {
-  transition: transform var(--dur-slow) var(--ease-out-expo);
-}
-.mega__cat:hover img {
-  transform: scale(1.08) rotate(-2deg);
-}
-.mega__side {
-  position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 80% 10%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 55%),
-    var(--dark);
-  animation: fade-up 700ms var(--ease-out-expo) 200ms backwards;
-}
 
 /* Mobile drawer links already use .stagger.is-visible; give them a keyframe entrance */
 .mnav.stagger > * {
@@ -1334,8 +1310,6 @@ html[dir='rtl'] .status-steps div::before {
   .cine__dots button span,
   .cart-peek__timer,
   .mega,
-  .mega__cat,
-  .mega__side,
   .mnav.stagger > *,
   .anim-in > *,
   .seg__panel,

@@ -43,6 +43,12 @@ const copy = {
     galleryShow: (name: string) => `Show ${name}`,
     galleryTapToAdd: 'Tap the image to add to bag',
     viewDetails: 'View details',
+    byCategory: 'By category',
+    viewAllIn: (name: string) => `View all ${name}`,
+    rangeTitle: 'Built for every part of your day',
+    rangeLead: 'Explore each CELIBERY category — from everyday charging to life on the road.',
+    shopNow: 'Shop now',
+    serviceBar: 'Customer services',
   },
   ar: {
     universeEyebrow: 'منتجات سيليبري',
@@ -81,6 +87,12 @@ const copy = {
     galleryShow: (name: string) => `عرض ${name}`,
     galleryTapToAdd: 'اضغط على الصورة للإضافة إلى السلة',
     viewDetails: 'عرض التفاصيل',
+    byCategory: 'حسب الفئة',
+    viewAllIn: (name: string) => `عرض كل ${name}`,
+    rangeTitle: 'مصممة لكل لحظة من يومك',
+    rangeLead: 'اكتشف فئات سيليبري — من الشحن اليومي إلى رحلاتك على الطريق.',
+    shopNow: 'تسوّق الآن',
+    serviceBar: 'خدمات العملاء',
   },
 };
 

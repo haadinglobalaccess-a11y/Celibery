@@ -5,7 +5,7 @@ import { L } from '../lib/format';
 import { absoluteUrl, useSeo } from '../lib/useSeo';
 import { useSettings } from '../state/settings';
 import type { HomeData } from '../lib/types';
-import { BrandStory, CampaignGallery, CategorySpotlights, CategoryUniverse, ClosingCampaign, Ecosystem, ExploreCollection, FlagshipCampaigns, WhyCelibery } from '../storefront/HomeSections';
+import { BrandStory, CampaignGallery, CategoryRange, CategoryUniverse, ClosingCampaign, Ecosystem, ExploreCollection, FlagshipCampaigns, WhyCelibery } from '../storefront/HomeSections';
 import { TheatreStage } from '../storefront/motion';
 import { HomeFaq } from '../storefront/Faq';
 import { HomeVideos } from '../storefront/HomeVideos';
@@ -86,7 +86,7 @@ export default function Home() {
       <CampaignGallery data={data} />
       {/* 03 */}
       {/* 04 */}
-      <CategorySpotlights data={data} />
+      <CategoryRange data={data} />
       {/* 05 */}
       <Ecosystem data={data} />
       {/* Video showcase (Admin → Website → Homepage videos) — not rendered when no video is published */}

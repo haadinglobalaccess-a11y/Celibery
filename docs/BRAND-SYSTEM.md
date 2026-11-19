@@ -47,6 +47,18 @@ The wordmark is too wide for a square icon. The icon is the logo's opening **C�
 - **Product photography brief.** Shoot on pure white (`#FFFFFF`), with the whole product in frame and no cropping, in square 1:1 format. The site removes the white automatically.
 - **Header.** Over the hero the header is transparent. Once the page is scrolled on desktop, it becomes a 92% white bar so it stays clean over dark sections.
 
+## Storefront structure (19 November 2026)
+
+The layout patterns come from a study of leading international tech retailers, UGREEN in particular. Everything is built with CELIBERY's own tokens, type, content and data. The new pieces live in `client/src/styles/structure.css`, which loads last and uses only new class names:
+
+- **Mega menu (desktop):** Category list on the start side. Hovering or focusing a category shows its real products (thumbnail, name, price in the visitor's currency) with a "View all" link. Every row is a plain link, so keyboard and screen-reader users get the same content.
+- **Category lineup:** All categories on one uniform light card under a centred heading. Six across on desktop, three on tablets, a swipeable row on phones.
+- **Category range (bento):** Replaces the six full-height category spotlight chapters. There are two large tiles, then the remaining categories in a row; each tile shows the category name, its Admin description, its image and a "Shop now" pill. Tiles are light (White, Ice, Mist) because product cut-outs blend away their white only on a light stage.
+- **Footer service bar:** Track order, Support centre, Warranty and About CELIBERY, above the footer columns.
+- **Product page:** From 1200px, gallery thumbnails sit in a vertical rail beside the main image (the right side in Arabic). Below that width they stay under it.
+
+Homepage section order: Hero → Category lineup → Explore the collection → Flagship → Campaigns → Category range → Bundles → Videos → Why CELIBERY → Story → FAQ → Newsletter. Flagship, Campaigns, Videos and FAQ only appear when Admin has published content for them.
+
 ## Rules
 
 - One accent. Use it for highlights, not for whole sections. Dark spotlights are graphite or midnight with at most an 18% turquoise glow.

@@ -136,13 +136,11 @@ html[dir='rtl'] .cx-link {
   background-size: 100% 1px;
 }
 .cx-link:hover .cx-arrow,
-.cx-btn:hover .cx-arrow,
-.cx-uni:hover .cx-arrow {
+.cx-btn:hover .cx-arrow {
   transform: translateX(4px);
 }
 html[dir='rtl'] .cx-link:hover .cx-arrow,
-html[dir='rtl'] .cx-btn:hover .cx-arrow,
-html[dir='rtl'] .cx-uni:hover .cx-arrow {
+html[dir='rtl'] .cx-btn:hover .cx-arrow {
   transform: scaleX(-1) translateX(4px);
 }
 .cx-btn {
@@ -612,178 +610,6 @@ html[lang='ar'] .cx-card__title {
   --tone-ink: #fff;
 }
 
-.cx-universe__grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-}
-.cx-uni {
-  position: relative;
-  display: block;
-  min-height: 210px;
-  border-radius: var(--cx-r-xl);
-  background: var(--tone-bg);
-  color: var(--tone-ink);
-  overflow: hidden;
-  isolation: isolate;
-  box-shadow: inset 0 0 0 1px rgb(127 127 127 / 0.14);
-  transition: transform 600ms var(--cx-ease), box-shadow 600ms var(--cx-ease);
-}
-.cx-uni:hover {
-  box-shadow: inset 0 0 0 1px rgb(127 127 127 / 0.2), 0 30px 60px -40px rgb(0 0 0 / 0.55);
-}
-.cx-uni__visual {
-  position: absolute;
-  inset-block: 7%;
-  inset-inline-end: 3%;
-  width: 46%;
-  display: grid;
-  place-items: center;
-  z-index: -1;
-}
-.cx-uni__halo {
-  position: absolute;
-  width: 92%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(255 255 255 / 0.55), transparent);
-  opacity: 0.7;
-}
-.cx-uni.is-dark .cx-uni__halo {
-  background: radial-gradient(closest-side, rgb(255 255 255 / 0.12), transparent);
-}
-.cx-uni__visual img {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 18px;
-  filter: drop-shadow(0 26px 30px rgb(0 0 0 / 0.22));
-  transition: transform 900ms var(--cx-ease);
-}
-.cx-uni:hover .cx-uni__visual img {
-  transform: translateY(-4%) scale(1.05) rotate(-1.5deg);
-}
-.cx-uni__copy {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: clamp(22px, 2.4vw, 32px);
-  max-width: 54%;
-  z-index: 1;
-}
-.cx-uni__index {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  opacity: 0.55;
-  margin-bottom: auto;
-}
-.cx-uni__name {
-  font-size: clamp(1.375rem, 1rem + 1.1vw, 2rem);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1.02;
-}
-html[lang='ar'] .cx-uni__name {
-  letter-spacing: 0;
-  line-height: 1.3;
-  font-weight: 700;
-}
-.cx-uni__desc {
-  margin-top: 8px;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  opacity: 0.68;
-  max-width: 30ch;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.cx-uni__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-@media (min-width: 640px) {
-  .cx-universe__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-  }
-  .cx-uni {
-    min-height: 300px;
-  }
-  .cx-uni--0 {
-    grid-column: 1 / -1;
-    min-height: 380px;
-  }
-  .cx-uni__visual {
-    inset-inline-end: 4%;
-    width: 46%;
-  }
-}
-@media (min-width: 1024px) {
-  .cx-universe__grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-auto-rows: 280px;
-    gap: 18px;
-  }
-  .cx-uni {
-    min-height: 0;
-  }
-  .cx-uni--0 {
-    grid-column: span 7;
-    grid-row: span 2;
-  }
-  .cx-uni--1,
-  .cx-uni--2 {
-    grid-column: span 5;
-  }
-  .cx-uni--3,
-  .cx-uni--4,
-  .cx-uni--5 {
-    grid-column: span 4;
-    grid-row: span 1;
-  }
-  .cx-uni--0 .cx-uni__visual {
-    inset-block: 6% 30%;
-    width: 52%;
-    inset-inline-end: 3%;
-  }
-  .cx-uni--0 .cx-uni__name {
-    font-size: clamp(2.25rem, 1.4rem + 2vw, 3.25rem);
-  }
-  .cx-uni--0 .cx-uni__copy {
-    max-width: 48%;
-  }
-  .cx-uni--1 .cx-uni__visual,
-  .cx-uni--2 .cx-uni__visual {
-    width: 44%;
-  }
-  .cx-uni--3 .cx-uni__visual,
-  .cx-uni--4 .cx-uni__visual,
-  .cx-uni--5 .cx-uni__visual {
-    width: 46%;
-    inset-block: 9%;
-  }
-  .cx-uni--3 .cx-uni__copy,
-  .cx-uni--4 .cx-uni__copy,
-  .cx-uni--5 .cx-uni__copy {
-    max-width: 52%;
-  }
-  .cx-uni--3 .cx-uni__name,
-  .cx-uni--4 .cx-uni__name,
-  .cx-uni--5 .cx-uni__name {
-    font-size: clamp(1.25rem, 0.9rem + 0.9vw, 1.75rem);
-  }
-}
-
 /* =====================================================================
    02 · Flagship campaigns
    ===================================================================== */
@@ -1075,198 +901,6 @@ html[lang='ar'] .cx-campaign__body strong {
   from {
     opacity: 0;
     transform: translateY(14px);
-  }
-}
-
-/* =====================================================================
-   04 · Category spotlight chapters
-   ===================================================================== */
-.cx-spot {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  padding-block: clamp(64px, 8vw, 128px);
-  background: var(--tone-bg);
-  color: var(--tone-ink);
-}
-.cx-spot__inner {
-  display: grid;
-  gap: 40px;
-  align-items: center;
-}
-.cx-spot__copy {
-  position: relative;
-}
-.cx-spot__copy .cx-btn {
-  margin-top: 30px;
-}
-.cx-spot.is-dark .cx-eyebrow {
-  color: color-mix(in srgb, var(--accent) 70%, #fff);
-}
-.cx-spot__chapter {
-  position: absolute;
-  top: -0.42em;
-  inset-inline-start: -0.06em;
-  font-size: clamp(7rem, 16vw, 14rem);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.06em;
-  color: transparent;
-  -webkit-text-stroke: 1px currentColor;
-  opacity: 0.1;
-  z-index: -1;
-  pointer-events: none;
-}
-.cx-spot__body {
-  display: grid;
-  gap: 18px;
-  min-width: 0;
-}
-/* Showcase hero: the frame takes the artwork's own proportion (ArtFrame fit="natural"), so the
-   complete artwork fills it with no empty margin; its width is capped by shape so square and
-   portrait art stay in proportion with the copy beside it. */
-.cx-spot__hero {
-  position: relative;
-  display: block;
-  justify-self: center;
-  width: 100%;
-  max-width: 600px;
-  border-radius: var(--cx-r-art);
-  background: var(--cx-art-matte);
-  overflow: hidden;
-  isolation: isolate;
-  box-shadow:
-    0 0 0 1px rgb(127 127 127 / 0.16),
-    0 44px 70px -44px rgb(0 0 0 / 0.6);
-}
-.cx-spot__hero:has(.cx-art[data-shape='landscape']) {
-  max-width: none;
-}
-.cx-spot__hero:has(.cx-art[data-shape='portrait']) {
-  max-width: 540px;
-}
-.cx-spot__hero .cx-art {
-  border-radius: inherit;
-}
-.cx-spot__cards {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-.cx-spot__grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.cx-spot__grid > :nth-child(3) {
-  display: none;
-}
-.cx-spot__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid rgb(127 127 127 / 0.22);
-}
-.cx-spot__row {
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 6px;
-  border-bottom: 1px solid rgb(127 127 127 / 0.22);
-  transition: background 300ms var(--cx-ease), padding 400ms var(--cx-ease);
-}
-.cx-spot__row:hover {
-  background: rgb(255 255 255 / 0.45);
-  padding-inline: 14px;
-}
-.cx-spot.is-dark .cx-spot__row:hover {
-  background: rgb(255 255 255 / 0.05);
-}
-.cx-spot__thumb {
-  width: 84px;
-  aspect-ratio: 1;
-  border-radius: 14px;
-  box-shadow: 0 0 0 1px rgb(127 127 127 / 0.22);
-}
-.cx-spot__rowtext {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.cx-spot__rowtext strong {
-  font-weight: 600;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.cx-spot__rowtext span {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  opacity: 0.6;
-}
-.cx-spot__row .price {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.cx-spot__row .price__was {
-  font-size: 0.75rem;
-  font-weight: 500;
-  opacity: 0.55;
-}
-@media (min-width: 640px) {
-  .cx-spot__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .cx-spot__grid > :nth-child(3) {
-    display: flex;
-  }
-}
-@media (min-width: 960px) {
-  .cx-spot__inner {
-    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-    gap: clamp(40px, 5vw, 80px);
-  }
-  /* Stage: copy beside a wide lit hero, product strip across the full width below */
-  .cx-spot--stage .cx-spot__inner {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    row-gap: 48px;
-  }
-  .cx-spot--stage .cx-spot__body {
-    display: contents;
-  }
-  .cx-spot--stage .cx-spot__cards {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 24px;
-  }
-  .cx-spot--list .cx-spot__inner {
-    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-  }
-  .cx-spot--list .cx-spot__body {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    align-items: center;
-    gap: clamp(24px, 3vw, 44px);
-  }
-  .cx-spot--grid .cx-spot__inner {
-    grid-template-columns: 1fr;
-  }
-  .cx-spot--grid .cx-spot__copy {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    column-gap: 40px;
-  }
-  .cx-spot--grid .cx-spot__copy > .cx-btn {
-    grid-column: 2;
-    grid-row: 2 / span 3;
-    align-self: end;
-  }
-  .cx-spot--grid .cx-spot__copy > :not(.cx-btn):not(.cx-spot__chapter) {
-    grid-column: 1;
   }
 }
 
@@ -2893,49 +2527,6 @@ html[lang='ar'] .cx-footer h3 {
   background: rgb(255 255 255 / 0.97);
   backdrop-filter: blur(20px) saturate(140%);
 }
-.header .mega__grid {
-  padding-block: 28px 32px;
-  gap: 8px 16px;
-}
-.header .mega__cat {
-  padding: 14px;
-  border-radius: 20px;
-  transition: background 240ms var(--cx-ease);
-}
-.header .mega__cat:hover {
-  background: var(--cx-cloud);
-  transform: none;
-}
-.header .mega__cat img {
-  width: 68px;
-  height: 68px;
-  padding: 8px;
-  object-fit: contain;
-  border-radius: 18px;
-  background: var(--cx-stage);
-  box-shadow: inset 0 0 0 1px var(--cx-line);
-}
-.header .mega__cat:hover img {
-  transform: scale(1.05);
-}
-.header .mega__cat strong {
-  font-size: 1rem;
-  font-weight: 700;
-}
-.header .mega__cat ul {
-  margin-top: 6px;
-}
-.header .mega__cat li {
-  font-size: 0.8125rem;
-  color: var(--cx-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.header .mega__side {
-  border-radius: 24px;
-}
-
 /* Mobile drawer */
 .drawer .drawer__head {
   border-bottom: 1px solid var(--cx-line);
@@ -2963,28 +2554,6 @@ html[lang='ar'] .cx-footer h3 {
    ===================================================================== */
 @media (max-width: 959px) {
   /* Chapter products become a swipe strip instead of an uneven grid */
-  .cx-spot__cards,
-  .cx-spot__grid {
-    display: grid;
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: 46%;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-  }
-  .cx-spot__cards::-webkit-scrollbar,
-  .cx-spot__grid::-webkit-scrollbar {
-    display: none;
-  }
-  .cx-spot__cards > *,
-  .cx-spot__grid > * {
-    scroll-snap-align: start;
-  }
-  .cx-spot__grid > :nth-child(3) {
-    display: flex;
-  }
   .cx-flag__stage {
     width: min(100%, 420px);
   }
@@ -2996,10 +2565,6 @@ html[lang='ar'] .cx-footer h3 {
   }
   .cx-rail__track {
     grid-auto-columns: 74%;
-  }
-  .cx-spot__cards,
-  .cx-spot__grid {
-    grid-auto-columns: 62%;
   }
   .cx-eco__board {
     grid-template-columns: none;
@@ -3107,233 +2672,12 @@ html[lang='ar'] .cx-footer h3 {
 /* Group proportion: when every artwork in a row is landscape (or every one portrait), the row's
    frames take that proportion together; mixed rows stay square. Decided once images report their
    real shape, so cards in one row are always the same size. */
-:is(.cx-rail__track, .cx-spot__cards, .cx-spot__grid, .cx-eco__board, .cx-grid):has(.cx-art.cx-card__img[data-shape]):not(:has(.cx-art.cx-card__img:not([data-shape='landscape']))) {
+:is(.cx-rail__track, .cx-eco__board, .cx-grid):has(.cx-art.cx-card__img[data-shape]):not(:has(.cx-art.cx-card__img:not([data-shape='landscape']))) {
   --art-ratio: 3 / 2;
 }
-:is(.cx-rail__track, .cx-spot__cards, .cx-spot__grid, .cx-eco__board, .cx-grid):has(.cx-art.cx-card__img[data-shape]):not(:has(.cx-art.cx-card__img:not([data-shape='portrait']))) {
+:is(.cx-rail__track, .cx-eco__board, .cx-grid):has(.cx-art.cx-card__img[data-shape]):not(:has(.cx-art.cx-card__img:not([data-shape='portrait']))) {
   --art-ratio: 11 / 12;
 }
-
-/* =====================================================================
-   Category gallery (Car Essentials · Tech Essentials) — stage + up to seven product thumbnails
-   ===================================================================== */
-.cx-gal {
-  display: grid;
-  gap: 24px;
-  min-width: 0;
-}
-.cx-gal__main {
-  display: grid;
-  gap: 22px;
-  align-items: end;
-}
-.cx-gal__stage {
-  position: relative;
-  display: block;
-  width: 100%;
-  max-width: 560px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--cx-r-art);
-  background: none;
-  color: inherit;
-  cursor: pointer;
-}
-.cx-gal__stage:disabled {
-  cursor: not-allowed;
-}
-.cx-gal__stage:focus-visible,
-.cx-gal__thumb:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-/* Fixed square stage: switching products never resizes the gallery. */
-.cx-gal__frame {
-  position: relative;
-  display: block;
-  aspect-ratio: 1;
-  border-radius: inherit;
-  isolation: isolate;
-}
-.cx-gal__layer {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  transform-origin: center;
-}
-.cx-gal__layer[data-layer='in'] {
-  z-index: 1;
-}
-.cx-gal__layer .cx-art {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 0.08),
-    0 44px 70px -44px rgb(0 0 0 / 0.75);
-}
-.cx-gal__cta {
-  position: absolute;
-  z-index: 2;
-  inset-block-end: 16px;
-  inset-inline-start: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 0 18px 0 14px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.95);
-  color: var(--cx-ink);
-  font-size: 0.875rem;
-  font-weight: 600;
-  box-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.6);
-  transition:
-    background 220ms var(--cx-ease),
-    color 220ms var(--cx-ease),
-    translate 400ms var(--cx-spring);
-}
-.cx-gal__cta .icon {
-  width: 18px;
-  height: 18px;
-}
-.cx-gal__stage:not(:disabled):hover .cx-gal__cta,
-.cx-gal__stage:not(:disabled):focus-visible .cx-gal__cta {
-  background: var(--accent);
-  color: var(--accent-ink, #fff);
-  translate: 0 -2px;
-}
-.cx-gal__stage.is-added .cx-gal__cta {
-  background: var(--success, #15803d);
-  color: #fff;
-}
-.cx-gal__stage:disabled .cx-gal__cta {
-  background: rgb(255 255 255 / 0.7);
-  color: var(--cx-muted);
-}
-.cx-gal__info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  min-width: 0;
-  /* re-enters with each selected product (keyed in CategoryGallery) */
-  animation: cx-gal-info 520ms var(--cx-ease) both;
-}
-@keyframes cx-gal-info {
-  from {
-    opacity: 0;
-    translate: 0 10px;
-  }
-}
-.cx-gal__desc {
-  margin: 0;
-  max-width: 40ch;
-  line-height: 1.55;
-  opacity: 0.72;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.cx-gal__name {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.cx-gal__name span {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  opacity: 0.6;
-}
-.cx-gal__name strong {
-  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.75rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  text-wrap: balance;
-}
-html[lang='ar'] .cx-gal__name strong {
-  letter-spacing: 0;
-  line-height: 1.45;
-}
-.cx-gal__price {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-.cx-gal__price .price__now {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-.cx-gal__price .price__was {
-  opacity: 0.55;
-}
-/* Large, recognisable thumbnails: one row for up to four products, two balanced rows beyond that
-   (--cols is set by CategoryGallery); each tile is capped so artwork never floats in an empty box. */
-.cx-gal__thumbs {
-  --gap: 14px;
-  display: grid;
-  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
-  gap: var(--gap);
-  max-width: calc(var(--cols, 4) * 200px + (var(--cols, 4) - 1) * var(--gap));
-}
-.cx-gal__thumb {
-  display: block;
-  aspect-ratio: 1;
-  padding: 0;
-  border: 0;
-  border-radius: 16px;
-  background: none;
-  cursor: pointer;
-  opacity: 0.78;
-  box-shadow: 0 0 0 1px rgb(127 127 127 / 0.28);
-  transition:
-    opacity 300ms var(--cx-ease),
-    translate 400ms var(--cx-ease),
-    box-shadow 300ms var(--cx-ease);
-}
-.cx-gal__thumb .cx-art {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-}
-.cx-gal__thumb:hover {
-  opacity: 1;
-}
-.cx-gal__thumb[aria-pressed='true'] {
-  opacity: 1;
-  translate: 0 -3px;
-  box-shadow:
-    0 0 0 2px var(--accent),
-    0 14px 24px -14px rgb(0 0 0 / 0.7);
-}
-@media (min-width: 960px) {
-  .cx-gal__main {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
-    gap: 36px;
-  }
-}
-@media (max-width: 639px) {
-  /* Phones: thumbnails keep a usable size and scroll sideways instead of shrinking. */
-  .cx-gal__thumbs {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: 112px;
-    max-width: none;
-    overflow-x: auto;
-    padding: 4px 2px 6px;
-    scrollbar-width: none;
-  }
-  .cx-gal__thumbs::-webkit-scrollbar {
-    display: none;
-  }
-  .cx-gal__cta {
-    inset-block-end: 12px;
-    inset-inline-start: 12px;
-  }
-}
-
 /* =====================================================================
    Viewport fit — desktop & laptop
    Root cause: artwork frames were sized in fixed pixels (flagship stage 600px, spotlight hero
@@ -3363,16 +2707,6 @@ html[lang='ar'] .cx-gal__name strong {
   /* Spotlight showcase artwork (Headphones, Cables, …): the frame's width is derived from the
      visible height and the artwork's shape (data-shape, measured by ArtFrame), so its height never
      exceeds the screen. The image keeps width:100% — a lazy image must never collapse to 0×0. */
-  .cx-spot__hero {
-    --hero-h: calc(var(--cx-view) - 72px);
-    width: min(100%, var(--hero-h));
-  }
-  .cx-spot__hero:has(.cx-art[data-shape='landscape']) {
-    width: min(100%, calc(var(--hero-h) * 1.5));
-  }
-  .cx-spot__hero:has(.cx-art[data-shape='portrait']) {
-    width: min(100%, calc(var(--hero-h) * 0.91));
-  }
   /* Campaign card = banner + copy (~200px): the banner gives way, shown whole (contain). */
   .cx-campaign__media img,
   .cx-campaign__video {
@@ -3382,20 +2716,6 @@ html[lang='ar'] .cx-gal__name strong {
   /* Gallery (Car / Tech Essentials) = stage + gap + thumbnail row. Stage and thumbnails scale
      together (thumbnail ≈ 27% of the available height) so their proportion holds on every screen,
      and the product information sits directly beside the stage. */
-  .cx-gal {
-    --gal-h: calc(var(--cx-view) - 72px);
-    --gal-thumb: min(200px, calc(var(--gal-h) * 0.27));
-    --gal-stage: min(560px, calc(var(--gal-h) - var(--gal-thumb) - 24px));
-  }
-  .cx-gal__main {
-    grid-template-columns: minmax(0, var(--gal-stage)) minmax(200px, 1fr);
-  }
-  .cx-gal__stage {
-    max-width: none;
-  }
-  .cx-gal__thumbs {
-    max-width: calc(var(--cols, 4) * var(--gal-thumb) + (var(--cols, 4) - 1) * var(--gap));
-  }
   /* Brand-story artwork: height capped, width follows, so the whole image fits on screen. */
   .cx-story__media {
     justify-self: center;
@@ -3511,12 +2831,6 @@ html[lang='ar'] .cx-gal__name strong {
 .cx-theatre [data-fx='iris'].fx-in {
   animation: fx-iris 1100ms var(--fx-door) var(--d) both;
 }
-.cx-theatre .cx-uni.fx-in .cx-uni__visual img {
-  animation: fx-settle 1700ms var(--fx-ease) calc(var(--d) + 120ms) both;
-}
-.cx-theatre .cx-uni.fx-in .cx-uni__copy > * {
-  animation: fx-rise 900ms var(--fx-ease) calc(var(--d) + 420ms) both;
-}
 @keyframes fx-iris {
   from {
     clip-path: circle(0% at 50% 55%);
@@ -3540,12 +2854,10 @@ html[lang='ar'] .cx-gal__name strong {
 [data-fx='split'] {
   --fx-panel: linear-gradient(100deg, var(--brand-midnight) 0%, var(--brand-graphite) 42%, var(--on-dark-muted) 50%, var(--brand-graphite) 58%, var(--brand-midnight) 100%);
 }
-.cx-spot:not(.is-dark) [data-fx='split'],
 .cx-campaign--light[data-fx='split'] {
   --fx-panel: linear-gradient(100deg, var(--surface-2) 0%, var(--brand-cloud) 42%, var(--brand-white) 50%, var(--brand-cloud) 58%, var(--surface-2) 100%);
 }
 .cx-theatre [data-fx='split']::before,
-.cx-theatre .cx-spot__hero[data-fx='split']::after,
 .cx-theatre .cx-story__media[data-fx='split']::after {
   content: '';
   position: absolute;
@@ -3560,13 +2872,11 @@ html[lang='ar'] .cx-gal__name strong {
   left: 0;
   transform-origin: left center;
 }
-.cx-theatre .cx-spot__hero[data-fx='split']::after,
 .cx-theatre .cx-story__media[data-fx='split']::after {
   right: 0;
   transform-origin: right center;
 }
 .cx-theatre [data-fx='split'].fx-in::before,
-.cx-theatre .cx-spot__hero[data-fx='split'].fx-in::after,
 .cx-theatre .cx-story__media[data-fx='split'].fx-in::after {
   animation: fx-door 1250ms var(--fx-door) calc(var(--d) + 120ms) both;
 }
@@ -3783,8 +3093,7 @@ html[lang='ar'] .cx-gal__name strong {
   -webkit-background-clip: text;
   background-clip: text;
 }
-.cx-why__mark,
-.cx-spot:not(.is-dark) .cx-spot__chapter {
+.cx-why__mark {
   --fx-chrome: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 .cx-theatre [data-fx='chrome'].fx-in {
@@ -3964,15 +3273,11 @@ html[dir='rtl'] .cx-pdp .gallery__frame[data-dir='prev'] {
     display: none;
   }
   .cx-card__img,
-  .cx-card__media,
-  .cx-gal__thumb,
-  .cx-gal__info,
-  .cx-gal__cta,
-  .cx-uni__visual img,
-  .cx-campaign__media img,
-  .cx-btn,
-  .cx-link,
-  .cx-arrow {
+.cx-card__media,
+.cx-campaign__media img,
+.cx-btn,
+.cx-link,
+.cx-arrow {
     transition: none;
   }
 }
@@ -4031,10 +3336,6 @@ html[dir='rtl'] .drawer.drawer--3d {
   }
   .cx-theatre [data-fx='iris'].fx-in {
     animation: fx-rise 900ms var(--fx-ease) var(--d) both;
-  }
-  .cx-theatre .cx-uni.fx-in .cx-uni__visual img,
-  .cx-theatre .cx-uni.fx-in .cx-uni__copy > * {
-    animation: none;
   }
   .cx-theatre [data-fx='chrome'].fx-in {
     animation: none;
@@ -4293,18 +3594,6 @@ textarea {
 .header .mega {
   color: var(--ink);
 }
-.header .mega__cat strong {
-  color: var(--ink);
-}
-.header .mega__cat:hover strong,
-.header .mega__cat:focus-visible strong {
-  color: var(--accent-text);
-}
-.header .mega__cat:focus-visible {
-  background: var(--cx-cloud);
-  outline-offset: 0;
-}
-
 /* Phones: the sample notice becomes a slim in-flow strip above the header,
    so it never covers headings, prices or the sticky buy bar. */
 @media (max-width: 959px) {

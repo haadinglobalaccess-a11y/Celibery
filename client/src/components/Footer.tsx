@@ -5,6 +5,8 @@ import { cloudinaryAt } from '../lib/media';
 import { useCached } from '../lib/hooks';
 import type { HomeData } from '../lib/types';
 import { useSettings, whatsappLink } from '../state/settings';
+import { storeCopy } from '../storefront/copy';
+import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { PayLogos } from './ui';
 
@@ -102,6 +104,24 @@ export function Footer() {
   return (
     <footer className="footer cx-footer">
       <div className="container">
+        {/* Service bar: the four after-sales destinations customers look for first. */}
+        <nav className="cx-svc" aria-label={storeCopy(lang).serviceBar}>
+          {(
+            [
+              ['/track', 'truck', t.nav.track],
+              ['/support', 'chat', lang === 'ar' ? 'مركز الدعم' : 'Support center'],
+              ['/page/warranty', 'shield', t.footer.warranty],
+              ['/about', 'bolt', lang === 'ar' ? 'عن سيليبري' : 'About CELIBERY'],
+            ] as const
+          ).map(([to, icon, label]) => (
+            <Link key={to} to={p(to)} className="cx-svc__item">
+              <span className="cx-svc__icon" aria-hidden="true">
+                <Icon name={icon} />
+              </span>
+              <span className="cx-svc__label">{label}</span>
+            </Link>
+          ))}
+        </nav>
         <div className="footer__grid cx-footer__grid">
           <div className="cx-footer__brand">
             <Logo onDark />

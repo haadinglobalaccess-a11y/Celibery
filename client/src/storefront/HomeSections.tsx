@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArtFrame } from '../components/ArtFrame';
-import { ProductCard, ProductImage } from '../components/ProductCard';
+import { ProductCard } from '../components/ProductCard';
 import { PayLogos, Price } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { post } from '../lib/api';
@@ -14,15 +14,9 @@ import type { Category, HomeData, ProductCardData } from '../lib/types';
 import { useSettings } from '../state/settings';
 import { useToast } from '../state/toast';
 import { bannerVideo, useLinkFor } from '../three-d';
-import { CategoryGallery } from './CategoryGallery';
 import { storeCopy } from './copy';
 import { Kinetic } from './motion';
 import { ProductRail } from './ProductRail';
-
-/* Each category gets its own tone, by position — categories themselves stay data-driven. */
-const TONES = ['obsidian', 'porcelain', 'graphite', 'mist', 'sand', 'midnight'] as const;
-const DARK_TONES = new Set(['obsidian', 'graphite', 'midnight']);
-const toneFor = (i: number) => TONES[i % TONES.length];
 
 /* Responsive image hints per layout, so the browser picks the right uploaded WebP variant. */
 const SIZES_RAIL = '(max-width: 639px) 74vw, (max-width: 1023px) 42vw, 25vw';
@@ -45,9 +39,9 @@ function Arrow() {
   );
 }
 
-function Head({ eyebrow, title, lead, link, linkLabel, id }: { eyebrow?: string; title: string; lead?: string; link?: string; linkLabel?: string; id?: string }) {
+function Head({ eyebrow, title, lead, link, linkLabel, id, center = false }: { eyebrow?: string; title: string; lead?: string; link?: string; linkLabel?: string; id?: string; center?: boolean }) {
   return (
-    <div className="cx-head">
+    <div className={`cx-head${center ? ' cx-head--center' : ''}`}>
       <div className="cx-head__text">
         {eyebrow ? (
           <span className="cx-eyebrow" data-fx="rise">
@@ -70,41 +64,75 @@ function Head({ eyebrow, title, lead, link, linkLabel, id }: { eyebrow?: string;
   );
 }
 
-/* ───────────────────────── 01 · Category universe — iris portals ───────────────────────── */
+/* ───────────────────────── 01 · Category lineup — one uniform row of category cards ───────────────────────── */
+/** Every category on the same light card (product cut-outs need a light stage), centred heading,
+ *  six across on desktop, a swipeable row on phones. Categories, images and counts come from /api/home. */
 export function CategoryUniverse({ data }: { data: HomeData }) {
   const { t, lang, p } = useI18n();
-  const c = storeCopy(lang);
   if (!data.categories.length) return null;
   return (
-    <section className="cx-section cx-universe" aria-labelledby="cx-universe-title">
+    <section className="cx-section cx-lineup" aria-labelledby="cx-universe-title">
       <div className="container">
-        <Head id="cx-universe-title" title={t.home.categories} link={p('/shop')} linkLabel={t.nav.viewAll} />
-        <div className="cx-universe__grid">
+        <Head id="cx-universe-title" title={t.home.categories} link={p('/shop')} linkLabel={t.nav.viewAll} center />
+        <div className="cx-lineup__track">
           {data.categories.map((cat, i) => {
-            const tone = toneFor(i);
             const v = visualFor(data, cat);
+            return (
+              <Link key={cat._id} to={p(`/c/${cat.slug}`)} className="cx-lineup__card" data-testid="category-tile" data-fx="rise" style={{ '--d': `${i * 70}ms` } as CSSProperties}>
+                <span className="cx-lineup__media" aria-hidden="true">
+                  <ArtFrame src={v.url} image={v.image} category={cat.slug} sizes="(max-width: 639px) 44vw, (max-width: 1199px) 30vw, 200px" />
+                </span>
+                <strong className="cx-lineup__name">{L(cat.name, lang)}</strong>
+                {cat.productCount ? <span className="cx-lineup__count">{t.premium.productsCount(cat.productCount)}</span> : null}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── 04 · Category range — bento grid ───────────────────────── */
+/** One section for the whole range instead of a full chapter per category: two large tiles, then the
+ *  rest in a row. Name, Admin description and visual are the category's own; the CTA opens its page. */
+const RANGE_TONES = ['white', 'ice', 'mist', 'white', 'ice', 'mist'] as const;
+
+export function CategoryRange({ data }: { data: HomeData }) {
+  const { lang, p } = useI18n();
+  const c = storeCopy(lang);
+  const cats = data.categories.filter((cat) => itemsFor(data, cat).length || cat.image?.url);
+  if (!cats.length) return null;
+  const rest = Math.max(0, cats.length - 2);
+  return (
+    <section className="cx-section cx-range" aria-labelledby="cx-range-title">
+      <div className="container">
+        <Head id="cx-range-title" title={c.rangeTitle} lead={c.rangeLead} center />
+        <div className="cx-range__grid" data-rest={Math.min(rest, 4)}>
+          {cats.map((cat, i) => {
+            const v = visualFor(data, cat);
+            const name = L(cat.name, lang);
+            const desc = L(cat.description, lang);
             return (
               <Link
                 key={cat._id}
                 to={p(`/c/${cat.slug}`)}
-                className={`cx-uni cx-uni--${i} cx-tone-${tone} ${DARK_TONES.has(tone) ? 'is-dark' : ''}`}
-                data-testid="category-tile"
-                data-fx="iris"
-                style={{ '--d': `${i * 90}ms` } as CSSProperties}
+                className={`cx-range__tile cx-range__tile--${i < 2 ? 'lg' : 'sm'} cx-range--${RANGE_TONES[i % RANGE_TONES.length]}`}
+                aria-labelledby={`cx-range-${cat.slug}`}
+                data-fx="rise"
+                style={{ '--d': `${(i % 4) * 90}ms` } as CSSProperties}
               >
-                <span className="cx-uni__visual" aria-hidden="true">
-                  <span className="cx-uni__halo" />
-                  <ProductImage src={v.url} image={v.image} alt="" category={cat.slug} sizes={i === 0 ? '(max-width: 1023px) 60vw, 34vw' : '(max-width: 1023px) 45vw, 20vw'} />
+                <span className="cx-range__copy">
+                  <strong id={`cx-range-${cat.slug}`} className="cx-range__name">
+                    {name}
+                  </strong>
+                  {desc ? <span className="cx-range__desc">{desc}</span> : null}
+                  <span className="cx-range__cta">
+                    {c.shopNow} <Arrow />
+                  </span>
                 </span>
-                <span className="cx-uni__copy">
-                  <span className="cx-uni__index ltr" aria-hidden="true">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <strong className="cx-uni__name">{L(cat.name, lang)}</strong>
-                  {cat.productCount ? <span className="cx-uni__desc">{t.premium.productsCount(cat.productCount)}</span> : null}
-                  <span className="cx-uni__cta">
-                    {c.exploreCategory} <Arrow />
-                  </span>
+                <span className="cx-range__media" aria-hidden="true">
+                  <ArtFrame src={v.url} image={v.image} category={cat.slug} sizes={i < 2 ? '(max-width: 959px) 92vw, 46vw' : '(max-width: 959px) 46vw, 23vw'} />
                 </span>
               </Link>
             );
@@ -296,105 +324,6 @@ export function ExploreCollection({ data }: { data: HomeData }) {
         </div>
       </div>
     </section>
-  );
-}
-
-/* ───────────────────────── 04 · Category spotlight chapters — split reveal ───────────────────────── */
-/** Chapters presented as an interactive product gallery (see CategoryGallery). */
-const GALLERY_CATEGORIES = new Set(['car-essentials', 'tech-essentials']);
-/** Per-chapter thumbnail count (display only): Tech Essentials shows one row of four. */
-const GALLERY_LIMIT: Record<string, number> = { 'tech-essentials': 4 };
-
-function SpotlightList({ items, cat }: { items: ProductCardData[]; cat: Category }) {
-  const { lang, p } = useI18n();
-  return (
-    <ol className="cx-spot__list" data-fx="stagger">
-      {items.map((pr) => (
-        <li key={pr._id}>
-          <Link to={p(`/p/${pr.slug}`)} className="cx-spot__row">
-            <ArtFrame className="cx-spot__thumb" src={pr.images?.[0]?.url} image={pr.images?.[0]} category={cat.slug} sizes="120px" />
-            <span className="cx-spot__rowtext">
-              <strong>{L(pr.name, lang)}</strong>
-              {pr.model ? <span className="ltr">{pr.model}</span> : null}
-            </span>
-            <Price price={pr.price} compareAt={pr.compareAtPrice} />
-          </Link>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-export function CategorySpotlights({ data }: { data: HomeData }) {
-  const { lang, p } = useI18n();
-  const c = storeCopy(lang);
-  const chapters = data.categories.map((cat, i) => ({ cat, i, items: itemsFor(data, cat) })).filter((x) => x.items.length);
-  if (!chapters.length) return null;
-  return (
-    <div className="cx-spots" aria-label={c.spotlightEyebrow}>
-      {chapters.map(({ cat, i, items }) => {
-        const tone = toneFor(i);
-        const dark = DARK_TONES.has(tone);
-        const layout = GALLERY_CATEGORIES.has(cat.slug) ? 'gallery' : ['stage', 'grid', 'list'][i % 3];
-        const lead = items.find((pr) => pr.images?.[0]?.url) ?? items[0];
-        const name = L(cat.name, lang);
-        const desc = L(cat.description, lang);
-        const v = visualFor(data, cat);
-        return (
-          <section key={cat._id} className={`cx-spot cx-spot--${layout} cx-tone-${tone} ${dark ? 'is-dark' : ''}`} aria-labelledby={`cx-spot-${cat.slug}`}>
-            <div className="container cx-spot__inner">
-              <div className="cx-spot__copy">
-                <span className="cx-spot__chapter ltr" aria-hidden="true" data-fx="chrome">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span className="cx-eyebrow" data-fx="rise">
-                  {c.chapter} {i + 1} · {c.spotlightEyebrow}
-                </span>
-                <Kinetic id={`cx-spot-${cat.slug}`} text={name} className="cx-display" />
-                {desc ? (
-                  <p className="cx-lead" data-fx="rise" style={{ '--d': '300ms' } as CSSProperties}>
-                    {desc}
-                  </p>
-                ) : null}
-                <Link className={`cx-btn ${dark ? 'cx-btn--light' : 'cx-btn--solid'}`} to={p(`/c/${cat.slug}`)} data-fx="rise" style={{ '--d': '380ms' } as CSSProperties}>
-                  {c.shopCategory} {name} <Arrow />
-                </Link>
-              </div>
-
-              {layout === 'stage' ? (
-                <div className="cx-spot__body">
-                  <Link to={p(`/p/${lead.slug}`)} className="cx-spot__hero" data-fx="split" tabIndex={-1} aria-hidden="true">
-                    <ArtFrame fit="natural" src={lead.images?.[0]?.url} image={lead.images?.[0]} category={cat.slug} sizes="(max-width: 959px) 92vw, 58vw" />
-                  </Link>
-                  <div className="cx-spot__cards" data-fx="stagger">
-                    {items.slice(0, 4).map((pr, k) => (
-                      <ProductCard key={pr._id} product={pr} categorySlug={cat.slug} index={k} tone={dark ? 'dark' : 'light'} sizes={SIZES_STRIP} />
-                    ))}
-                  </div>
-                </div>
-              ) : layout === 'gallery' ? (
-                <div className="cx-spot__body" data-fx="rise">
-                  <CategoryGallery cat={cat} initial={items} size={GALLERY_LIMIT[cat.slug]} />
-                </div>
-              ) : layout === 'grid' ? (
-                <div className="cx-spot__body cx-spot__grid" data-fx="stagger">
-                  {items.slice(0, 3).map((pr, k) => (
-                    <ProductCard key={pr._id} product={pr} categorySlug={cat.slug} index={k} tone={dark ? 'dark' : 'light'} sizes={SIZES_STRIP} />
-                  ))}
-                </div>
-              ) : (
-                <div className="cx-spot__body">
-                  <div className="cx-spot__hero cx-spot__hero--tall" data-fx="split">
-                    <ArtFrame fit="natural" src={v.url} image={v.image} category={cat.slug} sizes="(max-width: 959px) 92vw, 34vw" />
-                  </div>
-                  <SpotlightList items={items.slice(0, 4)} cat={cat} />
-                </div>
-              )}
-            </div>
-          </section>
-        );
-      })}
-    </div>
   );
 }
 

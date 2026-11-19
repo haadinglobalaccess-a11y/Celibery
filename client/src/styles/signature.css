@@ -127,16 +127,6 @@ body:has(.campaign-hero-slider) .header:not(.is-scrolled) .header__actions > .ic
   border-top: 1px solid var(--sg-hair);
   box-shadow: 0 40px 80px -48px rgb(0 0 0 / 0.35);
 }
-.header .mega__cat {
-  border-radius: var(--sg-radius-sm);
-}
-.header .mega__cat img {
-  border-radius: 12px;
-  background: var(--surface);
-}
-.header .mega__cat strong {
-  letter-spacing: -0.01em;
-}
 
 /* Mobile navigation drawer */
 .drawer .mnav > a {
