@@ -128,6 +128,8 @@ const settingsUpdate = z
         brandStory: loc,
         brandStoryImageUrl: urlish,
         newsletterEnabled: z.boolean(),
+        scenesEnabled: z.boolean(),
+        scenesTitle: loc,
       })
       .partial(),
     reviews: z.object({ enabled: z.boolean() }).partial(),

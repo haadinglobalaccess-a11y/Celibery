@@ -4,7 +4,8 @@ import { LocalizedSchema } from './common';
 /** Homepage / campaign banners managed from Admin → Website content. */
 const BannerSchema = new Schema(
   {
-    placement: { type: String, enum: ['hero', 'lifestyle', 'promo', 'campaign'], required: true, index: true },
+    /** 'scene' = a tab of the homepage lifestyle scenes section (image, tab name, text, button). */
+    placement: { type: String, enum: ['hero', 'lifestyle', 'promo', 'campaign', 'scene'], required: true, index: true },
     title: { type: LocalizedSchema, default: () => ({}) },
     subtitle: { type: LocalizedSchema, default: () => ({}) },
     description: { type: LocalizedSchema, default: () => ({}) },

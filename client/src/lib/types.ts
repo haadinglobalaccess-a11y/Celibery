@@ -133,6 +133,8 @@ export type HomeData = {
   campaigns: Campaign[];
   brandStory: { text: Localized; imageUrl: string };
   newsletterEnabled: boolean;
+  /** Lifestyle scenes section: title, on/off and its tabs (active "scene" banners in Admin order). */
+  scenes?: { enabled: boolean; title: Localized; items: Banner[] };
   /** Admin → Website → FAQ management (published, homepage-selected questions). */
   faq?: HomeFaq;
 };

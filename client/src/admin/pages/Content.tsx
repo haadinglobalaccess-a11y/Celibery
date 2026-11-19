@@ -57,6 +57,8 @@ type Homepage = {
   brandStory: Localized;
   brandStoryImageUrl: string;
   newsletterEnabled: boolean;
+  scenesEnabled: boolean;
+  scenesTitle: Localized;
 };
 const HOMEPAGE_DEFAULTS: Homepage = {
   heroSortOrder: -1,
@@ -76,6 +78,8 @@ const HOMEPAGE_DEFAULTS: Homepage = {
   brandStory: { ar: '', en: '' },
   brandStoryImageUrl: '',
   newsletterEnabled: true,
+  scenesEnabled: true,
+  scenesTitle: { ar: '', en: '' },
 };
 
 function HomepageSettings() {
@@ -166,6 +170,22 @@ function HomepageSettings() {
           </label>
         </div>
       </Card>
+      <Card title="Lifestyle scenes">
+        <p className="muted" style={{ fontSize: 13 }}>
+          A wide lifestyle photo with tabs underneath (for example Home · Office · Car · Travel). Each tab is a banner with the placement <strong>Lifestyle scene</strong> in the Banners tab: its title is the tab name, its
+          description the text under the photo, plus a button label and link. Sort order sets the tab order. The section is hidden while no scene is active.
+        </p>
+        <p className="muted" style={{ fontSize: 13 }}>
+          Photo sizes: <strong>desktop 2400 × 1060 px</strong> (ratio about 2.27 : 1, landscape) · <strong>mobile 1600 × 1000 px</strong> (16 : 10, optional — without it the desktop photo is centre-cropped). Keep the
+          product and people near the centre; JPG or WebP under 500 KB.
+        </p>
+        <div className="form-grid form-grid--2">
+          <label className="check span-2">
+            <input type="checkbox" checked={h.scenesEnabled} onChange={(e) => setH({ ...h, scenesEnabled: e.target.checked })} /> Show the lifestyle scenes section
+          </label>
+          <LocInput label="Section title (empty = “Made for every part of your world”)" value={h.scenesTitle} onChange={(v) => setH({ ...h, scenesTitle: v })} />
+        </div>
+      </Card>
       <button className="btn btn--primary">Save homepage</button>
     </form>
   );
@@ -242,7 +262,7 @@ function Banners() {
             ))}
           </tbody>
         </table></div>
-        {!data.length ? <p className="muted">No banners yet. Hero banners replace the animated product slider; lifestyle banners appear mid-page.</p> : null}
+        {!data.length ? <p className="muted">No banners yet. Hero banners replace the animated product slider; lifestyle banners appear mid-page; lifestyle scenes are the tabs of the homepage scenes section.</p> : null}
       </Card>
       {edit ? (
         <Modal title={edit._id ? 'Edit banner' : 'New banner'} onClose={() => setEdit(null)} wide>
@@ -256,8 +276,15 @@ function Banners() {
                 <option value="lifestyle">Lifestyle banner</option>
                 <option value="promo">Promo</option>
                 <option value="campaign">Campaign</option>
+                <option value="scene">Lifestyle scene (homepage scenes tabs)</option>
               </select>
             </F>
+            {edit.placement === 'scene' ? (
+              <p className="muted span-2" style={{ fontSize: 13, margin: 0 }}>
+                <strong>Lifestyle scene:</strong> Title = tab name (e.g. HOME, OFFICE, CAR) · Description = text under the photo · Button label + Link = the button. Photo: desktop <strong>2400 × 1060 px</strong>, mobile
+                (optional) <strong>1600 × 1000 px</strong>. Duration, video and theme are not used.
+              </p>
+            ) : null}
             <F label="Theme">
               <select className="select" value={edit.theme} onChange={(e) => setEdit({ ...edit, theme: e.target.value })}>
                 <option value="dark">Dark text overlay</option>

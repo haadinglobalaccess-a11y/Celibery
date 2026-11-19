@@ -947,3 +947,147 @@ html[dir='rtl'] .icon--flip-rtl {
 .storefront .cx-card:not(.cx-card--dark) .cx-card__img--alt {
   background: var(--surface-2);
 }
+
+/* ==========================================================================
+   Lifestyle scenes (.cx-scenes) — a wide lifestyle image per scene, tabs
+   underneath switch image, text and button. Image ratios: desktop 34:15
+   (≈2.27:1, e.g. 2400×1060), phones 16:10 (a separate mobile image is used
+   when the Admin adds one; otherwise the desktop image is centre-cropped).
+   ========================================================================== */
+.cx-scenes {
+  background: var(--surface);
+}
+.cx-scenes .cx-head {
+  margin-bottom: clamp(24px, 3vw, 40px);
+}
+.cx-scenes__stage {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+}
+@media (min-width: 640px) {
+  .cx-scenes__stage { aspect-ratio: 16 / 9; }
+}
+@media (min-width: 1024px) {
+  .cx-scenes__stage { aspect-ratio: 34 / 15; }
+}
+.cx-scenes__image,
+.cx-scenes__image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cx-scenes__image img {
+  object-fit: cover;
+}
+.cx-scenes__image {
+  opacity: 0;
+  transition: opacity 700ms var(--cx-ease, ease);
+}
+.cx-scenes__image[data-active='true'] {
+  opacity: 1;
+}
+
+.cx-scenes__tabs {
+  display: flex;
+  justify-content: center;
+  gap: clamp(20px, 3vw, 40px);
+  margin-top: clamp(16px, 2vw, 24px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cx-scenes__tabs::-webkit-scrollbar {
+  display: none;
+}
+.cx-scenes__tab {
+  position: relative;
+  flex: none;
+  padding: 10px 2px 12px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+html[lang='ar'] .cx-scenes__tab {
+  letter-spacing: 0;
+  font-size: 0.9375rem;
+}
+.cx-scenes__tab::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 300ms var(--cx-ease, ease);
+}
+.cx-scenes__tab:hover {
+  color: var(--ink);
+}
+.cx-scenes__tab[aria-selected='true'] {
+  color: var(--ink);
+  font-weight: 700;
+}
+.cx-scenes__tab[aria-selected='true']::after {
+  transform: scaleX(1);
+}
+.cx-scenes__tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.cx-scenes__panel {
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+  max-width: 640px;
+  margin: clamp(16px, 2vw, 24px) auto 0;
+  text-align: center;
+  animation: cx-scene-in 500ms var(--cx-ease, ease) both;
+}
+.cx-scenes__text {
+  margin: 0;
+  font-size: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.cx-scenes__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 28px;
+  border: 1px solid rgb(17 17 17 / 0.2);
+  border-radius: 999px;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 220ms ease, color 220ms ease, border-color 220ms ease;
+}
+.cx-scenes__cta:hover,
+.cx-scenes__cta:focus-visible {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+@keyframes cx-scene-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-scenes__image,
+  .cx-scenes__tab::after { transition: none; }
+  .cx-scenes__panel { animation: none; }
+}

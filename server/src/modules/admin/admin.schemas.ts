@@ -143,7 +143,7 @@ export const discountInput = z
   .refine((d) => !d.startsAt || !d.endsAt || d.startsAt < d.endsAt, { message: 'End date must be after start date', path: ['endsAt'] });
 
 export const bannerInput = z.object({
-  placement: z.enum(['hero', 'lifestyle', 'promo', 'campaign']),
+  placement: z.enum(['hero', 'lifestyle', 'promo', 'campaign', 'scene']),
   title: localizedShort.default({ ar: '', en: '' }),
   subtitle: localizedShort.default({ ar: '', en: '' }),
   description: localizedShort.default({ ar: '', en: '' }),

@@ -167,6 +167,9 @@ const SettingsSchema = new Schema(
       brandStory: { type: LocalizedSchema, default: () => ({}) },
       brandStoryImageUrl: { type: String, default: '' },
       newsletterEnabled: { type: Boolean, default: true },
+      /** Lifestyle scenes section (its tabs are the active 'scene' banners). Empty title = the storefront default. */
+      scenesEnabled: { type: Boolean, default: true },
+      scenesTitle: { type: LocalizedSchema, default: () => ({}) },
     },
     /** FAQ display (Admin → Website → FAQ management → Display settings). Questions live in the Faq collection. */
     faq: {
