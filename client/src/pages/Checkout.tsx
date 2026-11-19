@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Icon, InlineArrow } from '../components/Icon';
 import { Field, PayLogos } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { ApiError, get, post, uuid } from '../lib/api';
@@ -420,13 +421,18 @@ export default function Checkout() {
                   <label key={m} className="pay-option" data-testid={`pay-${m}`}>
                     <input type="radio" name="method" value={m} checked={method === m} onChange={() => setMethod(m)} />
                     <span>{t.checkout.methods[m]}</span>
-                    {m === 'card' ? (
+                    {/* Brand badges (public/payment-logos) beside each method; decorative — the label names the method. */}
+                    {m === 'cod' ? (
                       <span className="pay-logos" aria-hidden="true">
-                        <span className="pay-logo">mada</span>
-                        <span className="pay-logo">VISA</span>
-                        <span className="pay-logo">Mastercard</span>
+                        <Icon name="cash" />
                       </span>
-                    ) : null}
+                    ) : (
+                      <span className="pay-logos pay-brand-logos" aria-hidden="true">
+                        {(m === 'card' ? ['mada', 'visa', 'mastercard'] : [m]).map((b) => (
+                          <img key={b} src={`/payment-logos/${b}.svg`} alt="" width={36} height={24} />
+                        ))}
+                      </span>
+                    )}
                   </label>
                 ))}
               </div>
@@ -463,7 +469,7 @@ export default function Checkout() {
           ) : null}
           {serverError || quoteError ? (
             <p className="alert alert--error" role="alert">
-              {serverError || quoteError} {serverError === t.cart.changed ? <Link to={p('/cart')}>{t.cart.title} →</Link> : null}
+              {serverError || quoteError} {serverError === t.cart.changed ? <Link to={p('/cart')}>{t.cart.title} <span className="cx-arrow" aria-hidden="true"><InlineArrow /></span></Link> : null}
             </p>
           ) : null}
           <button className="btn btn--primary btn--block btn--lg" disabled={busy || quoteLoading || Boolean(quoteError) || shippingPaused || !methods.length || !quote || Boolean(quote.issues.length)} data-testid="place-order">

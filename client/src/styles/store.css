@@ -1095,16 +1095,6 @@ details.acc > div {
   display: flex;
   gap: 4px;
 }
-.pay-logo {
-  font-size: 10px;
-  font-weight: 800;
-  padding: 3px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--line);
-  background: #fff;
-  letter-spacing: 0.02em;
-  direction: ltr;
-}
 .address-cards {
   display: grid;
   gap: var(--s-2);
@@ -1257,10 +1247,6 @@ details.acc > div {
   gap: var(--s-3) var(--s-6);
   justify-content: space-between;
   font-size: var(--fs-xs);
-}
-.footer .pay-logo {
-  background: #fff;
-  color: var(--ink);
 }
 .footer__social {
   display: flex;

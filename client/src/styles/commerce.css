@@ -49,7 +49,6 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
 .header .searchbox .input { min-height: 52px; }
 .header .search-categories { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; padding-block: 12px 0; }
 .header .search-categories a { min-height: 44px; display: inline-flex; align-items: center; font-size: .85rem; }
-.cx-footer .cx-footer__word { font-size: clamp(3rem, 12vw, 11rem); }
 @media (min-width: 960px) {
   .storefront .cx-info__story { grid-template-columns: 1fr 1fr; }
   .storefront .cx-grid { gap: 30px 20px; }

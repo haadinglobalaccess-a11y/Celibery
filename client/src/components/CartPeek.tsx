@@ -6,7 +6,7 @@ import { useMoney } from '../state/currency';
 import { cloudinaryAt } from '../lib/media';
 import { prefersReducedMotion } from '../lib/motion';
 import { useCart } from '../state/cart';
-import { Icon } from './Icon';
+import { Icon, InlineArrow } from './Icon';
 
 /**
  * Animated "added to cart" panel shown under the header after any add-to-cart.
@@ -89,7 +89,7 @@ export function CartPeek() {
           {t.premium.viewCart}
         </Link>
         <Link className="btn btn--primary btn--block" to={p('/checkout')}>
-          {t.premium.checkout} <span className="arrow">→</span>
+          {t.premium.checkout} <span className="arrow" aria-hidden="true"><InlineArrow /></span>
         </Link>
       </div>
       <span className="cart-peek__timer" aria-hidden="true" />

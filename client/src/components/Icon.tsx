@@ -64,6 +64,30 @@ const paths: Record<string, JSX.Element> = {
     </>
   ),
   bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />,
+  arrow: <path d="M4.5 12h15M13.5 6l6 6-6 6" />,
+  arrowBack: <path d="M19.5 12h-15M10.5 6l-6 6 6 6" />,
+  external: <path d="M8 6h10v10M18 6 6 18" />,
+  star: <path d="m12 3.2 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17.1 6.6 20l1.1-6.1-4.5-4.3 6.1-.8L12 3.2Z" fill="currentColor" stroke="none" />,
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3.5 6.5 8.5 6.25 8.5-6.25" />
+    </>
+  ),
+  phone: <path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6a2 2 0 0 1-2.1 2A16.5 16.5 0 0 1 4.6 5.6a2 2 0 0 1 2-2.1Z" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.75" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  cash: (
+    <>
+      <rect x="2.75" y="6" width="18.5" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="M6 9.5v5M18 9.5v5" />
+    </>
+  ),
   return: <path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" />,
   alert: (
     <>
@@ -93,6 +117,12 @@ export function Icon({ name, className = 'icon', label }: { name: keyof typeof p
       {paths[name] ?? null}
     </svg>
   );
+}
+
+/** Text-sized arrow for links and buttons (replaces the → / ← characters). Mirroring for Arabic comes
+ *  from the wrapping .cx-arrow / .arrow span, exactly as it did for the characters. */
+export function InlineArrow({ back = false }: { back?: boolean }) {
+  return <Icon name={back ? 'arrowBack' : 'arrow'} className="icon icon--inline" />;
 }
 
 /** Direction-aware chevron (points "forward" in both RTL and LTR). */

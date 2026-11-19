@@ -2415,30 +2415,8 @@ html[lang='ar'] .cx-checkout .summary h2 {
   /* the legacy perspective grid floor belongs to the previous design */
   display: none;
 }
-.cx-footer .cx-footer__grid {
-  display: grid;
-  gap: 40px 32px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.cx-footer__brand {
-  grid-column: 1 / -1;
-}
-@media (min-width: 960px) {
-  .cx-footer .cx-footer__grid {
-    grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
-    gap: 48px;
-  }
-  .cx-footer__brand {
-    grid-column: auto;
-  }
-}
 .cx-footer .logo {
   color: #fff;
-}
-.cx-footer__brand > p {
-  margin: 20px 0 6px;
-  color: #fff;
-  font-weight: 600;
 }
 .cx-footer ul {
   list-style: none;
@@ -2454,8 +2432,7 @@ html[lang='ar'] .cx-checkout .summary h2 {
 .cx-footer a:hover {
   color: #fff;
 }
-.cx-footer h3,
-.cx-footer .cx-footer__sub {
+.cx-footer h3 {
   margin: 0 0 18px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -2466,9 +2443,6 @@ html[lang='ar'] .cx-checkout .summary h2 {
 html[lang='ar'] .cx-footer h3 {
   letter-spacing: 0;
   font-size: 0.875rem;
-}
-.cx-footer .cx-footer__sub {
-  margin-top: 32px;
 }
 .cx-footer .footer__social a {
   display: grid;
@@ -2491,26 +2465,6 @@ html[lang='ar'] .cx-footer h3 {
   padding: 6px 9px;
   border-radius: 8px;
   background: #fff;
-}
-.cx-footer .pay-logo {
-  border-radius: 8px;
-  background: #fff;
-  color: var(--cx-ink);
-}
-.cx-footer__word {
-  display: block;
-  margin-top: clamp(48px, 7vw, 96px);
-  font-size: clamp(4rem, 17.5vw, 17rem);
-  font-weight: 800;
-  letter-spacing: -0.055em;
-  line-height: 0.78;
-  text-align: center;
-  color: transparent;
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.02) 85%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  user-select: none;
-  white-space: nowrap;
 }
 .cx-footer .cx-footer__legal {
   margin-top: 0;
@@ -2621,10 +2575,6 @@ html[lang='ar'] .cx-footer h3 {
   }
 }
 /* Footer wordmark keeps the same box before and after the web font swaps in. */
-.cx-footer__word {
-  height: 0.8em;
-  overflow: hidden;
-}
 /* Listing titles reserve their line before the category/collection name arrives */
 .cx-listhead h1 {
   min-height: 1em;

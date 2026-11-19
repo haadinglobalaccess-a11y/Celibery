@@ -1383,9 +1383,6 @@ main#main {
   }
 }
 
-.pay-logo {
-  white-space: nowrap;
-}
 .pay-logos {
   flex-wrap: wrap;
 }

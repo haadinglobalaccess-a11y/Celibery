@@ -7,6 +7,7 @@ import { formatDate } from '../lib/format';
 import { useApi } from '../lib/hooks';
 import { useAuth } from '../state/auth';
 import '../styles/phase5.css';
+import { Icon } from './Icon';
 import { Field } from './ui';
 
 type PublicReview = { id: string; rating: number; title: string; body: string; displayName: string; lang: 'ar' | 'en'; images: { url: string }[]; verifiedPurchase: boolean; createdAt: string; editedAt: string | null };
@@ -21,7 +22,7 @@ export function Stars({ value, label }: { value: number; label: string }) {
     <span className="cx-stars" role="img" aria-label={label}>
       {[1, 2, 3, 4, 5].map((i) => (
         <span key={i} aria-hidden="true" className={i <= full ? 'is-on' : ''}>
-          ★
+          <Icon name="star" className="icon icon--star" />
         </span>
       ))}
     </span>
@@ -107,7 +108,7 @@ export function ProductReviews({ slug, summary }: { slug: string; summary: Summa
                     return (
                       <li key={s}>
                         <button type="button" className={`rv-dist__row ${filter === s ? 'is-on' : ''}`} onClick={() => setFilter(filter === s ? 0 : s)} aria-pressed={filter === s} aria-label={r.distribution(s, n)} disabled={!n && filter !== s}>
-                          <span className="rv-dist__label ltr">{s}★</span>
+                          <span className="rv-dist__label ltr">{s}<Icon name="star" className="icon icon--star" /></span>
                           <span className="rv-dist__bar" aria-hidden="true">
                             <span style={{ width: `${summary.count ? (n / summary.count) * 100 : 0}%` }} />
                           </span>
@@ -176,7 +177,7 @@ export function ProductReviews({ slug, summary }: { slug: string; summary: Summa
                     <small className="cx-muted">
                       {rv.displayName || r.anonymous} · {formatDate(rv.createdAt, lang)}
                     </small>
-                    {rv.verifiedPurchase ? <span className="rv-verified">✓ {r.verified}</span> : null}
+                    {rv.verifiedPurchase ? <span className="rv-verified"><Icon name="check" className="icon icon--inline" /> {r.verified}</span> : null}
                     {isCustomer && own?.id !== rv.id ? (
                       reported.has(rv.id) ? (
                         <small className="cx-muted">{r.reported}</small>
@@ -297,7 +298,7 @@ function ReviewForm({ slug, initial, uploadsEnabled, onDone, onCancel }: { slug:
         {[1, 2, 3, 4, 5].map((n) => (
           <label key={n} className={n <= rating ? 'is-on' : ''} title={r.star(n)}>
             <input type="radio" name="rating" value={n} checked={rating === n} onChange={() => setRating(n)} />
-            <span aria-hidden="true">★</span>
+            <span aria-hidden="true"><Icon name="star" className="icon icon--star" /></span>
             <span className="sr-only">{r.star(n)}</span>
           </label>
         ))}
@@ -319,7 +320,7 @@ function ReviewForm({ slug, initial, uploadsEnabled, onDone, onCancel }: { slug:
               <span key={ph.id} className="rv-photo">
                 <img src={ph.url} alt={r.photoAlt(i + 1)} />
                 <button type="button" aria-label={r.removePhoto} onClick={() => setPhotos((x) => x.filter((y) => y.id !== ph.id))}>
-                  ×
+                  <Icon name="close" className="icon icon--inline" />
                 </button>
               </span>
             ))}

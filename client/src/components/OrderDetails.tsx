@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n/I18n';
 import { formatDate, formatPrice, L, listSep } from '../lib/format';
 import type { OrderView } from '../lib/types';
+import { Icon } from './Icon';
 import { ProductImage } from './ProductCard';
 
 const STEPS = ['confirmed', 'processing', 'shipped', 'delivered'];
@@ -49,7 +50,7 @@ export function OrderDetails({ order }: { order: OrderView }) {
             {order.delivery.trackingUrl ? (
               <div>
                 <a href={order.delivery.trackingUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>
-                  {t.order.trackShipment} ↗
+                  {t.order.trackShipment} <Icon name="external" className="icon icon--inline icon--flip-rtl" />
                 </a>
               </div>
             ) : null}

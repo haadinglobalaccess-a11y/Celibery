@@ -135,14 +135,23 @@ export function PayLogos() {
   const pay = useSettings()?.payments;
   const i18n = useMaybeI18n();
   if (!pay || !(pay.card || pay.applepay || pay.stcpay || pay.tabby)) return null;
+  // Official badges (public/payment-logos/README.md), only for methods enabled in Admin → Payments.
+  // Card payments run through Moyasar, which accepts mada, Visa and Mastercard.
+  const brands: [boolean | undefined, string, string][] = [
+    [pay.card, 'mada', 'mada'],
+    [pay.card, 'visa', 'Visa'],
+    [pay.card, 'mastercard', 'Mastercard'],
+    [pay.applepay, 'applepay', 'Apple Pay'],
+    [pay.stcpay, 'stcpay', 'STC Pay'],
+    [pay.tabby, 'tabby', 'tabby'],
+  ];
   return (
-    <span className="pay-logos pay-brand-logos" aria-label={i18n?.t.a11y.paymentBrands ?? 'Accepted payment brands'}>
-      {pay.card ? <img src="/payment-logos/visa.svg" alt="Visa" /> : null}
-      {pay.card ? <img src="/payment-logos/mastercard.svg" alt="Mastercard" /> : null}
-      {pay.applepay ? <img src="/payment-logos/applepay.svg" alt="Apple Pay" /> : null}
-      {pay.card ? <span className="pay-logo">mada</span> : null}
-      {pay.stcpay ? <span className="pay-logo">STC Pay</span> : null}
-      {pay.tabby ? <span className="pay-logo">tabby</span> : null}
+    <span className="pay-logos pay-brand-logos" role="list" aria-label={i18n?.t.a11y.paymentBrands ?? 'Accepted payment brands'}>
+      {brands
+        .filter(([on]) => on)
+        .map(([, file, name]) => (
+          <img key={file} role="listitem" src={`/payment-logos/${file}.svg`} alt={name} title={name} width={42} height={28} loading="lazy" decoding="async" />
+        ))}
     </span>
   );
 }
