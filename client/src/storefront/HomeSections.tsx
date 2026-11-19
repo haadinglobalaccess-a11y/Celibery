@@ -81,10 +81,18 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
             return (
               <Link key={cat._id} to={p(`/c/${cat.slug}`)} className="cx-lineup__card" data-testid="category-tile" data-fx="rise" style={{ '--d': `${i * 70}ms` } as CSSProperties}>
                 <span className="cx-lineup__media" aria-hidden="true">
-                  <ArtFrame src={v.url} image={v.image} category={cat.slug} sizes="(max-width: 639px) 44vw, (max-width: 1199px) 30vw, 200px" />
+                  <ArtFrame src={v.url} image={v.image} category={cat.slug} sizes="(max-width: 639px) 80vw, (max-width: 1023px) 46vw, 420px" />
                 </span>
-                <strong className="cx-lineup__name">{L(cat.name, lang)}</strong>
-                {cat.productCount ? <span className="cx-lineup__count">{t.premium.productsCount(cat.productCount)}</span> : null}
+                {/* Name, count and arrow under the artwork, as on the range tiles. */}
+                <span className="cx-lineup__copy">
+                  <span>
+                    <strong className="cx-lineup__name">{L(cat.name, lang)}</strong>
+                    {cat.productCount ? <span className="cx-lineup__count">{t.premium.productsCount(cat.productCount)}</span> : null}
+                  </span>
+                  <span className="cx-lineup__go cx-arrow" aria-hidden="true">
+                    <InlineArrow />
+                  </span>
+                </span>
               </Link>
             );
           })}
@@ -97,7 +105,6 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
 /* ───────────────────────── 04 · Category range — bento grid ───────────────────────── */
 /** One section for the whole range instead of a full chapter per category: two large tiles, then the
  *  rest in a row. Name, Admin description and visual are the category's own; the CTA opens its page. */
-const RANGE_TONES = ['white', 'ice', 'mist', 'white', 'ice', 'mist'] as const;
 
 export function CategoryRange({ data }: { data: HomeData }) {
   const { lang, p } = useI18n();
@@ -118,7 +125,7 @@ export function CategoryRange({ data }: { data: HomeData }) {
               <Link
                 key={cat._id}
                 to={p(`/c/${cat.slug}`)}
-                className={`cx-range__tile cx-range__tile--${i < 2 ? 'lg' : 'sm'} cx-range--${RANGE_TONES[i % RANGE_TONES.length]}`}
+                className={`cx-range__tile cx-range__tile--${i < 2 ? 'lg' : 'sm'}`}
                 aria-labelledby={`cx-range-${cat.slug}`}
                 data-fx="rise"
                 style={{ '--d': `${(i % 4) * 90}ms` } as CSSProperties}
@@ -270,7 +277,6 @@ const USE_CASES = ['for-travel', 'for-work', 'for-fitness', 'for-home'];
 
 export function ExploreCollection({ data }: { data: HomeData }) {
   const { t, lang, p } = useI18n();
-  const c = storeCopy(lang);
   // Tabs are built only from data that exists: featured, best sellers, Admin collections, use cases.
   const tabs = useMemo(() => {
     const list: { key: string; label: string; items: ProductCardData[]; link?: string }[] = [];
@@ -296,7 +302,7 @@ export function ExploreCollection({ data }: { data: HomeData }) {
   return (
     <section className="cx-section cx-collection" aria-labelledby="cx-collection-title">
       <div className="container">
-        <Head id="cx-collection-title" eyebrow={c.collectionEyebrow} title={t.premium.exploreTitle} link={current.link} linkLabel={current.link ? t.nav.viewAll : undefined} />
+        <Head id="cx-collection-title" title={t.premium.exploreTitle} link={current.link} linkLabel={current.link ? t.nav.viewAll : undefined} center />
         <div className="cx-tabs" role="tablist" aria-label={t.premium.exploreTitle} data-fx="rise">
           {tabs.map((x) => (
             <button key={x.key} type="button" role="tab" id={`cx-tab-${x.key}`} aria-selected={x.key === current.key} aria-controls="cx-collection-panel" onClick={() => setTab(x.key)}>
