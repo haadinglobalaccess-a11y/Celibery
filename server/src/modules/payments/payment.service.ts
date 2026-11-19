@@ -108,6 +108,15 @@ export async function applyGatewayStatus(paymentId: string, result: StatusResult
   if (['paid', 'refunded', 'partially_refunded'].includes(payment.status)) return 'paid';
   const provider = providerByName(payment.provider);
 
+  const mismatch = (r: StatusResult) => (r.amount !== undefined && r.amount !== payment.amount) || Boolean(r.currency && r.currency !== payment.currency);
+  // Never capture an authorisation that does not match what we asked for (amount and currency).
+  if (result.status === 'authorized' && mismatch(result)) {
+    await Payment.updateOne({ _id: payment._id }, { $set: { failureReason: `AMOUNT_MISMATCH authorized=${result.amount} ${result.currency}` }, $push: { events: { type: 'status', source, status: 'authorized_mismatch' } } });
+    await Order.updateOne({ _id: payment.order }, { $push: { history: { status: 'payment_review', note: 'Authorised amount did not match the order total — not captured, manual review required', visibleToCustomer: false } } });
+    logger.error('Authorised amount mismatch', { paymentId, expected: payment.amount, got: result.amount });
+    return 'review';
+  }
+
   // Authorise-then-capture gateways (Tabby, sandbox-tabby): capture exactly once.
   if (result.status === 'authorized' && provider?.capture && payment.providerRef) {
     const claim = await Payment.updateOne({ _id: payment._id, captureRequestedAt: { $exists: false } }, { $set: { captureRequestedAt: new Date(), status: 'authorized' } });
@@ -128,7 +137,7 @@ export async function applyGatewayStatus(paymentId: string, result: StatusResult
 
   if (result.status === 'paid') {
     // Reconcile amount and currency with what we charged.
-    if ((result.amount !== undefined && result.amount !== payment.amount) || (result.currency && result.currency !== payment.currency)) {
+    if (mismatch(result)) {
       await Payment.updateOne({ _id: payment._id }, { $set: { failureReason: `AMOUNT_MISMATCH gateway=${result.amount} ${result.currency}` } });
       await Order.updateOne({ _id: payment.order }, { $push: { history: { status: 'payment_review', note: 'Gateway amount did not match the order total — manual review required', visibleToCustomer: false } } });
       logger.error('Payment amount mismatch', { paymentId, expected: payment.amount, got: result.amount });

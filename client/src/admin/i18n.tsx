@@ -27,6 +27,7 @@ const en = {
     faq: 'FAQ management',
     videos: 'Homepage videos',
     reviews: 'Reviews',
+    payments: 'Payments',
     media: 'Media library',
     activity: 'Activity log',
     viewStore: 'View store',
@@ -119,7 +120,7 @@ const en = {
     current: 'Current',
     noComparison: 'No data in the previous period',
     kpi: {
-      revenue: 'Total Revenue',
+      revenue: 'Net revenue',
       orders: 'Total Orders',
       aov: 'Average Order Value',
       pending: 'Pending Orders',
@@ -131,7 +132,7 @@ const en = {
       lowStock: 'Low Stock Products',
     },
     tip: {
-      revenue: 'Revenue in SAR from paid orders and COD orders in the selected period (cancelled and returned orders excluded).',
+      revenue: 'Net revenue in SAR for orders placed in the period: money collected (paid online or cash collected on delivery) minus refunds. Cash-on-delivery orders not yet collected are pending, not revenue.',
       orders: 'Revenue-counting orders placed in the selected period.',
       aov: 'Total revenue divided by total orders for the selected period.',
       pending: 'Orders needing action now: waiting for confirmation (Pending) or confirmed but not yet in preparation.',
@@ -349,6 +350,7 @@ const ar: Dict = {
     faq: 'إدارة الأسئلة الشائعة',
     videos: 'فيديوهات الصفحة الرئيسية',
     reviews: 'التقييمات',
+    payments: 'المدفوعات',
     media: 'مكتبة الوسائط',
     activity: 'سجل النشاط',
     viewStore: 'عرض المتجر',
@@ -441,7 +443,7 @@ const ar: Dict = {
     current: 'الآن',
     noComparison: 'لا توجد بيانات في الفترة السابقة',
     kpi: {
-      revenue: 'إجمالي الإيرادات',
+      revenue: 'صافي الإيرادات',
       orders: 'إجمالي الطلبات',
       aov: 'متوسط قيمة الطلب',
       pending: 'الطلبات المعلّقة',
@@ -453,7 +455,7 @@ const ar: Dict = {
       lowStock: 'منتجات منخفضة المخزون',
     },
     tip: {
-      revenue: 'الإيرادات بالريال من الطلبات المدفوعة وطلبات الدفع عند الاستلام خلال الفترة المحددة (باستثناء الطلبات الملغاة والمرتجعة).',
+      revenue: 'صافي الإيرادات بالريال للطلبات خلال الفترة: المبالغ المحصّلة (دفع إلكتروني أو تحصيل نقدي عند الاستلام) مطروحاً منها المبالغ المستردة. طلبات الدفع عند الاستلام غير المحصّلة بعد معلّقة وليست إيرادات.',
       orders: 'الطلبات المحتسبة في الإيرادات خلال الفترة المحددة.',
       aov: 'إجمالي الإيرادات مقسوماً على عدد الطلبات خلال الفترة المحددة.',
       pending: 'طلبات تحتاج إلى إجراء الآن: بانتظار التأكيد أو مؤكدة ولم يبدأ تجهيزها بعد.',

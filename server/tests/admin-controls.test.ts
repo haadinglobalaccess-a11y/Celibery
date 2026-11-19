@@ -273,9 +273,14 @@ describe('reports use Riyadh calendar days', () => {
     expect(r.status).toBe(201);
     // createdAt is immutable in Mongoose; backdate through the driver.
     await Order.collection.updateOne({ orderNumber: r.body.data.order.orderNumber }, { $set: { createdAt: new Date('2026-10-31T22:30:00Z') } });
+    // Cash not collected yet: a pending payment on 1 Nov, not revenue.
+    const pending = await salesReport(new Date('2026-11-01'), new Date('2026-11-01'));
+    expect(pending.summary).toMatchObject({ placed: 1, orders: 0, pendingOrders: 1, pendingAmount: 14900, revenue: 0 });
+    // Cash collected on delivery: revenue on the day the order was placed (1 Nov, Riyadh).
+    await Order.collection.updateOne({ orderNumber: r.body.data.order.orderNumber }, { $set: { paymentStatus: 'cod_collected' } });
     const nov = await salesReport(new Date('2026-11-01'), new Date('2026-11-01'));
     expect(nov.summary.orders).toBe(1);
-    expect(nov.daily).toEqual([{ date: '2026-11-01', orders: 1, revenue: 14900 }]);
+    expect(nov.daily).toEqual([{ date: '2026-11-01', placed: 1, orders: 1, revenue: 14900, net: 14900 }]);
     const oct = await salesReport(new Date('2026-10-31'), new Date('2026-10-31'));
     expect(oct.summary.orders).toBe(0);
   });

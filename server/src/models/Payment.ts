@@ -46,6 +46,7 @@ const PaymentSchema = new Schema(
 );
 
 PaymentSchema.index({ provider: 1, providerRef: 1 }, { unique: true, partialFilterExpression: { providerRef: { $type: 'string' } } });
+PaymentSchema.index({ createdAt: -1 });
 
 export type PaymentDoc = InferSchemaType<typeof PaymentSchema> & { _id: Types.ObjectId };
 export const Payment: Model<PaymentDoc> = (models.Payment as Model<PaymentDoc>) || model<PaymentDoc>('Payment', PaymentSchema);
