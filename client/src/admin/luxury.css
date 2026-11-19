@@ -1,0 +1,358 @@
+/* =========================================================================================
+   CELIBERY ADMIN — LUXURY LAYER (loaded after admin.css and design.css)
+   A calmer, more premium finish for the same dashboard: deep midnight sidebar with a
+   turquoise signature, frosted header, soft-shadow cards, refined type, tables and
+   controls. Static styling only — the dashboard spec keeps motion switched off.
+   No layout, markup or behaviour changes.
+   ========================================================================================= */
+
+/* ---- Tokens ---- */
+.admin.a-shell {
+  --a-side: #0b0e11;
+  --a-side-active: rgb(0 177 192 / 0.14);
+  --a-side-hover: rgb(255 255 255 / 0.05);
+  --a-side-text: #9aa4ad;
+  --a-page: #f3f5f7;
+  --a-card: #ffffff;
+  --a-border: #e5e8ec;
+  --a-divider: #eef1f4;
+  --a-text: #0b0e11;
+  --a-muted: #5f6b76;
+  --a-accent: #00b1c0;
+  --a-r-card: 16px;
+  --a-r-ctl: 10px;
+  --a-lux-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 10px 28px -18px rgb(16 24 40 / 0.18);
+  --admin-card: #ffffff;
+  --admin-border: #e5e8ec;
+  --admin-text: #0b0e11;
+  --admin-muted: #5f6b76;
+}
+
+/* ---- Sidebar ---- */
+.admin.a-shell .a-side {
+  background:
+    radial-gradient(120% 40% at 0% 0%, rgb(0 177 192 / 0.12), transparent 60%),
+    linear-gradient(180deg, #0d1114 0%, #0a0c0e 70%, #0b1416 100%);
+  box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.05);
+}
+html[dir='rtl'] .admin.a-shell .a-side {
+  box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.05);
+}
+.admin.a-shell .a-side__brand {
+  height: 64px;
+  border-bottom-color: rgb(255 255 255 / 0.06);
+}
+.admin.a-shell .a-nav--secondary {
+  border-top-color: rgb(255 255 255 / 0.06);
+}
+.admin.a-shell .a-nav__heading {
+  padding-top: 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: #56616b;
+}
+.admin.a-shell .a-nav__item {
+  height: 40px;
+  font-weight: 500;
+}
+.admin.a-shell .a-nav__item:hover {
+  color: #ffffff;
+}
+.admin.a-shell .a-nav__item.active,
+.admin.a-shell .a-nav__item[aria-current='page'] {
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--a-accent);
+}
+html[dir='rtl'] .admin.a-shell .a-nav__item.active,
+html[dir='rtl'] .admin.a-shell .a-nav__item[aria-current='page'] {
+  box-shadow: inset -3px 0 0 var(--a-accent);
+}
+.admin.a-shell .a-nav__item.active .a-icon,
+.admin.a-shell .a-nav__item[aria-current='page'] .a-icon {
+  color: var(--a-accent);
+}
+
+/* ---- Header ---- */
+.admin.a-shell .a-top {
+  height: 64px;
+  background: rgb(255 255 255 / 0.86);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom-color: var(--a-border);
+}
+.admin.a-shell .a-top__title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.admin.a-shell .a-iconbtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+.admin.a-shell .a-search input,
+.admin.a-shell .a-search {
+  border-radius: 12px;
+}
+
+/* ---- Page head ---- */
+.admin.a-shell .a-pagehead h1 {
+  font-size: clamp(22px, 1.4vw + 12px, 28px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+html[lang='ar'] .admin.a-shell .a-pagehead h1 {
+  letter-spacing: 0;
+}
+
+/* ---- Cards ---- */
+.admin.a-shell .a-card {
+  border-color: var(--a-border);
+  border-radius: var(--a-r-card);
+  box-shadow: var(--a-lux-shadow);
+}
+.admin.a-shell .a-card h2,
+.admin.a-shell .a-card__head h2 {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* ---- KPI cards: hairline turquoise signature, larger figures ---- */
+.admin.a-shell .a-kpi {
+  position: relative;
+  overflow: hidden;
+  padding: 18px 20px;
+  border-color: var(--a-border);
+  border-radius: var(--a-r-card);
+  box-shadow: var(--a-lux-shadow);
+}
+.admin.a-shell .a-kpi::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--a-accent), rgb(0 177 192 / 0) 70%);
+}
+html[dir='rtl'] .admin.a-shell .a-kpi::before {
+  background: linear-gradient(270deg, var(--a-accent), rgb(0 177 192 / 0) 70%);
+}
+.admin.a-shell .a-kpi--attention {
+  border-color: #f0d49c;
+  background: linear-gradient(180deg, #fffaf0, #ffffff 60%);
+}
+.admin.a-shell .a-kpi--attention::before {
+  background: linear-gradient(90deg, #e5a12a, rgb(229 161 42 / 0) 70%);
+}
+.admin.a-shell .a-kpi__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html[lang='ar'] .admin.a-shell .a-kpi__label {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 13px;
+}
+.admin.a-shell .a-kpi__value {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* ---- Tables ---- */
+.admin.a-shell .a-table th,
+.admin.a-shell .table th {
+  background: #f7f9fa;
+  color: #6b7681;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html[lang='ar'] .admin.a-shell .a-table th,
+html[lang='ar'] .admin.a-shell .table th {
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 12px;
+}
+.admin.a-shell .a-table tbody tr:hover,
+.admin.a-shell .table tbody tr:hover {
+  background: #f6fafb;
+}
+.admin.a-shell .table-wrap {
+  border-radius: var(--a-r-card);
+}
+
+/* ---- Controls ---- */
+.admin.a-shell .a-input,
+.admin.a-shell .a-select,
+.admin.a-shell .a-textarea,
+.admin.a-shell .input,
+.admin.a-shell .select,
+.admin.a-shell textarea {
+  border-color: #dde2e7;
+  border-radius: var(--a-r-ctl);
+}
+.admin.a-shell .a-input,
+.admin.a-shell .a-select {
+  height: 38px;
+}
+.admin.a-shell .a-input:focus,
+.admin.a-shell .a-select:focus,
+.admin.a-shell .a-textarea:focus,
+.admin.a-shell .input:focus,
+.admin.a-shell .select:focus,
+.admin.a-shell textarea:focus {
+  border-color: var(--a-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(0 177 192 / 0.16);
+}
+.admin.a-shell .a-btn {
+  height: 38px;
+  border-radius: var(--a-r-ctl);
+  font-weight: 600;
+}
+.admin.a-shell .a-btn--sm {
+  height: 32px;
+}
+.admin.a-shell .a-btn--primary,
+.admin.a-shell .btn--primary {
+  background: var(--a-text);
+  border-color: var(--a-text);
+  color: #ffffff;
+  box-shadow: 0 6px 16px -10px rgb(11 14 17 / 0.6);
+}
+.admin.a-shell .a-btn--primary:hover,
+.admin.a-shell .btn--primary:hover {
+  background: var(--a-accent);
+  border-color: var(--a-accent);
+  color: #0b0e11;
+}
+.admin.a-shell .a-btn--secondary {
+  border-color: #dde2e7;
+}
+.admin.a-shell .btn {
+  border-radius: var(--a-r-ctl);
+}
+.admin.a-shell :focus-visible {
+  outline-color: var(--a-accent);
+}
+
+/* ---- User chip ---- */
+.admin.a-shell .a-user {
+  border-radius: 12px;
+}
+
+/* =========================================================================================
+   Sign-in, two-factor and set-password screens
+   (outside the dashboard shell, so they get their own complete styling)
+   ========================================================================================= */
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgb(0 177 192 / 0.2), transparent 70%),
+    radial-gradient(40% 40% at 100% 100%, rgb(0 177 192 / 0.08), transparent 70%),
+    #0a0c0e;
+}
+.admin-login .a-card {
+  display: grid;
+  gap: 16px;
+  width: min(420px, 100%);
+  padding: clamp(28px, 4vw, 40px) clamp(22px, 4vw, 36px);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 22px;
+  background: #ffffff;
+  color: #0b0e11;
+  box-shadow: 0 40px 100px -30px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.04);
+}
+.admin-login .a-card .logo img {
+  height: 30px;
+  width: auto;
+}
+.admin-login .a-card h1 {
+  margin: 6px 0 2px;
+  font-size: 22px !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0b0e11;
+}
+.admin-login .a-card p,
+.admin-login .a-muted {
+  color: #5f6b76;
+}
+.admin-login .field {
+  display: grid;
+  gap: 6px;
+}
+.admin-login .label {
+  color: #3c4650;
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-login .input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid #dde2e7;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0b0e11;
+  font: inherit;
+  font-size: 15px;
+}
+.admin-login .input:focus {
+  border-color: #00b1c0;
+  outline: none;
+  box-shadow: 0 0 0 4px rgb(0 177 192 / 0.16);
+}
+.admin-login .btn {
+  height: 48px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+.admin-login .btn--primary {
+  margin-top: 4px;
+  border: 0;
+  background: #0b0e11;
+  color: #ffffff;
+  box-shadow: 0 10px 24px -14px rgb(11 14 17 / 0.8);
+}
+.admin-login .btn--primary:hover {
+  background: #00b1c0;
+  color: #0b0e11;
+}
+.admin-login .btn--primary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.admin-login .btn:not(.btn--primary) {
+  border: 1px solid #dde2e7;
+  background: #ffffff;
+  color: #0b0e11;
+}
+.admin-login .btn:not(.btn--primary):hover {
+  background: #f3f5f7;
+}
+.admin-login a.muted,
+.admin-login a {
+  color: #5f6b76;
+  text-decoration: none;
+}
+.admin-login a:hover {
+  color: #0b0e11;
+  text-decoration: underline;
+}
+.admin-login :focus-visible {
+  outline: 2px solid #00b1c0;
+  outline-offset: 2px;
+}
+.admin-login .alert--error {
+  margin: 0;
+  border-radius: 12px;
+}
