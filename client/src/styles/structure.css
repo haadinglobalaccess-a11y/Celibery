@@ -1,0 +1,504 @@
+/* =====================================================================
+   CELIBERY structure layer — premium storefront architecture.
+   Loaded last. Layout patterns studied from leading international tech
+   retailers (two-pane mega menu, uniform category lineup, bento range
+   grid, service bar), rendered entirely with CELIBERY tokens, type and
+   content. Every class here is new (mx-, cx-lineup, cx-range, cx-svc …)
+   so the earlier stylesheet layers are not overridden piecemeal.
+   ===================================================================== */
+
+/* ---------- Mega menu: category list + product panel ---------- */
+.header .mx {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: clamp(28px, 4vw, 56px);
+  padding-block: 28px 32px;
+}
+.mx__label {
+  margin: 0 0 12px;
+  padding-inline: 16px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.mx__cats ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.header .mx__cat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding-inline: 16px;
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-weight: 500;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.header .mx__cat .icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.45;
+  transition: opacity var(--dur-fast), transform var(--dur) var(--ease-out);
+}
+.header .mx__cat[aria-current='true'] {
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+.header .mx__cat[aria-current='true'] .icon {
+  opacity: 1;
+  transform: translateX(calc(3px * var(--dir, 1)));
+}
+html[dir='rtl'] .header .mx__cat[aria-current='true'] .icon {
+  transform: scaleX(-1) translateX(3px);
+}
+.mx__more {
+  display: grid;
+  gap: 2px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.header .mx__more a {
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.header .mx__more a:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+.mx__panel {
+  min-width: 0;
+  animation: mx-panel 360ms var(--ease-out);
+}
+.mx__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.header .mx__item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 100px;
+  padding: 14px 20px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  transition:
+    background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+  animation: mx-item 420ms var(--ease-out) backwards;
+  animation-delay: calc(60ms + var(--i, 0) * 40ms);
+}
+.header .mx__item:hover,
+.header .mx__item:focus-visible {
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--line), var(--shadow-md);
+}
+.mx__thumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+}
+.mx__thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.header .mx__item:hover .mx__thumb img {
+  transform: scale(1.06);
+}
+.mx__text {
+  min-width: 0;
+}
+.mx__text strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.mx__price {
+  display: flex;
+  margin-top: 4px;
+  font-size: 0.875rem;
+}
+.header .mx__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.header .mx__all .icon {
+  width: 16px;
+  height: 16px;
+}
+.header .mx__all:hover {
+  color: var(--accent-text);
+}
+@keyframes mx-panel {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mx-item {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mx__panel,
+  .header .mx__item {
+    animation: none;
+  }
+}
+
+/* ---------- Homepage: category lineup ---------- */
+.storefront .cx-lineup {
+  background: var(--surface);
+}
+.cx-lineup__track {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+}
+.cx-lineup__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 12px 20px;
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+  transition:
+    transform var(--dur-slow) var(--ease-out),
+    box-shadow var(--dur-slow) var(--ease-out);
+}
+.cx-lineup__media {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.cx-lineup__media .cx-art {
+  aspect-ratio: 1;
+  border-radius: var(--r-sm);
+}
+.cx-lineup__media .cx-art > img {
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.cx-lineup__name {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.cx-lineup__count {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cx-lineup__card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+  }
+  .cx-lineup__card:hover .cx-art > img {
+    transform: scale(1.05);
+  }
+}
+@media (max-width: 1199px) {
+  .cx-lineup__track {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+/* Phones: one swipeable row, the next card peeking in so the row reads as scrollable. */
+@media (max-width: 639px) {
+  .cx-lineup__track {
+    display: flex;
+    gap: 12px;
+    margin-inline: calc(-1 * var(--s-4));
+    padding-inline: var(--s-4);
+    padding-bottom: 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--s-4);
+    scrollbar-width: none;
+  }
+  .cx-lineup__track::-webkit-scrollbar {
+    display: none;
+  }
+  .cx-lineup__card {
+    flex: 0 0 40%;
+    scroll-snap-align: start;
+  }
+  .cx-lineup__name {
+    font-size: 0.9375rem;
+  }
+}
+
+/* ---------- Homepage: category range (bento) ---------- */
+.storefront .cx-range {
+  background: var(--surface);
+}
+.cx-range__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+.cx-range__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  overflow: hidden;
+  padding: clamp(24px, 3vw, 40px);
+  border-radius: var(--r-lg);
+  color: var(--ink);
+  text-align: center;
+  transition: box-shadow var(--dur-slow) var(--ease-out);
+}
+.cx-range__tile--lg {
+  grid-column: span 6;
+}
+.cx-range__tile--sm {
+  grid-column: span 3;
+}
+.cx-range__grid[data-rest='3'] .cx-range__tile--sm {
+  grid-column: span 4;
+}
+.cx-range__grid[data-rest='2'] .cx-range__tile--sm {
+  grid-column: span 6;
+}
+.cx-range__grid[data-rest='1'] .cx-range__tile--sm {
+  grid-column: span 12;
+}
+.cx-range--white {
+  background: var(--paper);
+}
+.cx-range--ice {
+  background: var(--accent-soft);
+}
+.cx-range--mist {
+  background: var(--surface-2);
+}
+.cx-range__copy {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  max-width: 36ch;
+}
+.cx-range__name {
+  font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2.125rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.cx-range__tile--sm .cx-range__name {
+  font-size: clamp(1.125rem, 0.95rem + 0.6vw, 1.375rem);
+}
+html[lang='ar'] .cx-range__name {
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+.cx-range__desc {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.cx-range__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin-top: 6px;
+  padding-inline: 20px;
+  border: 1px solid var(--ink);
+  border-radius: var(--r-pill);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+.cx-range__media {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: auto;
+}
+.cx-range__media .cx-art {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--r-md);
+}
+.cx-range__tile--lg .cx-range__media .cx-art {
+  max-width: 560px;
+}
+.cx-range__tile--sm .cx-range__media .cx-art {
+  aspect-ratio: 4 / 3;
+}
+.cx-range__media .cx-art > img {
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cx-range__tile:hover {
+    box-shadow: var(--shadow-md);
+  }
+  .cx-range__tile:hover .cx-range__cta {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .cx-range__tile:hover .cx-art > img {
+    transform: scale(1.04);
+  }
+}
+@media (max-width: 1023px) {
+  .cx-range__tile--sm,
+  .cx-range__grid[data-rest] .cx-range__tile--sm {
+    grid-column: span 6;
+  }
+}
+@media (max-width: 639px) {
+  .cx-range__grid {
+    gap: 12px;
+  }
+  .cx-range__tile--lg {
+    grid-column: span 12;
+  }
+  .cx-range__tile--sm {
+    gap: 14px;
+    padding: 18px 14px;
+    border-radius: var(--r-md);
+  }
+  .cx-range__tile--sm .cx-range__desc {
+    display: none;
+  }
+  .cx-range__tile--sm .cx-range__cta {
+    min-height: 34px;
+    padding-inline: 14px;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Centred section heads stay centred on phones (commerce.css aligns every head to the start there). */
+.storefront .cx-head--center {
+  align-items: center;
+}
+
+/* ---------- Footer: service bar ---------- */
+.cx-svc {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: clamp(36px, 5vw, 56px);
+  padding-bottom: clamp(28px, 4vw, 44px);
+  border-bottom: 1px solid var(--dark-line);
+}
+.footer .cx-svc__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 12px;
+  border-radius: var(--r-md);
+  color: var(--on-dark);
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: background var(--dur) var(--ease);
+}
+.cx-svc__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.06);
+  color: var(--accent);
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    transform var(--dur-slow) var(--ease-out);
+}
+.cx-svc__icon .icon,
+.cx-svc__icon svg {
+  width: 24px;
+  height: 24px;
+}
+.footer .cx-svc__item:hover {
+  background: rgb(255 255 255 / 0.04);
+}
+.footer .cx-svc__item:hover .cx-svc__icon {
+  background: var(--accent);
+  color: var(--accent-ink);
+  transform: translateY(-2px);
+}
+@media (max-width: 639px) {
+  .cx-svc {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .footer .cx-svc__item {
+    padding: 16px 8px;
+    font-size: 0.875rem;
+  }
+}
+
+/* ---------- Product page: vertical thumbnail rail (large screens) ----------
+   The gallery's behaviour (image switching, zoom, packaging badge) is untouched; only the
+   thumbnails move from under the stage to a rail on its start side (right side in Arabic). */
+@media (min-width: 1200px) {
+  .cx-pdp .gallery--3d:has(> .gallery__thumbs) {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+  }
+  .cx-pdp .gallery--3d:has(> .gallery__thumbs) > .gallery__main {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .cx-pdp .gallery--3d > .gallery__thumbs {
+    grid-column: 1;
+    grid-row: 1;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-self: stretch;
+    gap: 10px;
+    margin-top: 0;
+    padding: 6px 4px; /* room for the active thumbnail's lift and focus ring */
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .cx-pdp .gallery--3d > .gallery__thumbs button {
+    flex: none;
+  }
+}

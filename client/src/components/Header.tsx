@@ -12,9 +12,11 @@ import { useMoney } from '../state/currency';
 import { useSettings } from '../state/settings';
 import { useWishlist } from '../state/wishlist';
 import { CartPeek } from './CartPeek';
+import { storeCopy } from '../storefront/copy';
 import { CurrencySelect } from './CurrencySelect';
-import { Icon } from './Icon';
+import { Chevron, Icon } from './Icon';
 import { Logo } from './Logo';
+import { Price } from './ui';
 
 function SearchBox({ onDone, autoFocus = false }: { onDone?: () => void; autoFocus?: boolean }) {
   const { t, p } = useI18n();
@@ -57,6 +59,7 @@ export function Header() {
   const settings = useSettings();
   const { data: home } = useCached<HomeData>('/api/home');
   const [mega, setMega] = useState(false);
+  const [megaCat, setMegaCat] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const loc = useLocation();
@@ -111,6 +114,8 @@ export function Header() {
 
   const categories = home?.categories ?? [];
   const productsFor = (id: string) => home?.categoryProducts.find((c) => c.categoryId === id)?.items ?? [];
+  const copy = storeCopy(lang);
+  const activeCat = categories.find((c) => c._id === megaCat) ?? categories[0];
   const months = settings?.commerce?.warrantyMonths ?? 0;
 
   return (
@@ -180,28 +185,54 @@ export function Header() {
             </nav>
           </div>
         ) : null}
-        {mega ? (
+        {mega && activeCat ? (
+          /* Two-pane mega menu: category list on the start side; the hovered/focused category's real
+             products (from /api/home) on the other. Every row is a plain link, so keyboard and
+             screen-reader users get the same content; hover/focus only changes which list is shown. */
           <div className="mega" id="mega" ref={megaRef}>
-            <div className="container mega__grid">
-              {categories.map((c, i) => (
-                <Link key={c._id} to={p(`/c/${c.slug}`)} className="mega__cat" style={{ '--i': i } as CSSProperties}>
-                  <img src={cloudinaryAt(c.image?.url, 320) || placeholderFor(c.slug)} alt="" loading="lazy" decoding="async" />
-                  <span>
-                    <strong>{L(c.name, lang)}</strong>
-                    <ul>
-                      {productsFor(c._id)
-                        .slice(0, 3)
-                        .map((pr) => (
-                          <li key={pr._id}>{L(pr.name, lang)}</li>
-                        ))}
-                    </ul>
-                  </span>
+            <div className="container mx">
+              <div className="mx__cats">
+                <p className="mx__label">{copy.byCategory}</p>
+                <ul>
+                  {categories.map((c) => (
+                    <li key={c._id}>
+                      <Link
+                        to={p(`/c/${c.slug}`)}
+                        className="mx__cat"
+                        aria-current={c._id === activeCat._id ? 'true' : undefined}
+                        onMouseEnter={() => setMegaCat(c._id)}
+                        onFocus={() => setMegaCat(c._id)}
+                      >
+                        <span>{L(c.name, lang)}</span>
+                        <Chevron />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mx__more">
+                  <Link to={p('/bundles')}>{t.nav.bundles}</Link>
+                  <Link to={p('/shop')}>{t.nav.allProducts}</Link>
+                </div>
+              </div>
+              <div className="mx__panel" key={activeCat._id}>
+                <div className="mx__grid">
+                  {productsFor(activeCat._id)
+                    .slice(0, 6)
+                    .map((pr, i) => (
+                      <Link key={pr._id} to={p(`/p/${pr.slug}`)} className="mx__item" style={{ '--i': i } as CSSProperties}>
+                        <span className="mx__thumb">
+                          <img src={cloudinaryAt(pr.images?.[0]?.url, 160) || placeholderFor(activeCat.slug)} alt="" width={72} height={72} loading="lazy" decoding="async" />
+                        </span>
+                        <span className="mx__text">
+                          <strong>{L(pr.name, lang)}</strong>
+                          <Price price={pr.price} compareAt={pr.compareAtPrice} className="mx__price" />
+                        </span>
+                      </Link>
+                    ))}
+                </div>
+                <Link to={p(`/c/${activeCat.slug}`)} className="mx__all">
+                  {copy.viewAllIn(L(activeCat.name, lang))} <Chevron />
                 </Link>
-              ))}
-              <div className="mega__side">
-                <span className="muted">{t.home.bundlesText}</span>
-                <Link to={p('/bundles')}>{t.nav.bundles} →</Link>
-                <Link to={p('/shop')}>{t.nav.allProducts} →</Link>
               </div>
             </div>
           </div>

@@ -4,21 +4,10 @@
 html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
 .storefront .cx-head { margin-bottom: 26px; gap: 20px; }
 .storefront .cx-lead { font-size: 1rem; line-height: 1.65; max-width: 48ch; }
-.storefront .cx-universe { background: #f5f7f8; }
-.storefront .cx-universe__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: none; gap: 12px; }
-.storefront .cx-universe__grid .cx-uni { grid-column: auto; grid-row: auto; min-height: 0; display: flex; flex-direction: column; border-radius: 14px; padding: 12px; gap: 8px; }
-.storefront .cx-universe__grid .cx-uni__visual { position: relative; inset: auto; width: 100%; height: auto; aspect-ratio: 1; margin: 0; }
-.storefront .cx-universe__grid .cx-uni__copy { position: relative; inset: auto; padding: 8px 0; width: 100%; max-width: none; }
-.storefront .cx-uni__name { font-size: clamp(.85rem, 1.4vw, 1.15rem); line-height: 1.4; }
-.storefront .cx-uni__desc { font-size: .75rem; margin-top: 4px; }
-.storefront .cx-uni__index { display: none; }
-.storefront .cx-uni__cta { margin-top: 8px; font-size: .75rem; }
 .storefront .cx-flag__inner { min-height: 0; padding-block: clamp(36px, 5vw, 72px); }
 /* Fluid from phone to desktop (28px at 320 → 47.5px at 1440, as before on desktop). */
 .storefront .cx-flag__title { font-size: clamp(1.75rem, 1.17rem + 2vw, 3.5rem); line-height: 1.15; }
 .storefront .cx-flag__desc { font-size: 1rem; line-height: 1.65; max-width: 45ch; }
-.storefront .cx-spot__inner { min-height: 0; padding-block: clamp(36px, 5vw, 72px); }
-.storefront .cx-spot__chapter { font-size: clamp(3rem, 6vw, 6rem); }
 .storefront .cx-listhead { padding-block: 24px 32px; }
 /* Category / shop / bundles title: 28px on phones, scaling with the viewport (was flat 30.4px up to ~1000px); desktop unchanged. */
 .storefront .cx-listhead h1 { font-size: clamp(1.75rem, 1.05rem + 1.83vw, 3.25rem); line-height: 1.2; }
@@ -56,8 +45,6 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
 .storefront .faq-page__head { padding-block: 32px; }
 .storefront .faq-title--page { font-size: clamp(1.9rem, 3vw, 3rem); }
 .header .mega { max-height: calc(100dvh - 110px); overflow-y: auto; }
-.header .mega__cat { border-radius: 12px; }
-.header .mega__cat strong { line-height: 1.4; }
 .header .searchbox { max-width: 840px; margin-inline: auto; }
 .header .searchbox .input { min-height: 52px; }
 .header .search-categories { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; padding-block: 12px 0; }
@@ -65,7 +52,6 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
 .cx-footer .cx-footer__word { font-size: clamp(3rem, 12vw, 11rem); }
 @media (min-width: 960px) {
   .storefront .cx-info__story { grid-template-columns: 1fr 1fr; }
-  .storefront .cx-universe__grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .storefront .cx-grid { gap: 30px 20px; }
   .storefront .cx-pdp .cx-pdp__grid { gap: clamp(30px, 4vw, 64px); align-items: start; }
 }
@@ -73,10 +59,6 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
   .storefront .cx-info__contacts, .storefront .cx-info__links { grid-template-columns: minmax(0, 1fr); }
   .storefront .cx-head { align-items: flex-start; gap: 12px; }
   .storefront .cx-head > .cx-link { font-size: .8rem; flex-shrink: 0; }
-  .storefront .cx-universe__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .storefront .cx-universe__grid .cx-uni { padding: 10px; }
-  .storefront .cx-universe__grid .cx-uni__visual { aspect-ratio: 1.3; }
-  .storefront .cx-uni__cta { min-height: 24px; }
   .storefront .cx-grid { gap: 24px 10px; }
   .storefront .cx-card__title { font-size: .875rem; }
   .storefront .cx-card__meta { font-size: .625rem; flex-wrap: wrap; }
