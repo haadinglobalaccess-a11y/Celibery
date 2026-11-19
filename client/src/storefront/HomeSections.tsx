@@ -83,11 +83,10 @@ export function CategoryUniverse({ data }: { data: HomeData }) {
                 <span className="cx-lineup__media" aria-hidden="true">
                   <ArtFrame src={v.url} image={v.image} category={cat.slug} sizes="(max-width: 639px) 80vw, (max-width: 1023px) 46vw, 420px" />
                 </span>
-                {/* Name, count and arrow under the artwork, as on the range tiles. */}
+                {/* Name and arrow under the artwork, as on the range tiles (no product count). */}
                 <span className="cx-lineup__copy">
                   <span>
                     <strong className="cx-lineup__name">{L(cat.name, lang)}</strong>
-                    {cat.productCount ? <span className="cx-lineup__count">{t.premium.productsCount(cat.productCount)}</span> : null}
                   </span>
                   <span className="cx-lineup__go cx-arrow" aria-hidden="true">
                     <InlineArrow />
