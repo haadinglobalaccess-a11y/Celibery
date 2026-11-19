@@ -516,3 +516,59 @@ html[lang='ar'] .cx-range__name {
 .header .logo--brand img {
   translate: 0 2.8%;
 }
+
+/* =====================================================================
+   Design-system refinements (premium typography, product imagery, footer)
+   Reference study (live pages, 19 Nov 2026): display headings set at a
+   600 weight with near-normal tracking; 14px/400 footer links; products
+   on a plain light stage. Expressed with CELIBERY's own fonts and tokens.
+   ===================================================================== */
+
+/* Display type: 700 instead of 800 and -0.02em instead of -0.035…-0.045em, so headings read
+   confident rather than heavy and compressed. Arabic keeps its own weight/tracking rules
+   (html[lang='ar'] selectors are more specific). */
+.storefront .cx-display,
+.storefront .cx-flag__title,
+.storefront .cx-listhead h1,
+.storefront .cx-pdp__title,
+.storefront .cx-range__name,
+#main .page-head h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Desktop navigation: a touch larger for an international-store header. */
+.header .header__nav > a,
+.header .header__nav > button {
+  font-size: 0.9375rem;
+}
+
+/* Product cards: the photo on the brand's Cloud stage, complete and uncropped. CELIBERY product
+   photos are real shots with their own light backgrounds; the dark campaign matte and its
+   half-transparent blurred copy painted dark bands beside them. Category artwork frames
+   (lineup, range, flagship) keep the matte + blurred fill that suits dark campaign art. */
+.cx-card .cx-art {
+  background: var(--surface);
+}
+.cx-card .cx-art > .cx-art__fill {
+  display: none;
+}
+
+/* Footer: calmer, international hierarchy — sentence-case column headings, regular-weight links. */
+.footer.cx-footer h3,
+.footer.cx-footer .cx-footer__sub {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--on-dark);
+}
+.footer.cx-footer ul a {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--on-dark-muted);
+}
+.footer.cx-footer ul a:hover {
+  color: var(--paper);
+}
