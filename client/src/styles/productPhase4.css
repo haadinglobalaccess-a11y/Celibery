@@ -58,14 +58,14 @@
 .cx-trust__text span {
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: var(--cx-muted, #5b6470);
+  color: var(--cx-muted);
 }
 .cx-trust__more {
   justify-self: start;
   margin-top: 2px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #00838f; /* turquoise darkened for 4.5:1 text contrast on cloud grey */
+  color: var(--accent-text); /* turquoise darkened for ≥4.5:1 text contrast on white and cloud grey */
   text-decoration: none;
 }
 .cx-trust__more:hover,
@@ -101,7 +101,7 @@
   width: 22px;
   height: 22px;
   margin-top: 2px;
-  color: #00838f;
+  color: var(--accent-text);
 }
 .cx-restock__head strong {
   display: block;
@@ -110,7 +110,7 @@
 }
 .cx-restock__head span {
   font-size: 0.8125rem;
-  color: var(--cx-muted, #5b6470);
+  color: var(--cx-muted);
 }
 .cx-restock__row {
   display: flex;
@@ -156,7 +156,7 @@
 .cx-restock--done .icon {
   width: 22px;
   height: 22px;
-  color: #00838f;
+  color: var(--accent-text);
 }
 @media (max-width: 420px) {
   .cx-restock__row {

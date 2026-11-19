@@ -464,7 +464,7 @@ html[lang='ar'] .cine__scroll {
   inset: 20%;
   border-radius: 32px;
   overflow: hidden;
-  background: #f4f4f5;
+  background: var(--brand-cloud);
   box-shadow:
     0 40px 90px -20px rgb(0 0 0 / 0.75),
     0 0 0 1px rgb(255 255 255 / 0.08);
@@ -794,7 +794,7 @@ html[dir='rtl'] .card__title a {
   background: transparent;
 }
 .dark .card__media {
-  background: #1c1c20;
+  background: var(--dark-2);
 }
 
 /* Keyframe entrance for content swapped in by tabs */
@@ -993,7 +993,7 @@ html[dir='rtl'] .card__title a {
 
 /* ---------- Dark skeleton ---------- */
 .skeleton--dark {
-  background: linear-gradient(100deg, #1a1a1e 20%, #26262c 40%, #1a1a1e 60%);
+  background: linear-gradient(100deg, var(--dark-2) 20%, var(--dark-3) 40%, var(--dark-2) 60%);
   background-size: 300% 100%;
 }
 
@@ -1500,7 +1500,7 @@ main#main {
     height: 40px;
     min-width: 40px;
     border-radius: 50%;
-    border: 1px solid rgba(15, 23, 42, .10);
+    border: 1px solid rgb(17 17 17 / 0.10);
     background: rgba(255, 255, 255, .58);
     color: var(--ink);
     backdrop-filter: blur(14px) saturate(140%);
@@ -1520,7 +1520,7 @@ main#main {
     min-height: 38px;
     padding-inline: 15px;
     border-radius: 999px;
-    border: 1px solid rgba(15, 23, 42, .14);
+    border: 1px solid rgb(17 17 17 / 0.14);
     background: rgba(255, 255, 255, .48);
     color: var(--ink);
     backdrop-filter: blur(12px);
@@ -1543,7 +1543,7 @@ main#main {
 
   .header.is-scrolled .header__actions > .icon-btn {
     background: rgba(255, 255, 255, .72);
-    border-color: rgba(15, 23, 42, .10);
+    border-color: rgb(17 17 17 / 0.10);
     color: #17232d;
   }
 

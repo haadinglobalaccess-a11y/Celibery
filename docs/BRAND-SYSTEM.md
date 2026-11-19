@@ -1,6 +1,6 @@
 # CELIBERY brand system (storefront)
 
-Updated 13 November 2026. Source of truth: the client's answers Q1, Q2, Q4, Q5, Q6, Q8 and Q9 in *CELIBERY Website Questions and KSA Recommendations*, plus the client-supplied logo `docs/brand/celibery-logo-original.png`.
+Updated 19 November 2026. Source of truth: the client's answers Q1, Q2, Q4, Q5, Q6, Q8 and Q9 in *CELIBERY Website Questions and KSA Recommendations*, plus the client-supplied logo `docs/brand/celibery-logo-original.png`.
 
 ## Colour
 
@@ -26,6 +26,20 @@ Manrope (Latin, variable 400–800) and IBM Plex Sans Arabic (400–700), both u
 
 `<Logo>` (`client/src/components/Logo.tsx`) uses the admin upload if there is one. Otherwise it shows `/brand/celibery-logo-480.webp` (960w for 2×), which is the client PNG cropped to its content. The turquoise wordmark works on the white header and on the near-black hero and footer, so one colourway is used for both. The source logo has no SVG yet (Q9): a true vector recreation is still outstanding.
 
+Header sizes (default logo; set in `celibery.css`, "CELIBERY brand layer"):
+
+| Width | Logo height | Notes |
+|---|---|---|
+| ≥ 960px | 32px (144px wide) | Centred on the nav's centre line |
+| 390–959px | 22px (99px wide) | |
+| < 390px | 76–99px wide (`26vw`) | The header compacts: 36px icon buttons, tighter gaps. This stops flexbox squashing the wordmark |
+
+The logo link (`.header__brand`) never shrinks. Don't size the logo with `width` and `height` together: always size it from one dimension so the 4.5:1 ratio holds.
+
+## Favicon and app icons
+
+The wordmark is too wide for a square icon. The icon is the logo's opening **C⚡E** cluster (the C, the bolt and the E it cuts through), copied unchanged from `docs/brand/celibery-logo-cropped.png` and centred on a Midnight Black tile. `scripts/generate-favicons.mjs` rebuilds the whole set: `favicon.ico` (16/32/48), `brand/icons/favicon-32.png`, `apple-touch-icon.png` (180), and `icon-192`, `icon-512` and `icon-maskable-512` for `site.webmanifest`. Run it again if the logo file changes.
+
 ## Surfaces and imagery
 
 - **Hybrid theme (Q1).** Shopping pages are light: shop, category, search and collection headers use only the light tones (`porcelain`, `mist`, `sand`). The dark tones (`obsidian`, `graphite`, `midnight`) are reserved for homepage premium sections, the PDP "At a glance" band and the footer.
@@ -38,3 +52,5 @@ Manrope (Latin, variable 400–800) and IBM Plex Sans Arabic (400–700), both u
 - One accent. Use it for highlights, not for whole sections. Dark spotlights are graphite or midnight with at most an 18% turquoise glow.
 - Primary purchase buttons stay near-black; turquoise marks offers and confirmation states, such as "Added to cart".
 - Never use green or blue in place of the turquoise.
+- Colour values come from `tokens.css` only. Other stylesheets use the tokens (`--ink`, `--surface`, `--line`, `--muted`, `--dark`, `--accent-text` …) and don't re-declare them. Until 19 November 2026, `signature.css` re-declared them with a neutral-violet grey set (`#1d1d1f`, `#f5f5f7`, `#6e6e73` …), which pulled the storefront off Midnight Black and Cloud Grey.
+- Turquoise text on light surfaces always uses `--accent-text`, never a hard-coded dark teal, so an accent changed in Admin → Brand still applies.

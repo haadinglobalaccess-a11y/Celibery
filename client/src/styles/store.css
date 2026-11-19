@@ -308,7 +308,7 @@ html[lang='en'] .hero h1 {
   z-index: -2;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 70% 35%, #26262b 0%, var(--dark) 62%);
+  background: radial-gradient(circle at 70% 35%, var(--dark-3) 0%, var(--dark) 62%);
 }
 .hero-products__item {
   position: absolute;
@@ -323,7 +323,7 @@ html[lang='en'] .hero h1 {
   transition:
     opacity 900ms var(--ease),
     transform 900ms var(--ease);
-  background: #f3f3f4;
+  background: var(--brand-cloud);
   box-shadow: 0 30px 80px rgb(0 0 0 / 0.5);
 }
 .hero-products__item[data-active='true'] {

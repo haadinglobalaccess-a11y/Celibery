@@ -46,7 +46,7 @@
 }
 .rv-dist__n {
   text-align: end;
-  color: var(--cx-muted, #5b6470);
+  color: var(--cx-muted);
 }
 .rv-dist__bar {
   height: 8px;
@@ -76,7 +76,7 @@
   padding: 2px 9px;
   border-radius: 999px;
   background: rgb(0 177 192 / 0.12);
-  color: #00737d;
+  color: var(--accent-text);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -87,7 +87,7 @@
   background: none;
   font: inherit;
   font-size: 0.75rem;
-  color: var(--cx-muted, #5b6470);
+  color: var(--cx-muted);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -181,7 +181,7 @@
 }
 .rv-status--approved {
   background: rgb(0 177 192 / 0.12);
-  color: #00737d;
+  color: var(--accent-text);
   border-color: transparent;
 }
 .rv-status--rejected,
@@ -229,22 +229,22 @@
   gap: 6px 12px;
   margin-top: 10px;
   font-size: 0.875rem;
-  color: var(--cx-muted, #5b6470);
+  color: var(--cx-muted);
 }
 .cx-bundle-value s {
-  color: var(--cx-muted, #5b6470);
+  color: var(--cx-muted);
 }
 .cx-bundle-value strong {
   padding: 2px 10px;
   border-radius: 999px;
   background: rgb(0 177 192 / 0.14);
-  color: #00737d;
+  color: var(--accent-text);
   font-size: 0.8125rem;
 }
 .cx-bundle-note {
   margin: 6px 0 0;
   font-size: 0.75rem;
-  color: var(--cx-muted, #5b6470);
+  color: var(--cx-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

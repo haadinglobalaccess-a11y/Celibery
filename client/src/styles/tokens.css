@@ -33,7 +33,7 @@
   --line: #e1e6e9;
   --muted: #5f686d;            /* steel, deepened to pass AA on white and cloud */
   --muted-2: #8a9398;
-  --dark: #0d1012;             /* premium dark sections */
+  --dark: var(--brand-midnight); /* premium dark sections — Midnight Black */
   --dark-2: #171c1f;
   --dark-3: var(--brand-graphite);
   --dark-line: #2c3439;

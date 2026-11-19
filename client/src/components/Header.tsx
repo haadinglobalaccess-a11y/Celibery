@@ -133,7 +133,7 @@ export function Header() {
           <button className="icon-btn mobile-only" aria-label={t.nav.menu} aria-expanded={mobile} onClick={() => setMobile(true)}>
             <Icon name="menu" />
           </button>
-          <Link to={p('/')} aria-label={t.a11y.home}>
+          <Link to={p('/')} className="header__brand" aria-label={t.a11y.home}>
             <Logo onDark={heroOverlay && !scrolled} />
           </Link>
           <nav className="header__nav" aria-label={t.a11y.mainNav}>
