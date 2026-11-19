@@ -1,11 +1,12 @@
 import { ORDER_STATUSES, Order, Product, User, getSettings } from '../../models';
 import { toCsv } from '../../lib/csv';
 
-/** Orders that count as revenue: paid online, or COD orders that are not cancelled/returned. */
-const revenueMatch = {
-  status: { $nin: ['cancelled', 'returned'] },
-  paymentStatus: { $in: ['paid', 'partially_refunded', 'cod_pending', 'cod_collected'] },
-};
+/**
+ * Paid orders = money received (online capture, or cash collected on delivery). Same rule as
+ * analytics.service.ts — COD orders not yet collected are pending payments, not revenue; refunds
+ * are subtracted for net revenue.
+ */
+const revenueMatch = { paymentStatus: { $in: ['paid', 'partially_refunded', 'refunded', 'cod_collected'] } };
 
 /** Saudi Arabia is UTC+3 all year (no daylight saving). Reports use Riyadh calendar days. */
 const RIYADH_OFFSET_MS = 3 * 3600 * 1000;
@@ -37,7 +38,7 @@ export async function overview() {
     Promise.all(ORDER_STATUSES.map(async (s) => ({ _id: s, n: await Order.countDocuments({ status: s }) }))).then((rows) => rows.filter((r) => r.n > 0)),
     Order.aggregate([
       { $match: { ...revenueMatch, createdAt: { $gte: start, $lte: end } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Asia/Riyadh' } }, orders: { $sum: 1 }, revenue: { $sum: '$total' } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Asia/Riyadh' } }, orders: { $sum: 1 }, revenue: { $sum: { $subtract: ['$total', { $ifNull: ['$refundedAmount', 0] }] } } } },
       { $sort: { _id: 1 } },
     ]),
     Product.find({ status: { $ne: 'archived' }, $expr: { $lte: ['$stock', { $ifNull: ['$lowStockThreshold', lowDefault] }] } })
@@ -76,64 +77,10 @@ function fillDays(rows: { _id: string; orders: number; revenue: number }[], star
   return out;
 }
 
+/** Sales report = analytics for the range (same figures as the dashboard and CSV exports). */
 export async function salesReport(from?: Date, to?: Date) {
-  const { start, end } = range(from, to);
-  const match = { ...revenueMatch, createdAt: { $gte: start, $lte: end } };
-  const [summary, daily, byCategory, byMethod, topProducts, discounts] = await Promise.all([
-    Order.aggregate([
-      { $match: match },
-      {
-        $group: {
-          _id: null,
-          orders: { $sum: 1 },
-          gross: { $sum: '$subtotal' },
-          discounts: { $sum: '$discountTotal' },
-          revenue: { $sum: '$total' },
-          refunds: { $sum: { $ifNull: ['$refundedAmount', 0] } },
-          vat: { $sum: '$vatAmount' },
-          units: { $sum: { $sum: '$items.quantity' } },
-        },
-      },
-    ]),
-    Order.aggregate([
-      { $match: match },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Asia/Riyadh' } }, orders: { $sum: 1 }, revenue: { $sum: '$total' } } },
-      { $sort: { _id: 1 } },
-    ]),
-    Order.aggregate([
-      { $match: match },
-      { $unwind: '$items' },
-      { $lookup: { from: 'products', localField: 'items.product', foreignField: '_id', as: 'p' } },
-      { $unwind: { path: '$p', preserveNullAndEmptyArrays: true } },
-      { $lookup: { from: 'categories', localField: 'p.category', foreignField: '_id', as: 'c' } },
-      { $unwind: { path: '$c', preserveNullAndEmptyArrays: true } },
-      { $group: { _id: '$c.slug', name: { $first: '$c.name' }, units: { $sum: '$items.quantity' }, revenue: { $sum: { $subtract: ['$items.lineTotal', '$items.discount'] } } } },
-      { $sort: { revenue: -1 } },
-    ]),
-    Order.aggregate([{ $match: match }, { $group: { _id: '$paymentMethod', orders: { $sum: 1 }, revenue: { $sum: '$total' } } }, { $sort: { revenue: -1 } }]),
-    Order.aggregate([
-      { $match: match },
-      { $unwind: '$items' },
-      { $group: { _id: '$items.product', sku: { $first: '$items.sku' }, name: { $first: '$items.name' }, units: { $sum: '$items.quantity' }, revenue: { $sum: { $subtract: ['$items.lineTotal', '$items.discount'] } } } },
-      { $sort: { units: -1 } },
-      { $limit: 20 },
-    ]),
-    Order.aggregate([
-      { $match: { ...match, 'discount.code': { $exists: true, $ne: null } } },
-      { $group: { _id: '$discount.code', orders: { $sum: 1 }, discount: { $sum: '$discountTotal' } } },
-      { $sort: { orders: -1 } },
-    ]),
-  ]);
-  return {
-    from: start,
-    to: end,
-    summary: summary[0] ?? { orders: 0, gross: 0, discounts: 0, revenue: 0, refunds: 0, vat: 0, units: 0 },
-    daily: fillDays(daily, start, end),
-    byCategory,
-    byPaymentMethod: byMethod,
-    topProducts,
-    discounts,
-  };
+  const { analytics } = await import('./analytics.service');
+  return analytics(from, to);
 }
 
 export async function ordersCsv(from?: Date, to?: Date) {

@@ -5,7 +5,7 @@ import { audit } from '../../lib/audit';
 import { ah, ok } from '../../lib/http';
 import { toHalalas } from '../../lib/money';
 import { env } from '../../config/env';
-import { forbidden } from '../../lib/errors';
+import { forbidden, notFound } from '../../lib/errors';
 import { requireAnyPermission, requirePermission } from '../../middleware/auth';
 import { storageStatus } from '../../integrations/storage';
 import { channelStatus } from '../../integrations/credentials';
@@ -17,6 +17,7 @@ import { releaseExpiredReservations } from '../orders/order.service';
 import { canonicalCity } from '../orders/delivery-rules';
 import { reportQuery } from './admin.schemas';
 import * as reports from './reports.service';
+import * as analyticsSvc from './analytics.service';
 
 const loc = z.object({ ar: text(5000).default(''), en: text(5000).default('') });
 const str = (max = 300) => text(max);
@@ -191,6 +192,62 @@ adminSystemRoutes.get(
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="celibery-orders-${new Date().toISOString().slice(0, 10)}.csv"`);
     res.send('\ufeff' + csv); // BOM so Excel opens Arabic text correctly
+  }),
+);
+
+// ---- Analytics (one definition of every figure: analytics.service.ts) ----
+adminSystemRoutes.get(
+  '/reports/analytics',
+  // The dashboard shows these figures to staff who could already see sales (orders:read), as before.
+  requireAnyPermission('reports:read', 'orders:read'),
+  validate(reportQuery, 'query'),
+  ah(async (req, res) => {
+    const query = q(req, reportQuery);
+    return ok(res, await analyticsSvc.analytics(query.from, query.to));
+  }),
+);
+const csvKind = z.object({ kind: z.enum(['summary', 'products', 'payments']) });
+adminSystemRoutes.get(
+  '/reports/:kind.csv',
+  requirePermission('reports:read'),
+  validate(csvKind, 'params'),
+  validate(reportQuery, 'query'),
+  ah(async (req, res) => {
+    const query = q(req, reportQuery);
+    const kind = req.params.kind as 'summary' | 'products' | 'payments';
+    const csv = await analyticsSvc.analyticsCsv(kind, query.from, query.to);
+    await audit(req, 'export', 'report', kind, `${query.from?.toISOString().slice(0, 10) ?? ''} → ${query.to?.toISOString().slice(0, 10) ?? ''}`);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="celibery-${kind}-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send('\ufeff' + csv);
+  }),
+);
+
+// ---- Payments (gateway records; never card data) ----
+const paymentList = z.object({
+  status: z.enum(['initiated', 'pending', 'authorized', 'paid', 'failed', 'cancelled', 'expired', 'refunded', 'partially_refunded']).optional(),
+  provider: z.enum(['sandbox', 'moyasar', 'tabby', 'cod']).optional(),
+  method: z.string().trim().max(20).optional(),
+  q: z.string().trim().max(120).optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+});
+adminSystemRoutes.get(
+  '/payments',
+  requireAnyPermission('payments:manage', 'orders:read'),
+  validate(paymentList, 'query'),
+  ah(async (req, res) => ok(res, await analyticsSvc.listPayments(q(req, paymentList)))),
+);
+adminSystemRoutes.get(
+  '/payments/:id',
+  requireAnyPermission('payments:manage', 'orders:read'),
+  validate(z.object({ id: z.string().regex(/^[a-f0-9]{24}$/i) }), 'params'),
+  ah(async (req, res) => {
+    const p = await analyticsSvc.paymentDetail(req.params.id);
+    if (!p) throw notFound('Payment');
+    return ok(res, p);
   }),
 );
 

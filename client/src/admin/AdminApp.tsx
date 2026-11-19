@@ -28,11 +28,12 @@ import { ActivityLog, Staff } from './pages/System';
 import { FaqManagement } from './pages/Faq';
 import { HomeVideosAdmin } from './pages/HomeVideos';
 import { ReviewsModeration } from './pages/Reviews';
+import { Payments } from './pages/Payments';
 
 const MEDIA_PERMS = ['media:write', 'products:write', 'content:write'];
 const SETTINGS_PERMS = ['settings:write', 'business:write', 'payments:manage'];
 
-type NavKey = 'faq' | 'videos' | 'reviews' | 'dashboard' | 'orders' | 'checkouts' | 'products' | 'categories' | 'inventory' | 'customers' | 'returns' | 'discounts' | 'reports' | 'staff' | 'settings' | 'content' | 'media' | 'activity';
+type NavKey = 'faq' | 'videos' | 'reviews' | 'payments' | 'dashboard' | 'orders' | 'checkouts' | 'products' | 'categories' | 'inventory' | 'customers' | 'returns' | 'discounts' | 'reports' | 'staff' | 'settings' | 'content' | 'media' | 'activity';
 type NavItem = { key: NavKey; to: string; icon: string; perm: string[]; badge?: 'pending' | 'lowStock' };
 
 /** Spec §7 navigation order; existing website-management pages are kept in a second group. */
@@ -46,6 +47,7 @@ const NAV: NavItem[] = [
   { key: 'customers', to: '/admin/customers', icon: 'customers', perm: ['customers:read'] },
   { key: 'returns', to: '/admin/returns', icon: 'returns', perm: ['orders:read'] },
   { key: 'discounts', to: '/admin/discounts', icon: 'discounts', perm: ['discounts:read'] },
+  { key: 'payments', to: '/admin/payments', icon: 'card', perm: ['payments:manage', 'orders:read'] },
   { key: 'reports', to: '/admin/reports', icon: 'reports', perm: ['reports:read'] },
   { key: 'staff', to: '/admin/staff', icon: 'staff', perm: ['staff:manage'] },
   { key: 'settings', to: '/admin/settings', icon: 'settings', perm: SETTINGS_PERMS },
@@ -583,6 +585,7 @@ function Shell({ lang, setLang }: { lang: AdminLang; setLang: (l: AdminLang) => 
             <Route path="discounts" element={guard('discounts:read', en(<Discounts canWrite={can('discounts:write')} />))} />
             <Route path="content" element={guard('content:write', en(<Content canSettings={can('settings:write')} canReviews={can('reviews:moderate')} />))} />
             <Route path="reports" element={guard('reports:read', en(<Reports />))} />
+            <Route path="payments" element={guard(['payments:manage', 'orders:read'], en(<Payments />))} />
             <Route path="staff" element={guard('staff:manage', en(<Staff />))} />
             <Route path="media" element={guard(MEDIA_PERMS, en(<MediaLibraryPage />))} />
             <Route path="faqs" element={guard('content:write', en(<FaqManagement />))} />

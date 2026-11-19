@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl, qs } from '../../lib/api';
 import type { Localized } from '../../lib/types';
-import { cachedApi, codPending, countLowStock, countOrders, countsAsRevenue, dayKey, ordersBetween, type PeriodOrder } from '../data';
+import { cachedApi, codPending, countLowStock, countOrders } from '../data';
 import { useAT } from '../i18n';
 import { AIcon } from '../icons';
 import { EmptyState, ErrorPanel, InfoTip, KpiCard, OrdersAreaChart, Skeleton, SkeletonKpis, SkeletonTable, Status, usePerms, type KpiTrend } from '../kit';
@@ -26,8 +26,6 @@ const previousOf = (r: Range): Range => {
   const n = spanDays(r);
   return { from: addDays(r.from, -n), to: addDays(r.from, -1) };
 };
-/** Day boundaries in Riyadh time, so the last day of the range is fully included. */
-const bounds = (r: Range) => ({ from: `${r.from}T00:00:00+03:00`, to: `${r.to}T23:59:59.999+03:00` });
 
 /* ───────────── Data ───────────── */
 type Sales = { summary: { orders: number; revenue: number }; daily: { date: string; orders: number; revenue: number }[] };
@@ -50,40 +48,26 @@ type Dash = {
   recent: RecentRow[] | null;
 };
 
-/**
- * Revenue, orders, trend and status counts are computed here from the order list, grouped by Riyadh
- * calendar day, using the server's own revenue rule. (The sales report's daily series is not used:
- * on servers east of Riyadh it drops the current day.)
- */
-function summarise(rows: PeriodOrder[], range: Range): { sales: Sales; status: Record<string, number> } {
-  const days = new Map<string, { orders: number; revenue: number }>();
-  for (let d = range.from; d <= range.to; d = addDays(d, 1)) days.set(d, { orders: 0, revenue: 0 });
-  const status: Record<string, number> = Object.fromEntries(PERIOD_STATUSES.map((s) => [s, 0]));
-  let orders = 0;
-  let revenue = 0;
-  for (const o of rows) {
-    status[o.status] = (status[o.status] ?? 0) + 1;
-    if (!countsAsRevenue(o)) continue;
-    orders += 1;
-    revenue += o.total;
-    const day = days.get(dayKey(o.createdAt));
-    if (day) {
-      day.orders += 1;
-      day.revenue += o.total;
-    }
-  }
-  return { sales: { summary: { orders, revenue }, daily: [...days].map(([date, v]) => ({ date, ...v })) }, status };
+/** Server analytics for a Riyadh-day range (analytics.service.ts — the same figures as Reports and the CSV exports). */
+type Analytics = { summary: { paidOrders: number; net: number }; daily: { date: string; orders: number; net: number }[]; byStatus: Record<string, number> };
+const analyticsFor = (r: Range) => cachedApi<Analytics>(`/api/admin/reports/analytics${qs(r)}`).then((x) => x.data);
+
+/** Dashboard figures: paid orders and NET revenue (collected − refunds); COD not yet collected is not revenue. */
+function summarise(a: Analytics): { sales: Sales; status: Record<string, number> } {
+  return {
+    sales: { summary: { orders: a.summary.paidOrders, revenue: a.summary.net }, daily: a.daily.map((d) => ({ date: d.date, orders: d.orders, revenue: d.net })) },
+    status: Object.fromEntries(PERIOD_STATUSES.map((st) => [st, a.byStatus[st] ?? 0])),
+  };
 }
 
 async function loadDash(range: Range, perms: Set<string>): Promise<Dash> {
   const prev = previousOf(range);
-  const b = bounds(range);
-  const pb = bounds(prev);
   const orders = perms.has('orders:read');
+  const figures = orders || perms.has('reports:read');
   const opt = <T,>(cond: boolean, f: () => Promise<T>) => (cond ? f() : Promise.resolve(null));
   const [cur, before, now, cod, overview, lowStockCount, recent] = await Promise.all([
-    opt(orders, () => ordersBetween(b.from, b.to)),
-    opt(orders, () => ordersBetween(pb.from, pb.to)),
+    opt(figures, () => analyticsFor(range)),
+    opt(figures, () => analyticsFor(prev)),
     opt(orders, async () => {
       const [pending, confirmed, processing, shipped] = await Promise.all(['pending', 'confirmed', 'processing', 'shipped'].map((s) => countOrders({ status: s })));
       return { pending, confirmed, processing, shipped };
@@ -93,13 +77,13 @@ async function loadDash(range: Range, perms: Set<string>): Promise<Dash> {
     opt(perms.has('inventory:read'), () => countLowStock()),
     opt(orders, () => cachedApi<RecentRow[]>(`/api/admin/orders${qs({ limit: 8 })}`).then((r) => r.data)),
   ]);
-  const c = cur ? summarise(cur.rows, range) : null;
-  const p = before ? summarise(before.rows, prev) : null;
+  const c = cur ? summarise(cur) : null;
+  const p = before ? summarise(before) : null;
   return {
     sales: c && p ? { cur: c.sales, prev: p.sales } : null,
     period: c?.status ?? null,
     prevPeriod: p ? { delivered: p.status.delivered, returned: p.status.returned } : null,
-    truncated: Boolean(cur?.truncated || before?.truncated),
+    truncated: false, // server-side aggregation: never partial
     now,
     cod,
     overview,
