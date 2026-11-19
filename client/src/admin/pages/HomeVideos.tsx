@@ -9,7 +9,7 @@ import { AHead, Card, dt, EmptyState, ErrorBox, ErrorPanel, F, LocInput, Modal, 
 
 /**
  * Admin → Website → Homepage videos. Up to eight positions on the homepage (count from the server), each filled with a saved,
- * published video. Videos come from a link (YouTube, Vimeo, Facebook, direct .mp4/.webm) or an
+ * published video. Videos come from a link (YouTube, Vimeo, Facebook, ImageKit, Cloudinary, direct .mp4/.webm) or an
  * uploaded file (media library → object storage). Everything the homepage shows is read from
  * /api/home/videos, i.e. from what is saved here. Permission: content:write; uploading and
  * deleting stored files also need media:write (enforced by the API).
@@ -251,7 +251,7 @@ export function HomeVideosAdmin() {
             </Card>
           ) : null}
 
-          {!videos.length ? <EmptyState title="No videos yet" text="Add a YouTube, Vimeo or Facebook link, a direct video file link, or upload a video. Nothing appears on the homepage until you publish a video and place it in a position." /> : null}
+          {!videos.length ? <EmptyState title="No videos yet" text="Add a YouTube, Vimeo, Facebook, ImageKit or Cloudinary link, a direct video file link, or upload a video. Nothing appears on the homepage until you publish a video and place it in a position." /> : null}
         </>
       ) : null}
 
@@ -476,7 +476,7 @@ function VideoEditor({ draft, positions, occupied, onClose, onSaved }: { draft: 
           <div className="hv-admin__seg" role="radiogroup" aria-label="Video source">
             {(
               [
-                ['url', 'Video link (YouTube, Vimeo, Facebook, .mp4/.webm)'],
+                ['url', 'Video link (YouTube, Vimeo, Facebook, ImageKit, Cloudinary, .mp4/.webm)'],
                 ['upload', 'Upload a video file'],
               ] as const
             ).map(([k, label]) => (
@@ -536,13 +536,13 @@ function VideoEditor({ draft, positions, occupied, onClose, onSaved }: { draft: 
           hint={
             d.sourceType === 'url' && inspect?.ok && inspect.suggestedPoster && inspect.suggestedPoster !== d.posterUrl ? (
               <>
-                Shown before the video plays. Empty = the platform’s own thumbnail (YouTube/Vimeo) or the poster frame of an uploaded file.{' '}
+                Shown before the video plays. Empty = the platform’s own thumbnail (YouTube/Vimeo/ImageKit/Cloudinary) or a frame from the video itself.{' '}
                 <button type="button" className="btn btn--ghost btn--sm" onClick={() => setD((x) => ({ ...x, posterUrl: inspect.suggestedPoster, posterMediaId: null }))}>
                   Use the platform thumbnail
                 </button>
               </>
             ) : (
-              'Shown before the video plays. Empty = the platform’s own thumbnail (YouTube/Vimeo) or the poster frame of an uploaded file. Facebook videos have no automatic poster.'
+              'Shown before the video plays. Empty = the platform’s own thumbnail (YouTube/Vimeo/ImageKit/Cloudinary) or a frame from the video itself. Facebook videos have no automatic poster.'
             )
           }
         />

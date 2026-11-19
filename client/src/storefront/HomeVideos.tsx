@@ -149,6 +149,7 @@ function VideoCard({ video: v, index, active, onPlay }: { video: HomeVideoItem; 
   const description = pick(v.description, lang);
   const alt = pick(v.posterAlt, lang);
   const [posterFailed, setPosterFailed] = useState(false);
+  const [frameFailed, setFrameFailed] = useState(false);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const playerRef = useRef<HTMLIFrameElement & HTMLVideoElement>(null);
@@ -217,6 +218,9 @@ function VideoCard({ video: v, index, active, onPlay }: { video: HomeVideoItem; 
                 <img className="hv-card__backdrop" src={v.posterUrl} alt="" aria-hidden="true" loading="lazy" decoding="async" />
                 <img className="hv-card__poster" src={v.posterUrl} alt={alt.text} {...langAttrs(alt, lang)} loading="lazy" decoding="async" onError={() => setPosterFailed(true)} />
               </>
+            ) : v.fileUrl && !frameFailed ? (
+              // No poster for a direct video link: show a frame from the video itself (loads only its start).
+              <video className="hv-card__poster" src={`${v.fileUrl.split('#')[0]}#t=1`} muted playsInline preload="metadata" aria-hidden="true" tabIndex={-1} onError={() => setFrameFailed(true)} />
             ) : (
               <span className="hv-card__placeholder" aria-hidden="true" />
             )}

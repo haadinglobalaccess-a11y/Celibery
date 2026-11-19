@@ -60,6 +60,25 @@ describe('homepage showcase video links', () => {
     expect(providerPoster(ok('https://youtu.be/dQw4w9WgXcQ'))).toBe('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
   });
 
+  it('ImageKit and Cloudinary video links: playable as MP4 with an automatic poster', () => {
+    const ik = classifyShowcaseUrl('https://ik.imagekit.io/celibery/films/launch.mp4');
+    expect(ik).toMatchObject({ ok: true, source: { provider: 'file', canonicalUrl: 'https://ik.imagekit.io/celibery/films/launch.mp4' } });
+    if (ik.ok) expect(providerPoster(ik.source)).toBe('https://ik.imagekit.io/celibery/films/launch.mp4/ik-thumbnail.jpg?tr=so-1');
+
+    const ikMov = classifyShowcaseUrl('https://ik.imagekit.io/celibery/films/reel.mov');
+    expect(ikMov).toMatchObject({ ok: true, source: { provider: 'file', canonicalUrl: 'https://ik.imagekit.io/celibery/films/reel.mov?tr=f-mp4' } });
+    if (ikMov.ok) expect(providerPoster(ikMov.source)).toBe('https://ik.imagekit.io/celibery/films/reel.mov/ik-thumbnail.jpg?tr=so-1');
+
+    const cl = classifyShowcaseUrl('https://res.cloudinary.com/demo/video/upload/v17/promo.mov');
+    expect(cl).toMatchObject({ ok: true, source: { provider: 'file', canonicalUrl: 'https://res.cloudinary.com/demo/video/upload/v17/promo.mp4' } });
+    if (cl.ok) expect(providerPoster(cl.source)).toBe('https://res.cloudinary.com/demo/video/upload/so_1/v17/promo.jpg');
+
+    // other hosts: .mov is still refused (not every browser plays it), and no poster is guessed
+    expect(classifyShowcaseUrl('https://cdn.example.com/x.mov').ok).toBe(false);
+    const plain = classifyShowcaseUrl('https://cdn.example.com/films/launch.mp4');
+    if (plain.ok) expect(providerPoster(plain.source)).toBe('');
+  });
+
   it('the site policy allows exactly the official player frames', () => {
     expect(cspDirectives()['frame-src']).toEqual(['https://www.youtube-nocookie.com', 'https://player.vimeo.com', 'https://www.facebook.com']);
   });
