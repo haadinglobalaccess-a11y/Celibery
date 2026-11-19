@@ -86,6 +86,21 @@ async function lookupIp(ip: string): Promise<string | null> {
 
 type Req = Pick<Request, 'ip'> & { get(name: string): string | undefined };
 
+/**
+ * The visitor's address for choosing a DISPLAY currency: the first public address in
+ * X-Forwarded-For (the original client, as the hosting edge records it), else req.ip.
+ * Behind Railway, req.ip can be the platform's own edge (e.g. Singapore), which showed SGD to
+ * visitors from Pakistan. A client can forge this header, but that only changes the currency it is
+ * shown itself — it is never used for rate limits, sessions or anything else.
+ */
+export function visitorIp(req: Req): string | undefined {
+  const forwarded = (req.get('x-forwarded-for') ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return forwarded.find((ip) => /^[0-9a-f.:]+$/i.test(ip) && !isPrivateIp(ip)) ?? req.ip;
+}
+
 export async function detectCountry(req: Req, platform: { vercel?: boolean } = { vercel: Boolean(process.env.VERCEL) }): Promise<DetectedCountry> {
   if (platform.vercel) {
     const c = normaliseCountry(req.get('x-vercel-ip-country'));
@@ -96,8 +111,9 @@ export async function detectCountry(req: Req, platform: { vercel?: boolean } = {
     const c = normaliseCountry(req.get(header));
     if (c) return { country: c, source: 'header' };
   }
-  if (req.ip) {
-    const c = await lookupIp(req.ip);
+  const ip = visitorIp(req);
+  if (ip) {
+    const c = await lookupIp(ip);
     if (c) return { country: c, source: 'ip-lookup' };
   }
   if (!isProd) {
