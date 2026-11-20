@@ -177,7 +177,7 @@ export async function findMediaUsage(asset: { _id: unknown; url: string; posterU
   const inUrls = { $in: urls };
   const out: MediaUsage = [];
   const [products, categories, collections, banners, campaigns, settings, orders, homeVideos, reviews] = await Promise.all([
-    Product.find({ $or: [{ 'images.url': inUrls }, { 'images.mediaId': asset._id }, { 'images.variants.url': inUrls }, { 'packagingImages.url': inUrls }, { 'packagingImages.mediaId': asset._id }, { 'packagingImages.variants.url': inUrls }] }).select('sku name').limit(50).lean(),
+    Product.find({ $or: [{ 'images.url': inUrls }, { 'images.mediaId': asset._id }, { 'images.variants.url': inUrls }, { 'packagingImages.url': inUrls }, { 'packagingImages.mediaId': asset._id }, { 'packagingImages.variants.url': inUrls }, { 'videos.url': inUrls }, { 'videos.mediaId': asset._id }, { 'videos.posterUrl': inUrls }] }).select('sku name').limit(50).lean(),
     Category.find({ $or: [{ 'image.url': inUrls }, { 'image.mediaId': asset._id }] }).select('slug').lean(),
     ProductCollection.find({ $or: [{ 'image.url': inUrls }, { 'image.mediaId': asset._id }] }).select('slug').lean(),
     Banner.find({

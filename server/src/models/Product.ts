@@ -20,6 +20,23 @@ const ColorSchema = new Schema(
   { _id: false },
 );
 
+/**
+ * A product video shown in the product-page gallery next to the photos (Admin → Products → Videos).
+ * `url` is a YouTube / Vimeo / Facebook link, an ImageKit / Cloudinary link or a direct .mp4/.webm
+ * file (uploaded through the media library or linked); see lib/showcase-video.ts.
+ */
+const ProductVideoSchema = new Schema(
+  {
+    url: { type: String, required: true, trim: true, maxlength: 2000 },
+    /** Uploaded file (media library), when the video was uploaded rather than linked. */
+    mediaId: { type: Schema.Types.ObjectId, ref: 'MediaAsset' },
+    /** Still shown in the thumbnail strip and before playback; providers' own poster is used when empty. */
+    posterUrl: { type: String, default: '', trim: true, maxlength: 2000 },
+    title: { type: LocalizedSchema, default: () => ({}) },
+  },
+  { _id: false },
+);
+
 const BundleItemSchema = new Schema(
   {
     product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -41,6 +58,9 @@ const ProductSchema = new Schema(
     images: { type: [ImageSchema], default: [] },
     /** Packaging photos (box, contents, labels) shown after the product photos in the gallery. */
     packagingImages: { type: [ImageSchema], default: [] },
+    /** Product videos in the gallery; `videoPlacement` puts them right after the main photo or after all photos. */
+    videos: { type: [ProductVideoSchema], default: [] },
+    videoPlacement: { type: String, enum: ['after_main', 'after_photos'], default: 'after_main' },
     /** Selling price in halalas, VAT inclusive. */
     price: { type: Number, required: true, min: 0 },
     /** Optional original price in halalas, shown struck-through when higher than price. */

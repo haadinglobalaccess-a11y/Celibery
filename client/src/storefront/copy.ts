@@ -1,4 +1,5 @@
 import type { Lang } from '../lib/types';
+import { arCount, AR_PRODUCTS } from '../i18n/strings';
 
 /**
  * Presentation labels used only by the redesigned storefront sections (headings, CTA wording,
@@ -57,7 +58,7 @@ const copy = {
     universeEyebrow: 'منتجات سيليبري',
     universeLead: 'ست فئات، ومعيار جودة واحد.',
     exploreCategory: 'اكتشف',
-    flagshipEyebrow: 'منتج رئيسي',
+    flagshipEyebrow: 'المنتج الأبرز',
     discover: 'اكتشف المزيد',
     collectionEyebrow: 'المجموعة',
     spotlightEyebrow: 'فئة مميزة',
@@ -69,7 +70,7 @@ const copy = {
     storyEyebrow: 'قصتنا',
     closingEyebrow: 'ابقَ على اطلاع',
     closingCta: 'تصفح جميع المنتجات',
-    scenesTitle: 'صُمّمت لكل جزء من عالمك',
+    scenesTitle: 'مصممة لكل تفاصيل يومك',
     prev: 'السابق',
     next: 'التالي',
     overview: 'نظرة عامة',
@@ -77,10 +78,10 @@ const copy = {
     inTheBox: 'محتويات العلبة',
     keyFacts: 'باختصار',
     services: 'التوصيل والعناية',
-    bag: 'حقيبة التسوق',
-    items: (n: number) => (n === 1 ? 'منتج واحد' : `${n} منتجات`),
+    bag: 'سلة التسوق',
+    items: (n: number) => arCount(n, AR_PRODUCTS),
     saved: 'المنتجات المحفوظة',
-    savedCount: (n: number) => (n === 1 ? 'منتج محفوظ واحد' : `${n} منتجات محفوظة`),
+    savedCount: (n: number) => (n === 1 ? 'منتج محفوظ واحد' : n === 2 ? 'منتجان محفوظان' : `${arCount(n, AR_PRODUCTS)} محفوظة`),
     secureCheckout: 'دفع آمن',
     shopEyebrow: 'المتجر',
     categoryEyebrow: 'الفئة',
@@ -89,7 +90,7 @@ const copy = {
     browseCategories: 'تصفح الفئات',
     all: 'الكل',
     galleryShow: (name: string) => `عرض ${name}`,
-    galleryTapToAdd: 'اضغط على الصورة للإضافة إلى السلة',
+    galleryTapToAdd: 'اضغط على الصورة لإضافة المنتج إلى السلة',
     viewDetails: 'عرض التفاصيل',
     byCategory: 'حسب الفئة',
     viewAllIn: (name: string) => `عرض كل ${name}`,

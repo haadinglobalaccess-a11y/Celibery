@@ -21,6 +21,7 @@ import { storeCopy } from '../storefront/copy';
 import { Kinetic, TheatreStage } from '../storefront/motion';
 import { ProductRail } from '../storefront/ProductRail';
 import { flyToCart, InteractiveProductGallery } from '../three-d';
+import type { GalleryItem } from '../three-d/InteractiveProductGallery';
 
 export default function ProductPage() {
   const { slug } = useParams();
@@ -79,9 +80,13 @@ export default function ProductPage() {
 
   const category = typeof data.category === 'object' ? data.category : undefined;
   const productImages = data.images?.length ? data.images : [{ url: '', alt: data.name }];
-  // Packaging photos follow the product photos in the same gallery (marked "Packaging").
-  const packaging = (data.packagingImages ?? []).filter((i) => i?.url);
-  const images = [...productImages, ...packaging];
+  // One gallery: product photos, the product videos (after the main photo unless the admin placed
+  // them after all photos), then the packaging photos (marked "Packaging").
+  const photos: GalleryItem[] = productImages.map((image) => ({ kind: 'image', image }));
+  const videos: GalleryItem[] = (data.videos ?? []).filter((v) => v.embedUrl || v.fileUrl).map((video) => ({ kind: 'video', video }));
+  const packaging: GalleryItem[] = (data.packagingImages ?? []).filter((i) => i?.url).map((image) => ({ kind: 'image', image, packaging: true }));
+  const at = data.videoPlacement === 'after_photos' ? photos.length : Math.min(1, photos.length);
+  const galleryItems = [...photos.slice(0, at), ...videos, ...photos.slice(at), ...packaging];
   const maxQ = settings?.commerce?.maxQuantityPerItem ?? 10;
   const add = () => {
     cart.add(data, qty);
@@ -112,7 +117,7 @@ export default function ProductPage() {
           <div className="pdp cx-pdp__grid">
             <div className="cx-pdp__stage">
               <span className="cx-pdp__halo" aria-hidden="true" />
-              <InteractiveProductGallery key={slug} images={images} name={name} category={category?.slug} stageRef={stageRef} packagingStart={productImages.length} />
+              <InteractiveProductGallery key={slug} items={galleryItems} name={name} category={category?.slug} stageRef={stageRef} />
             </div>
 
             <div className="pdp__info cx-pdp__info">

@@ -52,7 +52,14 @@ export type ProductDetail = ProductCardData & {
   seo?: { title?: Localized; description?: Localized };
   /** Packaging photos (box, contents), shown after the product photos. */
   packagingImages?: Image[];
+  /** Product videos for the gallery (Admin → Products → Videos). */
+  videos?: ProductVideo[];
+  /** Where the videos sit in the gallery: right after the main photo, or after all product photos. */
+  videoPlacement?: 'after_main' | 'after_photos';
 };
+
+/** A product video as the gallery plays it: an official player (iframe) or a file for <video>. */
+export type ProductVideo = { provider: 'youtube' | 'vimeo' | 'facebook' | 'file'; embedUrl?: string; fileUrl?: string; poster: string; title: Localized };
 
 /** One product-page trust benefit (Admin → Website content → Product page trust). */
 export type TrustItem = { icon: 'shield' | 'return' | 'truck' | 'support'; title: Localized; description?: Localized; link?: string; visible?: boolean };
