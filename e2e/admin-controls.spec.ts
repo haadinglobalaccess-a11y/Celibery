@@ -134,15 +134,15 @@ test.describe.serial('admin dashboard controls', () => {
       const bar = v.p.locator('.announce');
       await expect(bar).toContainText('Free delivery on orders from SAR 300.00');
       await expect(bar).not.toContainText('Free delivery across Saudi Arabia');
-      await expect(v.p.locator('.cx-why__list')).toContainText('Shipping & delivery');
-      await expect(v.p.locator('.cx-why__list')).not.toContainText('Free delivery to every region');
+      await expect(v.p.locator('.cx-why__grid')).toContainText('Shipping & delivery');
+      await expect(v.p.locator('.cx-why__grid')).not.toContainText('Free delivery to every region');
       await v.close();
     } finally {
       expect((await set({ freeDelivery: true, deliveryFee: 0, freeDeliveryThreshold: null })).status()).toBe(200);
     }
     const after = await visit();
     await expect(after.p.locator('.announce')).toContainText('Free delivery across Saudi Arabia');
-    await expect(after.p.locator('.cx-why__list')).toContainText('Free delivery to every region');
+    await expect(after.p.locator('.cx-why__grid')).toContainText('Free delivery to every region');
     await after.close();
   });
 

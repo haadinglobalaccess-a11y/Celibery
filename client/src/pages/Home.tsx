@@ -9,6 +9,7 @@ import { BrandStory, CampaignGallery, CategoryRange, CategoryUniverse, ClosingCa
 import { TheatreStage } from '../storefront/motion';
 import { HomeFaq } from '../storefront/Faq';
 import { HomeVideos } from '../storefront/HomeVideos';
+import { TrustStrip } from '../storefront/TrustStrip';
 import { Ambient, CinematicHero } from '../three-d';
 
 function HomeSkeleton() {
@@ -75,6 +76,7 @@ export default function Home() {
   return (
     <div className="cx-home">
       {data.hero.enabled !== false ? <CinematicHero data={data} /> : null}
+      <TrustStrip />
 
       {/* The motion theatre is scoped below the Hero, so the protected Hero DOM is never observed. */}
       <TheatreStage className="cx-stage">

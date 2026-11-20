@@ -1,0 +1,316 @@
+/* ==========================================================================
+   Premium finish, modelled on the UGREEN storefront language: a quiet service
+   strip under the hero, a compact category lineup, calm product cards (no
+   internal codes, small square badges, one surface) and service promises as
+   clean tiles. Loaded last, so it refines the earlier layers without
+   rewriting them.
+   ========================================================================== */
+
+/* ---------- Service strip (TrustStrip) ---------- */
+.cx-trust {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border-block-end: 1px solid var(--line);
+  color: var(--ink);
+  /* Soft fade at both ends, so items drift in and out instead of being cut. */
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.cx-trust__track {
+  display: flex;
+  width: max-content;
+  animation: cx-trust-drift 48s linear infinite;
+}
+[dir='rtl'] .cx-trust__track {
+  animation-name: cx-trust-drift-rtl;
+}
+.cx-trust:hover .cx-trust__track {
+  animation-play-state: paused;
+}
+.cx-trust__row {
+  display: flex;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cx-trust__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding-inline: clamp(24px, 3.4vw, 48px);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+html[lang='ar'] .cx-trust__item {
+  letter-spacing: 0;
+}
+.cx-trust__item .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-text);
+}
+@keyframes cx-trust-drift {
+  to { transform: translateX(-25%); }
+}
+@keyframes cx-trust-drift-rtl {
+  to { transform: translateX(25%); }
+}
+/* Reduced motion: one still, centred row that wraps when needed. */
+@media (prefers-reduced-motion: reduce) {
+  .cx-trust { mask-image: none; }
+  .cx-trust__track {
+    width: auto;
+    justify-content: center;
+    animation: none;
+  }
+  .cx-trust__row { flex-wrap: wrap; justify-content: center; }
+  .cx-trust__row[aria-hidden] { display: none; }
+}
+@media (max-width: 639px) {
+  .cx-trust__item {
+    height: 44px;
+    font-size: 0.8125rem;
+  }
+}
+
+/* ---------- Category lineup: one compact row (UGREEN "Explore the lineup") ---------- */
+.storefront .cx-lineup {
+  background: var(--paper);
+}
+.cx-lineup .cx-lineup__track {
+  grid-template-columns: repeat(var(--lineup-cols, 6), minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 20px);
+}
+.cx-lineup .cx-lineup__card {
+  gap: 14px;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  text-align: center;
+}
+.cx-lineup .cx-lineup__media {
+  display: block;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  transition: box-shadow var(--dur-slow) var(--ease-out);
+}
+.cx-lineup .cx-lineup__media .cx-art {
+  aspect-ratio: 1;
+  border-radius: inherit;
+  background: var(--surface-2);
+}
+.cx-lineup .cx-lineup__copy {
+  justify-content: center;
+  padding-inline: 0;
+}
+.cx-lineup .cx-lineup__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.cx-lineup .cx-lineup__go {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cx-lineup .cx-lineup__card:hover {
+    box-shadow: none;
+  }
+  .cx-lineup .cx-lineup__card:hover .cx-lineup__media {
+    box-shadow: var(--shadow-md);
+  }
+  .cx-lineup .cx-lineup__card:hover .cx-lineup__name {
+    color: var(--accent-text);
+  }
+}
+@media (max-width: 1023px) {
+  .cx-lineup .cx-lineup__track {
+    --lineup-cols: 3;
+  }
+}
+@media (max-width: 639px) {
+  .cx-lineup .cx-lineup__card {
+    flex: 0 0 38%;
+    border-radius: 0;
+  }
+  .cx-lineup .cx-lineup__name {
+    font-size: 0.875rem;
+  }
+}
+
+/* ---------- Product cards: one calm surface ---------- */
+/* The photo frame shares the card's grey, and clips its artwork to the rounded corners (before, a dark
+   matte showed through at the four corners of square artwork). */
+.storefront .cx-card:not(.cx-card--dark) .cx-card__media {
+  overflow: hidden;
+  background: var(--surface-2);
+  isolation: isolate;
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__media .cx-art {
+  border-radius: inherit;
+}
+.storefront .cx-card .cx-card__badges .cx-tag {
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  box-shadow: none;
+}
+.storefront .cx-card .cx-card__badges .cx-tag--sample {
+  background: rgb(255 255 255 / 0.85);
+  color: var(--muted);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__wish {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  background: rgb(255 255 255 / 0.85);
+  box-shadow: none;
+  backdrop-filter: blur(6px);
+}
+.storefront .cx-card__meta {
+  letter-spacing: 0.06em;
+}
+.storefront .cx-card__title {
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+.storefront .cx-card .price__now {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__add {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .storefront .cx-card:not(.cx-card--dark) .cx-art > img {
+    transition: transform 900ms var(--ease-out);
+  }
+  .storefront .cx-card:not(.cx-card--dark):hover .cx-art > img {
+    transform: scale(1.04);
+  }
+}
+@media (max-width: 639px) {
+  .storefront .cx-card .cx-card__badges .cx-tag {
+    height: 20px;
+    padding: 0 6px;
+    font-size: 0.625rem;
+  }
+  .storefront .cx-card__title {
+    font-size: 0.875rem;
+  }
+  .storefront .cx-card .price__now {
+    font-size: 1rem;
+  }
+}
+
+/* ---------- Why CELIBERY: service tiles (UGREEN "Driven by Innovation") ---------- */
+.cx-why--tiles {
+  background: var(--surface);
+}
+.cx-why--tiles .cx-head {
+  margin-bottom: clamp(28px, 3.4vw, 48px);
+}
+.cx-why__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--why-cols, 4), minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 20px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cx-why__grid[data-count='3'] { --why-cols: 3; }
+.cx-why__grid[data-count='2'] { --why-cols: 2; }
+.cx-why__grid[data-count='1'] { --why-cols: 1; max-width: 480px; margin-inline: auto; }
+.cx-why__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: clamp(24px, 2.4vw, 36px);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  transition:
+    box-shadow var(--dur-slow) var(--ease-out),
+    translate var(--dur-slow) var(--ease-out);
+}
+.cx-why__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.cx-why__icon .icon {
+  width: 24px;
+  height: 24px;
+}
+.cx-why__tile h3 {
+  margin: 0;
+  font-size: clamp(1.1875rem, 1rem + 0.6vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+html[lang='ar'] .cx-why__tile h3 {
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+.cx-why__tile p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.cx-why__tile .pay-brand-logos {
+  margin-top: 6px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cx-why__tile:hover {
+    translate: 0 -4px;
+    box-shadow: var(--shadow-md);
+  }
+}
+@media (max-width: 1023px) {
+  .cx-why__grid { --why-cols: 2; }
+  .cx-why__grid[data-count='1'] { --why-cols: 1; }
+}
+@media (max-width: 639px) {
+  .cx-why__grid,
+  .cx-why__grid[data-count] { --why-cols: 1; }
+  .cx-why__tile {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 14px;
+    padding: 20px;
+  }
+  .cx-why__icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0;
+  }
+  .cx-why__tile h3 {
+    flex: 1;
+  }
+  .cx-why__tile p,
+  .cx-why__tile .pay-brand-logos {
+    flex-basis: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-why__tile,
+  .cx-why__tile:hover { translate: none; }
+}

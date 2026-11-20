@@ -2,18 +2,17 @@ import { useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArtFrame } from '../components/ArtFrame';
 import { ProductCard } from '../components/ProductCard';
-import { InlineArrow } from '../components/Icon';
+import { Icon, InlineArrow } from '../components/Icon';
 import { PayLogos, Price } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { post } from '../lib/api';
 import { errorText } from '../lib/apiErrors';
 import { L, placeholderFor } from '../lib/format';
-import { useMoney } from '../state/currency';
 import { BackgroundVideo, cloudinarySrcSet, responsiveImg, useMediaQuery } from '../lib/media';
 import { prefersReducedMotion } from '../lib/motion';
 import type { Category, HomeData, ProductCardData } from '../lib/types';
-import { useSettings } from '../state/settings';
 import { useToast } from '../state/toast';
+import { useServicePromises } from './TrustStrip';
 import { bannerVideo, useLinkFor } from '../three-d';
 import { storeCopy } from './copy';
 import { Kinetic } from './motion';
@@ -376,52 +375,25 @@ export function Ecosystem({ data }: { data: HomeData }) {
 /* ───────────────────────── 06 · Why CELIBERY — drawn hairlines ───────────────────────── */
 export function WhyCelibery() {
   const { t, lang } = useI18n();
-  const money = useMoney();
   const c = storeCopy(lang);
-  const settings = useSettings();
-  const commerce = settings?.commerce;
-  // Every promise follows Admin → Settings: nothing is claimed that the store cannot deliver.
-  const [delivery, warranty, payment, support] = t.home.why;
-  const deliveryItem = !commerce || commerce.freeDelivery !== false
-    ? delivery
-    : {
-        t: t.product.shipping,
-        d: commerce.freeDeliveryThreshold
-          ? t.checkout.freeFrom(money(commerce.freeDeliveryThreshold))
-          : L(commerce.estimatedDelivery, lang) || (commerce.courierName ? t.product.deliveryBy(commerce.courierName) : ''),
-      };
-  const pay = settings?.payments;
-  const methods = pay ? (['card', 'applepay', 'stcpay', 'tabby', 'cod'] as const).filter((m) => pay[m]).map((m) => t.home.payNames[m]) : [];
-  const why: { key: string; t: string; d: string }[] = [
-    { key: 'delivery', ...deliveryItem },
-    ...(commerce?.warrantyEnabled && commerce.warrantyMonths ? [{ key: 'warranty', t: t.service.warranty(commerce.warrantyMonths), d: warranty.d }] : []),
-    ...(methods.length ? [{ key: 'payment', t: payment.t, d: `${methods.join(t.home.listJoin)}.` }] : []),
-    ...(settings?.business?.whatsappNumber ? [{ key: 'support', ...support }] : []),
-  ];
+  const why = useServicePromises();
+  if (!why.length) return null;
   return (
-    <section className="cx-section cx-why" aria-labelledby="cx-why-title">
-      <div className="container cx-why__inner">
-        <div className="cx-why__intro">
-          <span className="cx-eyebrow" data-fx="rise">
-            {c.whyEyebrow}
-          </span>
-          <Kinetic id="cx-why-title" text={t.home.whyTitle} className="cx-display cx-display--xl" />
-          <span className="cx-why__mark ltr" aria-hidden="true" data-fx="chrome">
-            C
-          </span>
-        </div>
-        <ol className="cx-why__list">
+    <section className="cx-section cx-why cx-why--tiles" aria-labelledby="cx-why-title">
+      <div className="container">
+        <Head id="cx-why-title" eyebrow={c.whyEyebrow} title={t.home.whyTitle} center />
+        <ul className="cx-why__grid" data-count={why.length}>
           {why.map((w, i) => (
-            <li key={w.key} className="cx-why__item" data-fx="line" style={{ '--i': i } as CSSProperties}>
-              <span className="cx-why__num ltr">{String(i + 1).padStart(2, '0')}</span>
-              <div>
-                <h3>{w.t}</h3>
-                <p>{w.d}</p>
-                {w.key === 'payment' ? <PayLogos /> : null}
-              </div>
+            <li key={w.key} className="cx-why__tile" data-fx="rise" style={{ '--d': `${i * 90}ms` } as CSSProperties}>
+              <span className="cx-why__icon" aria-hidden="true">
+                <Icon name={w.icon} />
+              </span>
+              <h3>{w.t}</h3>
+              <p>{w.d}</p>
+              {w.key === 'payment' ? <PayLogos /> : null}
             </li>
           ))}
-        </ol>
+        </ul>
       </div>
     </section>
   );

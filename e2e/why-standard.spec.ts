@@ -1,9 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
- * "The CELIBERY standard" / "Why CELIBERY" section entrance: eyebrow reveal, headline fade, staggered
- * reasons — replayed on every entry (down and up), never restarted while on screen, off for reduced
- * motion. Runs on desktop and mobile.
+ * "The CELIBERY standard" / "Why CELIBERY" section: service promises as tiles (UGREEN style), with a
+ * calm headline fade and staggered tiles — replayed on every entry (down and up), never restarted while
+ * on screen, off for reduced motion. Runs on desktop and mobile.
  */
 const settle = (page: Page) => page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
 async function scrollToY(page: Page, y: number) {
@@ -26,21 +26,25 @@ test('the section keeps its headings and plays the premium entrance on every ent
   await page.goto('/en');
   await page.waitForLoadState('networkidle');
   const section = page.locator('section.cx-why');
-  const eyebrow = section.locator('.cx-why__intro .cx-eyebrow');
+  const eyebrow = section.locator('.cx-head .cx-eyebrow');
   const heading = section.locator('#cx-why-title');
-  const items = section.locator('.cx-why__item');
+  const items = section.locator('.cx-why__tile');
+  const head = section.locator('.cx-head');
 
-  // Headings unchanged: the same text, order and elements as before.
+  // Same headings; each promise is a tile with its icon, title and text.
   await expect(eyebrow).toHaveText('The CELIBERY standard');
   await expect(heading).toHaveAttribute('aria-label', 'Why CELIBERY');
   await expect(heading).toHaveText('Why CELIBERY');
-  expect(await section.locator('.cx-why__intro > *').evaluateAll((els) => els.map((e) => e.className.split(' ')[0]))).toEqual(['cx-eyebrow', 'cx-display', 'cx-why__mark']);
-
-  // Reasons are staggered one after another (hairline and content delays grow by 140ms per item).
   const n = await items.count();
   expect(n).toBeGreaterThan(1);
-  const delays = await items.evaluateAll((els) => els.map((e) => getComputedStyle(e).getPropertyValue('--i').trim()));
-  expect(delays).toEqual([...Array(n).keys()].map(String));
+  for (let i = 0; i < n; i++) {
+    await expect(items.nth(i).locator('.cx-why__icon svg')).toHaveCount(1);
+    await expect(items.nth(i).locator('h3')).not.toBeEmpty();
+  }
+
+  // Tiles are staggered one after another (90ms per tile).
+  const delays = await items.evaluateAll((els) => els.map((e) => getComputedStyle(e).getPropertyValue('--d').trim()));
+  expect(delays).toEqual([...Array(n).keys()].map((i) => `${i * 90}ms`));
 
   for (const [label, away] of [['from above', () => scrollToY(page, 0)], ['from below', () => bottom(page)]] as const) {
     for (let round = 0; round < 2; round++) {
@@ -48,9 +52,9 @@ test('the section keeps its headings and plays the premium entrance on every ent
       await expect(eyebrow, label).not.toHaveClass(/fx-in/);
       await expect(heading, label).not.toHaveClass(/fx-in/);
       expect(await heading.evaluate((e) => getComputedStyle(e).opacity), label).toBe('0'); // re-armed, out of sight
-      await centre(page, section.locator('.cx-why__intro'));
-      // Eyebrow reveal and headline fade start fresh on this entry.
-      await expect.poll(async () => (await anims(eyebrow)).map((a) => a.name), { message: label }).toContain('cx-standard-reveal');
+      await centre(page, head);
+      // The headline fade starts fresh on this entry.
+      await expect.poll(async () => (await anims(heading)).map((a) => a.name), { message: label }).toContain('cx-standard-fade');
       const h = await anims(heading);
       expect(h.map((a) => a.name), label).toContain('cx-standard-fade');
       expect(Math.min(...h.map((a) => a.t)), label).toBeLessThan(700);
@@ -59,14 +63,12 @@ test('the section keeps its headings and plays the premium entrance on every ent
     }
   }
 
-  // Each reason that is playing waits for the one before it (on phones only some are on screen at once).
+  // Tiles enter as the section is reached.
   await centre(page, items.first());
-  const lineDelays = await items.evaluateAll((els) => els.filter((e) => e.classList.contains('fx-in')).map((e) => parseFloat(getComputedStyle(e, '::before').animationDelay)));
-  expect(lineDelays.length).toBeGreaterThan(1);
-  for (let i = 1; i < lineDelays.length; i++) expect(lineDelays[i]).toBeGreaterThan(lineDelays[i - 1]);
+  await expect(items.first()).toHaveClass(/fx-in/);
 
   // While the section stays on screen it never restarts: small scrolls do not touch the classes.
-  await centre(page, section.locator('.cx-why__intro'));
+  await centre(page, head);
   await page.waitForTimeout(1800); // entrance finished
   // Watch every animated element that stays fully on screen during the small scrolls below (on phones
   // the section is taller than the screen, so a reason at the edge may legitimately enter for the first time).
@@ -98,6 +100,7 @@ test.describe('reduced motion', () => {
     await centre(page, section);
     expect(await section.evaluate((s) => s.getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length)).toBe(0);
     expect(await section.locator('#cx-why-title').evaluate((e) => getComputedStyle(e).opacity)).toBe('1');
-    expect(await section.locator('.cx-why__intro .cx-eyebrow').evaluate((e) => getComputedStyle(e).opacity)).toBe('1');
+    expect(await section.locator('.cx-head .cx-eyebrow').evaluate((e) => getComputedStyle(e).opacity)).toBe('1');
+    expect(await section.locator('.cx-why__tile').first().evaluate((e) => getComputedStyle(e).opacity)).toBe('1');
   });
 });
