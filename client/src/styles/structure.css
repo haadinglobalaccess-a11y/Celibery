@@ -489,36 +489,180 @@ html[lang='ar'] .cx-range__name {
   }
 }
 
-/* ---------- Product page: vertical thumbnail rail (large screens) ----------
-   The gallery's behaviour (image switching, zoom, packaging badge) is untouched; only the
-   thumbnails move from under the stage to a rail on its start side (right side in Arabic). */
-@media (min-width: 1200px) {
-  .cx-pdp .gallery--3d:has(> .gallery__thumbs) {
-    display: grid;
-    grid-template-columns: 76px minmax(0, 1fr);
-    align-items: start;
-    gap: 16px;
-  }
-  .cx-pdp .gallery--3d:has(> .gallery__thumbs) > .gallery__main {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .cx-pdp .gallery--3d > .gallery__thumbs {
-    grid-column: 1;
-    grid-row: 1;
-    flex-direction: column;
-    flex-wrap: nowrap;
+/* ---------- Product page gallery: main frame + thumbnail strip underneath (photos and videos) ----------
+   Hovering a thumbnail (mouse) or clicking/tapping it brings it into the main frame. The strip scrolls
+   sideways when the admin adds more items than fit; it is centred while everything fits. */
+.cx-pdp .gallery__thumbs {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: safe center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 4px 2px 6px; /* room for the lift and focus ring */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.cx-pdp .gallery__thumbs::-webkit-scrollbar {
+  display: none;
+}
+.cx-pdp .gallery__thumbs button {
+  position: relative;
+  flex: none;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  background: var(--surface);
+  opacity: 1;
+  box-shadow: inset 0 0 0 1px var(--cx-line);
+  cursor: pointer;
+  transition:
+    box-shadow 220ms var(--cx-ease),
+    transform 220ms var(--cx-ease);
+}
+.cx-pdp .gallery__thumbs button:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cx-ink) 45%, transparent), 0 10px 22px -16px rgb(0 0 0 / 0.45);
+}
+.cx-pdp .gallery__thumbs button[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--cx-ink), 0 10px 22px -16px rgb(0 0 0 / 0.45);
+}
+.cx-pdp .gallery__thumbs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.cx-pdp .gallery__thumbs button[data-kind='video'] {
+  background: #0d0f12;
+}
+.cx-pdp .gallery__thumbs button[data-kind='video'] img {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  object-fit: cover;
+  mix-blend-mode: normal;
+}
+.gallery__thumb-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0) 30%, rgb(0 0 0 / 0.35));
+}
+.gallery__thumb-play .icon {
+  width: 30px;
+  height: 30px;
+  padding: 7px 6px 7px 8px; /* optical centre of the triangle */
+  border-radius: 50%;
+  color: #111;
+  background: rgb(255 255 255 / 0.94);
+  stroke-width: 0;
+}
+@media (max-width: 639px) {
+  .cx-pdp .gallery__thumbs {
     justify-content: flex-start;
-    align-self: stretch;
     gap: 10px;
-    margin-top: 0;
-    padding: 6px 4px; /* room for the active thumbnail's lift and focus ring */
-    max-height: 100%;
-    overflow-y: auto;
-    scrollbar-width: thin;
   }
-  .cx-pdp .gallery--3d > .gallery__thumbs button {
-    flex: none;
+  .cx-pdp .gallery__thumbs button {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+  }
+}
+
+/* Video in the main frame: a dark screening stage, no tilt or zoom, poster with a play button. */
+.gallery--3d .gallery__main.is-video {
+  transform: none;
+  cursor: auto;
+  background: #0d0f12;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.cx-pdp .gallery__main.is-video .gallery__frame {
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  mix-blend-mode: normal;
+}
+.cx-pdp .gallery__main.is-video img,
+.gallery--3d .gallery__main.is-video .gallery__frame img {
+  translate: none;
+  object-fit: cover;
+  mix-blend-mode: normal;
+}
+.gallery__video,
+.gallery__poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.gallery__video {
+  object-fit: contain;
+  background: #000;
+}
+.gallery__poster {
+  padding: 0;
+  background: #0d0f12;
+  cursor: pointer;
+}
+.gallery__poster img {
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+  transition:
+    opacity 400ms var(--cx-ease),
+    scale 900ms var(--cx-ease);
+}
+.gallery__poster:hover img {
+  opacity: 1;
+  scale: 1.03;
+}
+.gallery__play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  color: #111;
+  background: rgb(255 255 255 / 0.95);
+  box-shadow:
+    0 0 0 10px rgb(255 255 255 / 0.16),
+    0 22px 44px -18px rgb(0 0 0 / 0.7);
+  transition: scale 300ms var(--cx-ease), box-shadow 300ms var(--cx-ease);
+}
+.gallery__play .icon {
+  width: 30px;
+  height: 30px;
+  margin-left: 4px; /* optical centre; the triangle points the same way in both languages */
+  stroke-width: 0;
+}
+.gallery__poster:hover .gallery__play,
+.gallery__poster:focus-visible .gallery__play {
+  scale: 1.07;
+  box-shadow:
+    0 0 0 14px rgb(255 255 255 / 0.2),
+    0 22px 44px -18px rgb(0 0 0 / 0.7);
+}
+.gallery__poster:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+.gallery--3d .gallery__main.is-video .gallery__count {
+  z-index: 4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gallery__poster img,
+  .gallery__play,
+  .cx-pdp .gallery__thumbs button {
+    transition: none;
   }
 }
 

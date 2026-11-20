@@ -497,6 +497,70 @@ export function MediaField({
 }
 
 // ---------------------------------------------------------------------------------------------
+// Product videos — shown in the product-page gallery next to the photos
+// ---------------------------------------------------------------------------------------------
+
+export type ProductVideoInput = { url: string; mediaId?: string | null; posterUrl: string; title: Localized };
+
+/**
+ * Product-page videos: each one a link (YouTube, Vimeo, Facebook, ImageKit / Cloudinary, .mp4/.webm)
+ * or an upload from the media library, with an optional poster and title. Order = order in the gallery.
+ */
+export function ProductVideos({ videos, onChange, max = 6 }: { videos: ProductVideoInput[]; onChange: (next: ProductVideoInput[]) => void; max?: number }) {
+  const set = (i: number, patch: Partial<ProductVideoInput>) => onChange(videos.map((v, j) => (j === i ? { ...v, ...patch } : v)));
+  const move = (from: number, to: number) => {
+    if (to < 0 || to >= videos.length) return;
+    const next = [...videos];
+    const [x] = next.splice(from, 1);
+    next.splice(to, 0, x);
+    onChange(next);
+  };
+  return (
+    <div className="product-videos" data-testid="product-videos">
+      {videos.map((v, i) => (
+        <div key={i} className="product-videos__item" style={{ borderTop: i ? '1px solid var(--line)' : undefined, paddingTop: i ? 16 : 0, marginTop: i ? 16 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+            <strong>Video {i + 1}</strong>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button type="button" className="icon-btn" aria-label={`Move video ${i + 1} earlier`} disabled={i === 0} onClick={() => move(i, i - 1)}>
+                ‹
+              </button>
+              <button type="button" className="icon-btn" aria-label={`Move video ${i + 1} later`} disabled={i === videos.length - 1} onClick={() => move(i, i + 1)}>
+                ›
+              </button>
+              <button type="button" className="btn btn--ghost btn--sm danger" onClick={() => window.confirm('Remove this video from the product? (An uploaded file stays in the media library.)') && onChange(videos.filter((_, j) => j !== i))}>
+                Remove
+              </button>
+            </div>
+          </div>
+          <div className="form-grid form-grid--2">
+            <MediaField
+              label="Video"
+              kind="video"
+              value={v.url}
+              poster={v.posterUrl}
+              hint="YouTube, Vimeo or Facebook video link, an ImageKit / Cloudinary link, or a direct .mp4 / .webm file — or upload an MP4."
+              onChange={(url, asset) => set(i, { url, mediaId: asset?._id || null, ...(asset?.posterUrl && !v.posterUrl ? { posterUrl: asset.posterUrl } : {}) })}
+            />
+            <MediaField label="Poster (thumbnail)" kind="image" value={v.posterUrl} onChange={(posterUrl) => set(i, { posterUrl })} hint="Shown in the thumbnail strip and before the video plays. Leave empty to use the YouTube thumbnail (uploaded videos get one automatically)." />
+            <LocInput label="Title (optional — read out by screen readers)" value={v.title} onChange={(title) => set(i, { title })} />
+          </div>
+        </div>
+      ))}
+      {videos.length < max ? (
+        <button type="button" className="btn btn--outline btn--sm" style={{ marginTop: videos.length ? 16 : 0 }} onClick={() => onChange([...videos, { url: '', mediaId: null, posterUrl: '', title: { ...emptyL } }])}>
+          + Add video
+        </button>
+      ) : (
+        <p className="muted" style={{ fontSize: 13, marginTop: 12 }}>
+          A product can have up to {max} videos.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
 // Product gallery — multiple images, primary, reorder, replace, remove, alt text
 // ---------------------------------------------------------------------------------------------
 

@@ -8,6 +8,26 @@ import type { ProductListQuery } from './catalog.schemas';
 import { availablePaymentMethods } from '../payments/payment.service';
 import { homepageFaq } from '../faq/faq.service';
 import { cached, keepWarm } from '../../lib/public-cache';
+import { classifyShowcaseUrl, embedUrlFor, providerPoster } from '../../lib/showcase-video';
+
+type StoredVideo = { url: string; posterUrl?: string; title?: { ar?: string; en?: string } };
+/**
+ * Product videos as the gallery plays them: an iframe player URL (YouTube, Vimeo, Facebook) or a
+ * file for <video>, plus a still for the thumbnail. Links that no longer classify are left out.
+ */
+export function publicProductVideos(videos: StoredVideo[] | undefined) {
+  return (videos ?? []).flatMap((v) => {
+    const r = classifyShowcaseUrl(v.url);
+    if (!r.ok) return [];
+    const embedUrl = embedUrlFor(r.source);
+    return [{
+      provider: r.source.provider,
+      ...(embedUrl ? { embedUrl } : { fileUrl: r.source.canonicalUrl }),
+      poster: v.posterUrl || providerPoster(r.source),
+      title: v.title ?? { ar: '', en: '' },
+    }];
+  });
+}
 
 /**
  * Store settings for PUBLIC catalogue reads (display thresholds, delivery text, warranty), from the
@@ -171,7 +191,7 @@ export const getProduct = (slug: string) => cached(`product:${slug}`, () => load
 async function loadProduct(slug: string) {
   const settings = await cachedSettings();
   const p = await Product.findOne({ slug, status: 'active' })
-    .select(PUBLIC_PRODUCT_FIELDS + ' description specs warrantyMonths bundleItems related seo packagingImages availableFrom availableUntil')
+    .select(PUBLIC_PRODUCT_FIELDS + ' description specs warrantyMonths bundleItems related seo packagingImages videos videoPlacement availableFrom availableUntil')
     .populate('category', 'slug name')
     .lean();
   if (!p) throw notFound('Product');
@@ -200,6 +220,8 @@ async function loadProduct(slug: string) {
   const { related: _r, bundleItems: bi, ...rest } = p as unknown as LeanProduct & { related: unknown; bundleItems: { product: Types.ObjectId; quantity: number }[] };
   return {
     ...toPublicProduct(rest as LeanProduct, low),
+    videos: publicProductVideos((p as unknown as { videos?: StoredVideo[] }).videos),
+    videoPlacement: (p as unknown as { videoPlacement?: string }).videoPlacement === 'after_photos' ? 'after_photos' : 'after_main',
     warrantyMonths,
     bundleContents: (bi ?? []).map((b) => {
       const x = bundleItems.find((y) => String(y._id) === String(b.product));

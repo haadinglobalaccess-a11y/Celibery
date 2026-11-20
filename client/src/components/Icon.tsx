@@ -47,6 +47,7 @@ const paths: Record<string, JSX.Element> = {
   ),
   chat: <path d="M4 20l1.5-4A8 8 0 1 1 9 19.3L4 20Z" />,
   chevron: <path d="m9 6 6 6-6 6" />,
+  play: <path d="M8.5 5.75v12.5a.6.6 0 0 0 .9.52l10.1-6.25a.6.6 0 0 0 0-1.04L9.4 5.23a.6.6 0 0 0-.9.52Z" fill="currentColor" />,
   chevronDown: <path d="m6.75 9.5 5.25 5.25 5.25-5.25" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,

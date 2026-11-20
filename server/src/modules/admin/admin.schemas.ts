@@ -3,6 +3,7 @@ import { FILTER_KEYS } from '../../models/Category';
 import { CONNECTORS } from '../../models/Product';
 import { PERMISSIONS } from '../../lib/permissions';
 import { cleanLocLine, cleanLocRich, hasReplacementChar, repairMojibake } from '../../lib/text';
+import { classifyShowcaseUrl } from '../../lib/showcase-video';
 
 export const objectId = z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id');
 export const idParam = z.object({ id: objectId });
@@ -40,6 +41,16 @@ const image = z.object({
   width: z.number().int().min(1).max(20000).nullable().optional(),
   height: z.number().int().min(1).max(20000).nullable().optional(),
 });
+/** Product-page video: any link the homepage video showcase accepts (lib/showcase-video.ts). */
+const productVideo = z.object({
+  url: z.string().trim().max(2000).superRefine((v, ctx) => {
+    const r = classifyShowcaseUrl(v);
+    if (!r.ok) ctx.addIssue({ code: 'custom', message: r.reason });
+  }),
+  mediaId: z.string().regex(/^[a-f0-9]{24}$/i).nullable().optional(),
+  posterUrl: url.default(''),
+  title: localizedShort.default({ ar: '', en: '' }),
+});
 const sar = z.number().min(0).max(1_000_000); // input in SAR, stored in halalas
 const hex = z.string().trim().regex(/^(#[0-9a-fA-F]{6})?$/, 'Use a hex colour like #1A2B3C');
 
@@ -55,6 +66,8 @@ export const productInput = z.object({
   series: z.string().trim().max(80).default(''),
   images: z.array(image).max(12).default([]),
   packagingImages: z.array(image).max(12).default([]),
+  videos: z.array(productVideo).max(6).default([]),
+  videoPlacement: z.enum(['after_main', 'after_photos']).default('after_main'),
   price: sar,
   compareAtPrice: sar.nullable().optional(),
   lowStockThreshold: z.number().int().min(0).nullable().optional(),

@@ -8,7 +8,7 @@ import { readTextFile, type DecodedText } from '../../lib/textFile';
 import type { Category, Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
 import { AHead, Card, dt, en, ErrorBox, F, fromSarInput, LocInput, Modal, Pager, ProductPicker, sar, Status, toSarInput, usePerms } from '../kit';
-import { ImageGallery, type GalleryImage } from '../media';
+import { ImageGallery, ProductVideos, type GalleryImage, type ProductVideoInput } from '../media';
 
 type Row = { _id: string; sku: string; slug: string; model: string; name: Localized; price: number; stock: number; status: string; featured: boolean; flagship?: boolean; dataSource: string; images: { url: string }[]; category?: { name: Localized } };
 
@@ -231,6 +231,8 @@ type ProductForm = {
   series: string;
   images: GalleryImage[];
   packagingImages: GalleryImage[];
+  videos: ProductVideoInput[];
+  videoPlacement: 'after_main' | 'after_photos';
   price: string;
   compareAtPrice: string;
   stock: string;
@@ -269,6 +271,8 @@ const blank: ProductForm = {
   series: '',
   images: [],
   packagingImages: [],
+  videos: [],
+  videoPlacement: 'after_main',
   price: '',
   compareAtPrice: '',
   stock: '0',
@@ -311,6 +315,8 @@ function fromApi(p: any): ProductForm {
     // Older products store only url/alt; uploaded images also carry media id + responsive variants.
     images: (p.images ?? []).map((i: GalleryImage) => ({ url: i.url, alt: i.alt ?? { ar: '', en: '' }, mediaId: i.mediaId ?? null, variants: i.variants, width: i.width ?? null, height: i.height ?? null })),
     packagingImages: (p.packagingImages ?? []).map((i: GalleryImage) => ({ url: i.url, alt: i.alt ?? { ar: '', en: '' }, mediaId: i.mediaId ?? null, variants: i.variants, width: i.width ?? null, height: i.height ?? null })),
+    videos: (p.videos ?? []).map((v: ProductVideoInput) => ({ url: v.url, mediaId: v.mediaId ? String(v.mediaId) : null, posterUrl: v.posterUrl ?? '', title: v.title ?? { ar: '', en: '' } })),
+    videoPlacement: p.videoPlacement === 'after_photos' ? 'after_photos' : 'after_main',
     price: toSarInput(p.price),
     compareAtPrice: toSarInput(p.compareAtPrice),
     stock: String(p.stock ?? 0),
@@ -352,6 +358,8 @@ function toApi(f: ProductForm, isNew: boolean) {
     series: f.series,
     images: f.images.filter((i) => i.url.trim()),
     packagingImages: f.packagingImages.filter((i) => i.url.trim()),
+    videos: f.videos.filter((v) => v.url.trim()).map((v) => ({ url: v.url.trim(), mediaId: v.mediaId || null, posterUrl: v.posterUrl.trim(), title: v.title })),
+    videoPlacement: f.videoPlacement,
     price: fromSarInput(f.price) ?? 0,
     compareAtPrice: fromSarInput(f.compareAtPrice),
     ...(isNew ? { stock: Number(f.stock || 0) } : {}),
@@ -497,6 +505,20 @@ export function ProductEdit() {
             </p>
             <div data-testid="packaging-gallery">
               <ImageGallery images={f.packagingImages} onChange={(packagingImages) => up({ packagingImages })} />
+            </div>
+          </Card>
+          <Card title="Videos">
+            <p className="muted" style={{ fontSize: 13 }}>
+              Videos appear in the product gallery as thumbnails with a play button, next to the photos. Customers hover or click a thumbnail to bring it into the main frame; choosing a video plays it there. Use the arrows to set their order.
+            </p>
+            <F label="Position in the gallery">
+              <select className="input" value={f.videoPlacement} onChange={(e) => up({ videoPlacement: e.target.value as ProductForm['videoPlacement'] })}>
+                <option value="after_main">Right after the main photo</option>
+                <option value="after_photos">After all product photos</option>
+              </select>
+            </F>
+            <div style={{ marginTop: 16 }}>
+              <ProductVideos videos={f.videos} onChange={(videos) => up({ videos })} />
             </div>
           </Card>
           <Card title="Specifications" actions={<button type="button" className="btn btn--outline btn--sm" onClick={() => up({ specs: [...f.specs, { label: { ar: '', en: '' }, value: { ar: '', en: '' } }] })}>+ Add row</button>}>
