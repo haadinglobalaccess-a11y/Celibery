@@ -564,7 +564,7 @@ export function ProductVideos({ videos, onChange, max = 6 }: { videos: ProductVi
 // Product gallery — multiple images, primary, reorder, replace, remove, alt text
 // ---------------------------------------------------------------------------------------------
 
-export function ImageGallery({ images, onChange, max = 12 }: { images: GalleryImage[]; onChange: (next: GalleryImage[]) => void; max?: number }) {
+export function ImageGallery({ images, onChange, max = 40 }: { images: GalleryImage[]; onChange: (next: GalleryImage[]) => void; max?: number }) {
   const [picker, setPicker] = useState<{ tab: PickTab; replace?: number } | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [editAlt, setEditAlt] = useState<number | null>(null);

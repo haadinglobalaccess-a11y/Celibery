@@ -489,19 +489,30 @@ html[lang='ar'] .cx-range__name {
   }
 }
 
-/* ---------- Product page gallery: main frame + thumbnail strip underneath (photos and videos) ----------
-   Hovering a thumbnail (mouse) or clicking/tapping it brings it into the main frame. The strip scrolls
-   sideways when the admin adds more items than fit; it is centred while everything fits. */
-.cx-pdp .gallery__thumbs {
+/* ---------- Product page gallery: thumbnail rail (photos and videos) ----------
+   Large screens: a column on the start side of the main photo (left in English, right in Arabic),
+   exactly as tall as the photo, with three large thumbnails in view and up/down arrows for the rest.
+   Phones and tablets: a row under the photo that scrolls sideways.
+   Hovering a thumbnail (mouse) or clicking/tapping it brings it into the main frame. */
+.cx-pdp .gallery__rail {
   display: flex;
+  align-items: center;
+  margin-top: 14px;
+  min-width: 0;
+}
+.cx-pdp .gallery__thumbs {
+  position: relative; /* offset parent for keeping the active thumbnail in view */
+  display: flex;
+  flex: 1 1 auto;
   flex-wrap: nowrap;
-  justify-content: safe center;
+  justify-content: flex-start;
   gap: 12px;
-  margin-top: 16px;
-  padding: 4px 2px 6px; /* room for the lift and focus ring */
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 2px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: x mandatory;
   scrollbar-width: none;
 }
 .cx-pdp .gallery__thumbs::-webkit-scrollbar {
@@ -510,9 +521,10 @@ html[lang='ar'] .cx-range__name {
 .cx-pdp .gallery__thumbs button {
   position: relative;
   flex: none;
-  width: 84px;
-  height: 84px;
+  width: 76px;
+  height: 76px;
   padding: 0;
+  border: 0;
   border-radius: 16px;
   overflow: hidden;
   scroll-snap-align: start;
@@ -520,20 +532,28 @@ html[lang='ar'] .cx-range__name {
   opacity: 1;
   box-shadow: inset 0 0 0 1px var(--cx-line);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition:
-    box-shadow 220ms var(--cx-ease),
-    transform 220ms var(--cx-ease);
+    box-shadow 240ms var(--cx-ease),
+    opacity 240ms var(--cx-ease);
+}
+.cx-pdp .gallery__thumbs button:not([aria-current='true']) {
+  opacity: 0.78;
 }
 .cx-pdp .gallery__thumbs button:hover {
-  transform: translateY(-2px);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cx-ink) 45%, transparent), 0 10px 22px -16px rgb(0 0 0 / 0.45);
+  opacity: 1;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cx-ink) 40%, transparent);
 }
 .cx-pdp .gallery__thumbs button[aria-current='true'] {
-  box-shadow: inset 0 0 0 2px var(--cx-ink), 0 10px 22px -16px rgb(0 0 0 / 0.45);
+  box-shadow: inset 0 0 0 2px var(--cx-ink);
 }
 .cx-pdp .gallery__thumbs button:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline-offset: -2px;
+}
+.cx-pdp .gallery__thumbs img {
+  object-fit: contain;
+  padding: 10%;
 }
 .cx-pdp .gallery__thumbs button[data-kind='video'] {
   background: #0d0f12;
@@ -553,17 +573,94 @@ html[lang='ar'] .cx-range__name {
   background: linear-gradient(180deg, rgb(0 0 0 / 0) 30%, rgb(0 0 0 / 0.35));
 }
 .gallery__thumb-play .icon {
-  width: 30px;
-  height: 30px;
-  padding: 7px 6px 7px 8px; /* optical centre of the triangle */
+  width: 34px;
+  height: 34px;
+  padding: 8px 7px 8px 9px; /* optical centre of the triangle */
   border-radius: 50%;
   color: #111;
   background: rgb(255 255 255 / 0.94);
   stroke-width: 0;
 }
+/* Rail arrows: large screens only (rows under the photo are swiped). */
+.gallery__rail-arrow {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .cx-pdp .gallery--3d:has(> .gallery__rail) {
+    display: grid;
+    grid-template-columns: clamp(104px, 20%, 156px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: stretch;
+  }
+  .cx-pdp .gallery--3d:has(> .gallery__rail) > .gallery__main {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  /* The rail never sets the row height: the main photo does, and the rail matches it. */
+  .cx-pdp .gallery--3d > .gallery__rail {
+    grid-column: 1;
+    grid-row: 1;
+    contain: size;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin: 0;
+  }
+  .cx-pdp .gallery__rail .gallery__thumbs {
+    flex: 1 1 0;
+    flex-direction: column;
+    min-height: 0;
+    padding: 2px;
+    scroll-snap-type: y mandatory;
+  }
+  /* Three in view, as large as the rail allows. */
+  .cx-pdp .gallery__rail .gallery__thumbs button {
+    width: 100%;
+    height: calc((100% - 24px) / 3);
+    border-radius: 20px;
+  }
+  .gallery__rail.is-scrollable .gallery__rail-arrow {
+    display: grid;
+    place-items: center;
+    flex: none;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    color: var(--cx-ink);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--cx-line);
+    cursor: pointer;
+    transition:
+      background 200ms var(--cx-ease),
+      box-shadow 200ms var(--cx-ease),
+      opacity 200ms var(--cx-ease);
+  }
+  .gallery__rail-arrow .icon {
+    width: 20px;
+    height: 20px;
+  }
+  .gallery__rail-arrow--up .icon {
+    rotate: 180deg;
+  }
+  .gallery__rail.is-scrollable .gallery__rail-arrow:hover:not(:disabled) {
+    color: #fff;
+    background: var(--cx-ink);
+    box-shadow: 0 10px 22px -14px rgb(0 0 0 / 0.5);
+  }
+  .gallery__rail.is-scrollable .gallery__rail-arrow:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .gallery__rail-arrow:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
 @media (max-width: 639px) {
   .cx-pdp .gallery__thumbs {
-    justify-content: flex-start;
     gap: 10px;
   }
   .cx-pdp .gallery__thumbs button {
@@ -661,8 +758,12 @@ html[lang='ar'] .cx-range__name {
 @media (prefers-reduced-motion: reduce) {
   .gallery__poster img,
   .gallery__play,
+  .gallery__rail-arrow,
   .cx-pdp .gallery__thumbs button {
     transition: none;
+  }
+  .cx-pdp .gallery__thumbs {
+    scroll-behavior: auto;
   }
 }
 

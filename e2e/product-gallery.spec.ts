@@ -36,7 +36,7 @@ test.describe.serial('Product gallery with videos', () => {
         stock: 10,
         status: 'active',
         name: { ar: 'باور بانك المعرض', en: 'Gallery Power Bank' },
-        images: [img('power-banks', 'Front'), img('cables', 'Cable'), img('charging-adapters', 'Adapter')],
+        images: [img('power-banks', 'Front'), img('cables', 'Cable'), img('charging-adapters', 'Adapter'), img('headphones', 'Headphones'), img('car-essentials', 'Car'), img('tech-essentials', 'Tech')],
         videos: [{ url: '/e2e/demo-video.mp4', posterUrl: '/placeholders/tech-essentials.svg', title: { ar: 'فيديو', en: 'Demo video' } }],
         videoPlacement: 'after_main',
       },
@@ -47,14 +47,42 @@ test.describe.serial('Product gallery with videos', () => {
     await page.goto(`/en/p/${slug}`);
     const main = page.locator('.cx-pdp .gallery__main');
     const thumbs = page.locator('.cx-pdp .gallery__thumbs button');
-    await expect(thumbs).toHaveCount(4); // photo, video (after the main photo), photo, photo
+    await expect(thumbs).toHaveCount(7); // photo, video (after the main photo), five more photos
     await expect(thumbs.nth(1)).toHaveAttribute('data-kind', 'video');
     await expect(thumbs.nth(0)).toHaveAttribute('aria-current', 'true');
 
-    // The strip sits under the main frame.
+    // The rail sits on the left of the main photo, exactly as tall, with three thumbnails in view.
+    const rail = page.locator('.cx-pdp .gallery__rail');
     const mainBox = (await main.boundingBox())!;
-    const stripBox = (await page.locator('.cx-pdp .gallery__thumbs').boundingBox())!;
-    expect(stripBox.y).toBeGreaterThan(mainBox.y + mainBox.height - 1);
+    const railBox = (await rail.boundingBox())!;
+    expect(railBox.x + railBox.width).toBeLessThanOrEqual(mainBox.x + 1);
+    expect(Math.abs(railBox.height - mainBox.height)).toBeLessThan(2);
+    // Counted inside the rail (offsets ignore the page's entrance animation).
+    const inView = () =>
+      page.locator('.cx-pdp .gallery__thumbs').evaluate((el) =>
+        [...el.children].filter((c) => {
+          const b = c as HTMLElement;
+          return b.offsetTop >= el.scrollTop - 1 && b.offsetTop + b.offsetHeight <= el.scrollTop + el.clientHeight + 1;
+        }).length,
+      );
+    expect(await inView()).toBe(3);
+    const up = page.locator('.gallery__rail-arrow--up');
+    const down = page.locator('.gallery__rail-arrow--down');
+    await expect(up).toBeDisabled();
+    await expect(down).toBeEnabled();
+    await down.click();
+    await expect(up).toBeEnabled();
+    await down.click();
+    await down.click();
+    await down.click();
+    await expect(down).toBeDisabled(); // reached the last thumbnail
+    await expect(thumbs.nth(6)).toBeInViewport();
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, 'pdp-rail-end.png') });
+    await up.click();
+    await up.click();
+    await up.click();
+    await up.click();
+    await expect(up).toBeDisabled();
 
     // Hover → main frame changes (no click).
     await thumbs.nth(2).hover();
@@ -78,6 +106,38 @@ test.describe.serial('Product gallery with videos', () => {
     await thumbs.nth(3).click();
     await expect(main.locator('video')).toHaveCount(0);
     await expect(main.locator('.gallery__frame img')).toHaveAttribute('alt', 'Adapter');
+
+    // Stepping with the main-frame arrows keeps the active thumbnail in view.
+    for (let i = 0; i < 3; i++) await page.locator('.gallery__nav--next').click();
+    await expect(thumbs.nth(6)).toHaveAttribute('aria-current', 'true');
+    await expect(thumbs.nth(6)).toBeInViewport();
+
+    // Arabic: the rail is on the right of the main photo.
+    await page.goto(`/ar/p/${slug}`);
+    const arMain = (await page.locator('.cx-pdp .gallery__main').boundingBox())!;
+    const arRail = (await page.locator('.cx-pdp .gallery__rail').boundingBox())!;
+    expect(arRail.x).toBeGreaterThanOrEqual(arMain.x + arMain.width - 1);
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, 'pdp-rail-ar.png') });
+
+    // Product cards carry only the two photos they show; the product page gets them all.
+    const list = (await (await page.request.get('/api/products?q=Gallery%20Power%20Bank&limit=20')).json()).data;
+    const card = (list.items ?? list).find((x: { slug: string }) => x.slug === slug);
+    expect(card.images).toHaveLength(2);
+    expect((await (await page.request.get(`/api/products/${slug}`)).json()).data.images).toHaveLength(6);
+  });
+
+  test('phones: the thumbnails are a row under the photo', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    await page.goto(`/en/p/${slug}`);
+    const mainBox = (await page.locator('.cx-pdp .gallery__main').boundingBox())!;
+    const rail = (await page.locator('.cx-pdp .gallery__rail').boundingBox())!;
+    expect(rail.y).toBeGreaterThan(mainBox.y + mainBox.height - 1);
+    await expect(page.locator('.gallery__rail-arrow--down')).toBeHidden();
+    await page.locator('.cx-pdp .gallery__thumbs button').nth(2).tap();
+    await expect(page.locator('.cx-pdp .gallery__thumbs button').nth(2)).toHaveAttribute('aria-current', 'true');
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, 'pdp-mobile.png') });
+    await ctx.close();
   });
 
   test('admin: videos card saves a video and its position', async ({ page }) => {
