@@ -325,7 +325,7 @@ export function ExploreCollection({ data }: { data: HomeData }) {
               ))}
             </ProductRail>
           ) : (
-            <p className="cx-muted">{lang === 'ar' ? 'ستتم إضافة المنتجات قريباً.' : 'Products coming soon.'}</p>
+            <p className="cx-muted">{lang === 'ar' ? 'سنضيف المنتجات قريباً.' : 'Products coming soon.'}</p>
           )}
         </div>
       </div>
