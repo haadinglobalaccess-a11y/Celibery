@@ -15,7 +15,7 @@ export { ProductImage } from './ArtFrame';
 
 /**
  * CELIBERY product card — the artwork sits complete in an ArtFrame (proportion set by its group, see
- * celibery.css "Art frames"), information below in a strict hierarchy (series/model · name · price). `tone="dark"` is used inside dark campaign sections.
+ * celibery.css "Art frames"), information below in a strict hierarchy (series · name · price). `tone="dark"` is used inside dark campaign sections.
  */
 export function ProductCard({ product, categorySlug, index, tone = 'light', sizes, eager = false }: { product: ProductCardData; categorySlug?: string; index?: number; tone?: 'light' | 'dark'; sizes?: string; eager?: boolean }) {
   const { lang, t, p } = useI18n();
@@ -59,12 +59,8 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
       </button>
 
       <div className="cx-card__body">
-        {product.series || product.model ? (
-          <span className="cx-card__meta">
-            {product.series ? <span>{product.series}</span> : null}
-            {product.model ? <span className="ltr">{product.model}</span> : null}
-          </span>
-        ) : null}
+        {/* Series only (a customer-facing range name); internal model codes stay on the product page. */}
+        {product.series ? <span className="cx-card__meta">{product.series}</span> : null}
         <h3 className="cx-card__title">
           <Link to={href}>{name}</Link>
         </h3>

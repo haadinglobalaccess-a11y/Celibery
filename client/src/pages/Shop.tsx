@@ -11,6 +11,7 @@ import { useApi, useCached } from '../lib/hooks';
 import { useSeo } from '../lib/useSeo';
 import type { Category, Collection, Facets, ProductCardData } from '../lib/types';
 import { storeCopy } from '../storefront/copy';
+import { TrustStrip } from '../storefront/TrustStrip';
 
 type Mode = 'all' | 'category' | 'search' | 'collection';
 
@@ -272,6 +273,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
           ) : null}
         </div>
       </header>
+      <TrustStrip />
 
       <div className="container">
         {mode === 'all' || mode === 'category' ? <CategoryNav current={mode === 'category' ? slug : undefined} /> : null}
