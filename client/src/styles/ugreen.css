@@ -314,3 +314,69 @@ html[lang='ar'] .cx-why__tile h3 {
   .cx-why__tile,
   .cx-why__tile:hover { translate: none; }
 }
+
+/* ---------- Footer on phones: same footer, tighter and better aligned ----------
+   Desktop is unchanged. On phones the service links become compact tiles, the Policies list
+   runs in two columns (it was one long column), and the payment badges start at the edge. */
+@media (max-width: 767px) {
+  .footer.cx-footer {
+    padding-top: 40px;
+  }
+  .footer.cx-footer .cx-svc {
+    gap: 10px;
+    margin-bottom: 36px;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .footer.cx-footer .cx-svc__item {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 14px 12px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: var(--r-md);
+    background: rgb(255 255 255 / 0.03);
+    text-align: start;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
+  .footer.cx-footer .cx-svc__icon {
+    flex: none;
+    width: 36px;
+    height: 36px;
+  }
+  .footer.cx-footer .cx-svc__icon .icon,
+  .footer.cx-footer .cx-svc__icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  .footer.cx-footer .cx-foot {
+    gap: 36px;
+    padding-bottom: 32px;
+  }
+  .footer.cx-footer .cx-foot__cols {
+    gap: 32px 20px;
+  }
+  .footer.cx-footer .cx-foot__cols h3 {
+    margin-bottom: 10px;
+  }
+  /* Policies: two columns instead of one long list. */
+  .footer.cx-footer .cx-foot__cols > :last-child ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+  }
+  .footer.cx-footer .cx-foot__pay {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-block: 22px;
+  }
+  .footer.cx-footer .cx-foot__pay .pay-brand-logos {
+    margin-inline-start: 0;
+    gap: 6px;
+  }
+  .footer.cx-footer .cx-footer__legal {
+    gap: 6px;
+    padding-bottom: 88px; /* clear of the floating WhatsApp button */
+  }
+}
