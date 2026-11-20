@@ -64,7 +64,7 @@ export const productInput = z.object({
   description: localized.transform(cleanLocRich).default({ ar: '', en: '' }),
   category: objectId,
   series: z.string().trim().max(80).default(''),
-  images: z.array(image).max(12).default([]),
+  images: z.array(image).max(40).default([]),
   packagingImages: z.array(image).max(12).default([]),
   videos: z.array(productVideo).max(6).default([]),
   videoPlacement: z.enum(['after_main', 'after_photos']).default('after_main'),

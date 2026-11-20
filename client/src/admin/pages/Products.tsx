@@ -493,7 +493,7 @@ export function ProductEdit() {
           </Card>
           <Card title="Images">
             <p className="muted" style={{ fontSize: 13 }}>
-              Upload photos from your computer, pick them from the media library, or paste image URLs. Two photos per product on a plain background are recommended (Q15). The first image is the main photo — drag or use the arrows to reorder.
+              Upload photos from your computer, pick them from the media library, or paste image URLs — up to 40 per product. Photos on a plain background look best. The first image is the main photo and the second one appears when a shopper hovers the product card; drag or use the arrows to reorder. On the product page every photo is shown in the thumbnail rail beside the main photo.
             </p>
             <div data-testid="product-gallery">
               <ImageGallery images={f.images} onChange={(images) => up({ images })} />
@@ -504,7 +504,7 @@ export function ProductEdit() {
               Photos of the box, its contents and labels. They appear after the product photos in the product gallery, marked “Packaging”. Upload, choose from the library or paste URLs; drag or use the arrows to reorder.
             </p>
             <div data-testid="packaging-gallery">
-              <ImageGallery images={f.packagingImages} onChange={(packagingImages) => up({ packagingImages })} />
+              <ImageGallery images={f.packagingImages} max={12} onChange={(packagingImages) => up({ packagingImages })} />
             </div>
           </Card>
           <Card title="Videos">

@@ -42,8 +42,13 @@ export const PUBLIC_PRODUCT_FIELDS =
 type LeanProduct = Record<string, unknown> & { _id: Types.ObjectId; price: number; compareAtPrice?: number | null; stock: number; lowStockThreshold?: number | null };
 
 /** Public shape: exact stock is not exposed, only availability. */
-export function toPublicProduct(p: LeanProduct, defaultLowStock = 5) {
+/**
+ * Public product shape. Cards (lists, rails, wishlist) show at most two photos — the main one and the
+ * hover one — so only those are sent; the product page asks for the whole gallery (`allImages`).
+ */
+export function toPublicProduct(p: LeanProduct, defaultLowStock = 5, { allImages = false }: { allImages?: boolean } = {}) {
   const { stock, lowStockThreshold, ...rest } = p;
+  if (!allImages && Array.isArray(rest.images) && rest.images.length > 2) rest.images = rest.images.slice(0, 2);
   const threshold = lowStockThreshold ?? defaultLowStock;
   const compareAt = p.compareAtPrice && p.compareAtPrice > p.price ? p.compareAtPrice : null;
   // Text saved before save-time cleaning existed is normalised here too (idempotent, see lib/text.ts).
@@ -219,7 +224,7 @@ async function loadProduct(slug: string) {
 
   const { related: _r, bundleItems: bi, ...rest } = p as unknown as LeanProduct & { related: unknown; bundleItems: { product: Types.ObjectId; quantity: number }[] };
   return {
-    ...toPublicProduct(rest as LeanProduct, low),
+    ...toPublicProduct(rest as LeanProduct, low, { allImages: true }),
     videos: publicProductVideos((p as unknown as { videos?: StoredVideo[] }).videos),
     videoPlacement: (p as unknown as { videoPlacement?: string }).videoPlacement === 'after_photos' ? 'after_photos' : 'after_main',
     warrantyMonths,

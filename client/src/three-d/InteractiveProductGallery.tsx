@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { Icon } from '../components/Icon';
 import { ProductImage } from '../components/ProductCard';
 import { useI18n } from '../i18n/I18n';
@@ -169,7 +169,7 @@ export function InteractiveProductGallery({ items, name, category, stageRef }: {
         ) : null}
       </div>
       {many ? (
-        <div className="gallery__thumbs" onMouseLeave={() => window.clearTimeout(hoverTimer.current)}>
+        <ThumbRail active={idx} label={lang === 'ar' ? 'صور المنتج' : 'Product photos'} upLabel={t.premium.previous} downLabel={t.premium.next} onLeave={() => window.clearTimeout(hoverTimer.current)}>
           {items.map((it, i) => (
             <button
               key={i}
@@ -193,8 +193,89 @@ export function InteractiveProductGallery({ items, name, category, stageRef }: {
               )}
             </button>
           ))}
-        </div>
+        </ThumbRail>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Thumbnail rail. Large screens: a column beside the main photo (start side — left in English, right
+ * in Arabic), exactly as tall as the photo, three thumbnails in view, up/down arrows for the rest.
+ * Phones and tablets: a row under the photo that scrolls sideways. The active thumbnail is always
+ * scrolled into view (only the rail scrolls, never the page).
+ */
+function ThumbRail({ active, label, upLabel, downLabel, onLeave, children }: { active: number; label: string; upLabel: string; downLabel: string; onLeave: () => void; children: ReactNode }) {
+  const view = useRef<HTMLDivElement | null>(null);
+  const [edge, setEdge] = useState({ start: true, end: true });
+  const vertical = () => {
+    const el = view.current;
+    return !!el && getComputedStyle(el).flexDirection === 'column';
+  };
+  const measure = () => {
+    const el = view.current;
+    if (!el) return;
+    const v = vertical();
+    const pos = v ? el.scrollTop : Math.abs(el.scrollLeft);
+    const max = v ? el.scrollHeight - el.clientHeight : el.scrollWidth - el.clientWidth;
+    setEdge({ start: pos <= 2, end: pos >= max - 2 });
+  };
+  useEffect(() => {
+    const el = view.current;
+    if (!el) return;
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // Keep the active thumbnail in view.
+  useEffect(() => {
+    const el = view.current;
+    const btn = el?.children[active] as HTMLElement | undefined;
+    if (!el || !btn) return;
+    if (vertical()) {
+      const top = btn.offsetTop; // the rail is the offset parent (position: relative)
+      if (top < el.scrollTop) el.scrollTo({ top, behavior: 'smooth' });
+      else if (top + btn.offsetHeight > el.scrollTop + el.clientHeight) el.scrollTo({ top: top + btn.offsetHeight - el.clientHeight, behavior: 'smooth' });
+    } else {
+      const r = btn.getBoundingClientRect();
+      const v = el.getBoundingClientRect();
+      if (r.left < v.left || r.right > v.right) el.scrollBy({ left: r.left < v.left ? r.left - v.left - 4 : r.right - v.right + 4, behavior: 'smooth' });
+    }
+  }, [active]);
+  /**
+   * One thumbnail per press (the arrows exist only on the vertical rail). Steps are counted by index,
+   * so quick repeated presses each move one thumbnail even while the previous scroll is still running.
+   */
+  const target = useRef<number | null>(null);
+  const settle = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(settle.current), []);
+  const page = (d: 1 | -1) => {
+    const el = view.current;
+    const kids = el ? ([...el.children] as HTMLElement[]) : [];
+    if (!el || !kids.length) return;
+    const step = kids.length > 1 ? kids[1].offsetTop - kids[0].offsetTop : kids[0].offsetHeight;
+    const fit = Math.max(1, Math.floor((el.clientHeight + 1) / step) || 1);
+    const last = Math.max(0, kids.length - fit);
+    const from = target.current ?? Math.round(el.scrollTop / step);
+    const next = Math.min(last, Math.max(0, from + d));
+    target.current = next;
+    window.clearTimeout(settle.current);
+    settle.current = window.setTimeout(() => (target.current = null), 600);
+    el.scrollTo({ top: next === last ? el.scrollHeight : kids[next].offsetTop - kids[0].offsetTop, behavior: 'smooth' });
+  };
+  const scrollable = !(edge.start && edge.end);
+  return (
+    <div className={`gallery__rail ${scrollable ? 'is-scrollable' : ''}`} role="group" aria-label={label}>
+      <button type="button" className="gallery__rail-arrow gallery__rail-arrow--up" aria-label={upLabel} disabled={edge.start} onClick={() => page(-1)} tabIndex={scrollable ? 0 : -1}>
+        <Icon name="chevronDown" />
+      </button>
+      <div ref={view} className="gallery__thumbs" onScroll={measure} onMouseLeave={onLeave}>
+        {children}
+      </div>
+      <button type="button" className="gallery__rail-arrow gallery__rail-arrow--down" aria-label={downLabel} disabled={edge.end} onClick={() => page(1)} tabIndex={scrollable ? 0 : -1}>
+        <Icon name="chevronDown" />
+      </button>
     </div>
   );
 }
