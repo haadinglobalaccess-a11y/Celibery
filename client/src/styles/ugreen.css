@@ -483,3 +483,54 @@ html[lang='ar'] .storefront .cx-card:not(.cx-card--dark) .cx-card__title {
     height: 15px;
   }
 }
+
+/* ---------- Product cards: spec line, quieter wishlist, gentle lift ----------
+   Same colours as before. A muted line of key specs sits under the name; on desktop the wishlist
+   heart appears on hover (always shown on touch screens, when saved, or when focused); the card
+   lifts slightly on hover. */
+.storefront .cx-card .cx-card__specs {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--cx-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.storefront .cx-card--dark .cx-card__specs {
+  color: var(--cx-night-muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  .storefront .cx-card .cx-card__wish {
+    opacity: 0;
+    transition:
+      opacity 220ms var(--cx-ease),
+      transform 300ms var(--cx-spring),
+      color 200ms;
+  }
+  .storefront .cx-card:hover .cx-card__wish,
+  .storefront .cx-card .cx-card__wish:focus-visible,
+  .storefront .cx-card .cx-card__wish[aria-pressed='true'] {
+    opacity: 1;
+  }
+  .storefront .cx-card:not(.cx-card--dark) {
+    transition:
+      box-shadow var(--dur-slow) var(--ease-out),
+      translate 500ms var(--cx-ease);
+  }
+  .storefront .cx-card:not(.cx-card--dark):hover {
+    translate: 0 -3px;
+  }
+}
+@media (max-width: 639px) {
+  .storefront .cx-card .cx-card__specs {
+    margin-top: 4px;
+    font-size: 0.6875rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .storefront .cx-card:not(.cx-card--dark):hover {
+    translate: none;
+  }
+}

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/I18n';
-import { L } from '../lib/format';
+import { connectorLabel, formatInt, L } from '../lib/format';
 import { useMediaQuery } from '../lib/media';
-import type { ProductCardData } from '../lib/types';
+import type { Lang, ProductCardData } from '../lib/types';
 import { useCart } from '../state/cart';
 import { useWishlist } from '../state/wishlist';
 import { flyToCart } from '../three-d/flyToCart';
@@ -36,6 +36,7 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
   // The hover image is only fetched where hover exists (desktop pointers) — never on touch devices.
   const canHover = useMediaQuery('(hover: hover) and (pointer: fine)');
   const alt = canHover && product.images?.[1]?.url ? product.images[1] : null;
+  const specs = cardSpecs(product, name, lang);
 
   return (
     <article className={`cx-card ${tone === 'dark' ? 'cx-card--dark' : ''}`} data-testid="product-card" style={index !== undefined ? ({ '--i': index } as CSSProperties) : undefined}>
@@ -65,6 +66,7 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
         <h3 className="cx-card__title">
           <Link to={href}>{name}</Link>
         </h3>
+        {specs ? <p className="cx-card__specs">{specs}</p> : null}
         <div className="cx-card__foot">
           <Price price={product.price} compareAt={product.compareAtPrice} />
           <button
@@ -89,6 +91,25 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
       </div>
     </article>
   );
+}
+
+/**
+ * One quiet line of key specs under the name ("20,000mAh · 65W · USB-C"), from the product's filter
+ * attributes. A figure the name already states (e.g. "60W" in the title) is not repeated.
+ */
+function cardSpecs(product: ProductCardData, name: string, lang: Lang) {
+  const a = product.attributes;
+  if (!a) return '';
+  const squash = (s: string) => s.toLowerCase().replace(/[\s,.٬٫]/g, '');
+  const title = squash(name);
+  const parts: string[] = [];
+  if (a.capacityMah && !title.includes(`${a.capacityMah}mah`)) parts.push(`${formatInt(a.capacityMah, lang)}mAh`);
+  if (a.powerW && !title.includes(`${a.powerW}w`)) parts.push(`${a.powerW}W`);
+  for (const c of (a.connectors ?? []).slice(0, 2)) {
+    const label = connectorLabel(c, lang);
+    if (!title.includes(squash(label))) parts.push(label);
+  }
+  return parts.join(' · ');
 }
 
 export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
