@@ -9,7 +9,7 @@ import { requirePermission, requireRecentAuthForWrites } from '../../middleware/
 import { validate } from '../../middleware/validate';
 import { channelStatus, encryptFor, integration, invalidateIntegrations, keyRing, loadIntegrations, secretContext } from '../../integrations/credentials';
 import { EMAIL_RX, INTEGRATIONS, MODES, SINGLE_MODE_SLOT, isIntegrationKey, missingRequired, upgradeValues, validateFieldValue, verificationSubject, type IntegrationKey, type Mode } from '../../integrations/credentials/definitions';
-import { smtpError, toSmtpConfig, toWhatsAppConfig, verifySmtp, verifyWhatsApp } from '../../integrations/notifications/providers';
+import { emailError, emailServerLabel, toResendConfig, toSmtpConfig, toWhatsAppConfig, verifyResend, verifySmtp, verifyWhatsApp, type EmailConfig } from '../../integrations/notifications/providers';
 import { deliverEmail, deliverWhatsApp, normalizeSaudiPhone } from '../../integrations/notifications';
 import { moyasarProvider } from '../../integrations/payments/moyasar';
 import { tabbyProvider } from '../../integrations/payments/tabby';
@@ -54,6 +54,7 @@ const verifiers: Partial<Record<IntegrationKey, (values: Record<string, string>)
   moyasar: (v) => moyasarProvider.verifyCredentials(v),
   tabby: (v) => tabbyProvider.verifyCredentials(v),
   smtp: (v) => verifySmtp(v),
+  resend: (v) => verifyResend(v),
   whatsapp: (v) => verifyWhatsApp(v),
   s3: (v) => verifyS3(v),
 };
@@ -307,7 +308,7 @@ const testMessageInput = z.object({ to: z.string().trim().max(200).optional(), l
 /**
  * Sends a real test message with the SAVED settings (works before the channel is enabled, so
  * delivery can be confirmed first):
- *  - smtp: a test email to the address the administrator enters (default: their own);
+ *  - smtp / resend: a test email to the address the administrator enters (default: their own);
  *  - whatsapp: the approved order-update template with sample values to the number they enter.
  * Every attempt is recorded in the delivery log; failures return the provider's reason.
  */
@@ -318,14 +319,16 @@ adminIntegrationRoutes.post(
   validate(testMessageInput),
   ah(async (req, res) => {
     const key = req.params.provider as IntegrationKey;
-    if (key !== 'smtp' && key !== 'whatsapp') throw badRequest('NOT_SUPPORTED', 'Test messages are available for email and WhatsApp only');
+    if (key !== 'smtp' && key !== 'resend' && key !== 'whatsapp') throw badRequest('NOT_SUPPORTED', 'Test messages are available for email and WhatsApp only');
     const doc = await IntegrationCredential.findOne({ provider: key }).select(WITH_SECRETS).lean();
     if (!doc) throw notFound('Saved settings');
     const values = decryptedValues(key, SINGLE_MODE_SLOT, doc);
 
-    if (key === 'smtp') {
-      const smtp = toSmtpConfig(values);
-      if (!smtp) throw unprocessable('NOT_CONFIGURED', 'Save the SMTP host and sender email address first');
+    if (key === 'smtp' || key === 'resend') {
+      const parsed = key === 'smtp' ? toSmtpConfig(values) : toResendConfig(values);
+      if (!parsed) throw unprocessable('NOT_CONFIGURED', key === 'smtp' ? 'Save the SMTP host and sender email address first' : 'Save the Resend API key and sender email address first');
+      const smtp = (key === 'smtp' ? { kind: 'smtp', ...parsed } : { kind: 'resend', ...parsed }) as EmailConfig;
+      const via = smtp.kind === 'smtp' ? `${smtp.host}:${smtp.port}` : emailServerLabel(smtp);
       const to = (req.body.to as string | undefined) || req.user!.email;
       if (!EMAIL_RX.test(to)) throw badRequest('VALIDATION_ERROR', 'Enter a valid recipient email address', { fieldErrors: { to: ['Enter a valid email address'] } });
       try {
@@ -334,13 +337,13 @@ adminIntegrationRoutes.post(
           to,
           {
             subject: 'CELIBERY — test email',
-            text: `This is a test email from the CELIBERY admin dashboard, sent from ${smtp.fromEmail} through ${smtp.host}:${smtp.port}. Email delivery is working.`,
-            html: `<p>This is a test email from the CELIBERY admin dashboard, sent from <strong>${escHtml(smtp.fromEmail)}</strong> through <strong>${escHtml(smtp.host)}:${smtp.port}</strong>.</p><p>Email delivery is working.</p>`,
+            text: `This is a test email from the CELIBERY admin dashboard, sent from ${smtp.fromEmail} through ${via}. Email delivery is working.`,
+            html: `<p>This is a test email from the CELIBERY admin dashboard, sent from <strong>${escHtml(smtp.fromEmail)}</strong> through <strong>${escHtml(via)}</strong>.</p><p>Email delivery is working.</p>`,
           },
           { fresh: true },
         );
       } catch (e) {
-        const detail = smtpError(e, smtp);
+        const detail = emailError(e, smtp);
         await Notification.create({ channel: 'email', to, template: 'admin.smtp_test', user: req.user!.id, status: 'failed', detail });
         await audit(req, 'credentials_test_message', 'integration', key, `failed to ${to}`);
         throw unprocessable('SEND_FAILED', `The test email could not be sent: ${detail}`);

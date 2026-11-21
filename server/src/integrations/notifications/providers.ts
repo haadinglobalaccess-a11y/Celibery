@@ -31,7 +31,123 @@ export type WhatsAppConfig = {
   langEn: string;
 };
 
+/** Resend (HTTPS email API) — used where outbound SMTP is blocked, e.g. Railway's Hobby plan. */
+export type ResendConfig = {
+  apiKey: string;
+  fromEmail: string;
+  fromName: string;
+  replyTo: string;
+};
+
+/** The email account in use: an SMTP server or the Resend API. */
+export type EmailConfig = ({ kind: 'smtp' } & SmtpConfig) | ({ kind: 'resend' } & ResendConfig);
+
 export const DEFAULT_GRAPH_VERSION = 'v20.0';
+const RESEND_API = 'https://api.resend.com';
+
+export function toResendConfig(v: Record<string, string>): ResendConfig | null {
+  if (!v.apiKey || !v.fromEmail) return null;
+  return { apiKey: v.apiKey, fromEmail: v.fromEmail, fromName: v.fromName ?? '', replyTo: v.replyTo ?? '' };
+}
+
+/** Where the email account sends from, for logs and the admin ("smtp.gmail.com", "Resend"). */
+export const emailServerLabel = (c: EmailConfig) => (c.kind === 'resend' ? 'Resend' : c.host);
+
+/**
+ * The email account in use right now, or null when email is not set up / switched off.
+ * Resend wins when both are switched on: it is the one that works on hosts that block SMTP.
+ */
+export async function activeEmail(): Promise<EmailConfig | null> {
+  await loadIntegrations();
+  const r = integration('resend');
+  if (r.enabled) {
+    const c = toResendConfig(r.values);
+    if (c) return { kind: 'resend', ...c };
+  }
+  const s = integration('smtp');
+  if (s.enabled) {
+    const c = toSmtpConfig(s.values);
+    if (c) return { kind: 'smtp', ...c };
+  }
+  return null;
+}
+
+class ResendError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
+/** Sends one email through the account. Throws on failure (the caller records the reason). */
+export async function sendEmailWith(c: EmailConfig, to: string, content: { subject: string; html: string; text: string }, opts: { fresh?: boolean } = {}) {
+  if (c.kind === 'resend') {
+    const res = await fetch(`${RESEND_API}/emails`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${c.apiKey}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(20_000),
+      body: JSON.stringify({
+        from: c.fromName ? `${c.fromName.replace(/["<>]/g, '')} <${c.fromEmail}>` : c.fromEmail,
+        to: [to],
+        subject: content.subject,
+        html: content.html,
+        text: content.text,
+        ...(c.replyTo ? { reply_to: c.replyTo } : {}),
+      }),
+    });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { message?: string; name?: string };
+      throw new ResendError(String(body.message ?? body.name ?? 'request rejected').slice(0, 200), res.status);
+    }
+    return;
+  }
+  const t = smtpTransport(c, opts);
+  try {
+    await t.sendMail({ from: smtpFrom(c), replyTo: c.replyTo || undefined, to, subject: content.subject, html: content.html, text: content.text });
+  } finally {
+    if (opts.fresh) t.close();
+  }
+}
+
+/** A readable reason for a failed send, for the admin and the order's notification log. */
+export function emailError(e: unknown, c?: EmailConfig | null): string {
+  if (c?.kind === 'resend' || e instanceof ResendError) {
+    if (e instanceof ResendError) {
+      if (e.status === 401 || e.status === 403) return `Resend refused the request: ${e.message} — check the API key and that the sender's domain is verified in Resend`;
+      if (e.status === 422) return `Resend rejected the email: ${e.message}`;
+      if (e.status === 429) return 'Resend rate limit reached — the email will be retried';
+      return `Resend error ${e.status}: ${e.message}`;
+    }
+    const msg = String((e as Error)?.message ?? e);
+    return /timeout|aborted/i.test(msg) ? 'Timed out connecting to Resend' : `Resend error: ${msg.slice(0, 200)}`;
+  }
+  return smtpError(e, c?.kind === 'smtp' ? c : undefined);
+}
+
+/**
+ * Checks the Resend API key without sending anything. A full-access key can list domains, so the
+ * sender's domain is also checked; a "sending access" key cannot (Resend answers 401
+ * restricted_api_key), which still proves the key is real.
+ */
+export async function verifyResend(values: Record<string, string>): Promise<CredentialCheck> {
+  const c = toResendConfig(values);
+  if (!c) return { ok: false, status: 'failed', message: 'API key and sender email address are required' };
+  try {
+    const res = await fetch(`${RESEND_API}/domains`, { headers: { Authorization: `Bearer ${c.apiKey}` }, signal: AbortSignal.timeout(15_000) });
+    const body = (await res.json().catch(() => ({}))) as { name?: string; message?: string; data?: { name: string; status: string }[] };
+    if (res.status === 401 && body.name === 'restricted_api_key') return { ok: true, status: 'ok', message: 'API key accepted (sending access). Send a test email to confirm the sender domain.' };
+    if (!res.ok) return { ok: false, status: 'failed', message: `Resend refused the API key: ${String(body.message ?? res.status).slice(0, 160)}` };
+    const domain = c.fromEmail.split('@')[1]?.toLowerCase() ?? '';
+    const d = (body.data ?? []).find((x) => x.name.toLowerCase() === domain);
+    if (!d) return { ok: false, status: 'failed', message: `API key works, but ${domain} is not a domain in this Resend account — add and verify it in Resend → Domains` };
+    if (d.status !== 'verified') return { ok: false, status: 'failed', message: `API key works, but ${domain} is "${d.status}" in Resend — finish the DNS records in Resend → Domains` };
+    return { ok: true, status: 'ok', message: `API key accepted; ${domain} is verified in Resend` };
+  } catch (e) {
+    return { ok: false, status: 'failed', message: emailError(e, { kind: 'resend', ...c }) };
+  }
+}
 
 export function toSmtpConfig(raw: Record<string, string>): SmtpConfig | null {
   const v = upgradeValues('smtp', raw);
@@ -60,13 +176,6 @@ export function toWhatsAppConfig(v: Record<string, string>): WhatsAppConfig | nu
     langAr: v.templateLangAr || 'ar',
     langEn: v.templateLangEn || 'en',
   };
-}
-
-/** The SMTP configuration in use right now, or null when email is not configured / disabled. */
-export async function activeSmtp(): Promise<SmtpConfig | null> {
-  await loadIntegrations();
-  const i = integration('smtp');
-  return i.enabled ? toSmtpConfig(i.values) : null;
 }
 
 export async function activeWhatsApp(): Promise<WhatsAppConfig | null> {

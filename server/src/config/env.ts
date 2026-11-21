@@ -46,6 +46,10 @@ const schema = z.object({
   SMTP_PASS: z.string().default(''),
   /** Legacy fallback only (Admin → Settings → Notifications is the primary place). No built-in sender address. */
   EMAIL_FROM: z.string().default(''),
+  /** Resend API key (HTTPS email) — for hosts that block SMTP, e.g. Railway's Hobby plan. Uses EMAIL_FROM as the sender. */
+  RESEND_API_KEY: z.string().default(''),
+  /** Optional reply-to address for the Resend fallback. */
+  EMAIL_REPLY_TO: z.string().default(''),
   WHATSAPP_ACCESS_TOKEN: z.string().default(''),
   WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
   WHATSAPP_ORDER_TEMPLATE: z.string().default('order_update'),
