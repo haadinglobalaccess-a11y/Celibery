@@ -46,7 +46,7 @@ export type IntegrationDef = {
   verifyFields?: string[];
 };
 
-export const INTEGRATION_KEYS = ['moyasar', 'tabby', 'imile', 'smtp', 'whatsapp', 's3'] as const;
+export const INTEGRATION_KEYS = ['moyasar', 'tabby', 'imile', 'smtp', 'resend', 'whatsapp', 's3'] as const;
 export type IntegrationKey = (typeof INTEGRATION_KEYS)[number];
 
 export const INTEGRATIONS: Record<IntegrationKey, IntegrationDef> = {
@@ -119,6 +119,26 @@ export const INTEGRATIONS: Record<IntegrationKey, IntegrationDef> = {
       { key: 'replyTo', label: 'Reply-to email (optional)', secret: false, required: false, hint: 'Where customer replies go, e.g. support@your-domain.com', maxLength: 200 },
     ],
   },
+  /**
+   * Resend: email over HTTPS. For hosts that block outbound SMTP (Railway's Hobby plan blocks ports
+   * 25/465/587). When switched on it is used instead of SMTP.
+   */
+  resend: {
+    key: 'resend',
+    label: 'Email (Resend API)',
+    kind: 'notification',
+    verifiable: true,
+    inUse: true,
+    singleMode: true,
+    docsUrl: 'https://resend.com/docs',
+    verifyFields: ['apiKey', 'fromEmail'],
+    fields: [
+      { key: 'apiKey', label: 'Resend API key', secret: true, required: true, hint: 'Resend → API Keys → Create (starts with re_). "Sending access" is enough.', maxLength: 200 },
+      { key: 'fromEmail', label: 'Sender email address (From)', secret: false, required: true, hint: 'An address on a domain verified in Resend → Domains, e.g. orders@celibery.international', maxLength: 200 },
+      { key: 'fromName', label: 'Sender display name', secret: false, required: false, hint: 'e.g. CELIBERY International', maxLength: 100, allowSpaces: true },
+      { key: 'replyTo', label: 'Reply-to email (optional)', secret: false, required: false, hint: 'Where customer replies go, e.g. support@celibery.international', maxLength: 200 },
+    ],
+  },
   whatsapp: {
     key: 'whatsapp',
     label: 'WhatsApp Business (Cloud API)',
@@ -181,6 +201,11 @@ export function validateFieldValue(integration: IntegrationKey, field: string, m
       return 'SMTP server must be a host name such as smtp.example.com (no https:// and no port)';
     if (field === 'port' && !(/^\d{1,5}$/.test(value) && Number(value) >= 1 && Number(value) <= 65535)) return 'Port must be a number between 1 and 65535';
     if (field === 'security' && !['starttls', 'ssl'].includes(value)) return 'Choose STARTTLS or SSL/TLS';
+    if ((field === 'fromEmail' || field === 'replyTo') && !EMAIL_RX.test(value)) return `${def.label} must be a valid email address`;
+    if (field === 'fromName' && /[<>"@]/.test(value)) return 'The display name cannot contain < > " or @';
+  }
+  if (integration === 'resend') {
+    if (field === 'apiKey' && !/^re_[A-Za-z0-9_]{8,}$/.test(value)) return 'Resend API keys start with re_';
     if ((field === 'fromEmail' || field === 'replyTo') && !EMAIL_RX.test(value)) return `${def.label} must be a valid email address`;
     if (field === 'fromName' && /[<>"@]/.test(value)) return 'The display name cannot contain < > " or @';
   }

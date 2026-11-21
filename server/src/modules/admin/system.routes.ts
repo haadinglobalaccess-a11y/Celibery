@@ -268,6 +268,12 @@ function hostingInfo() {
   };
 }
 
+/** Email readiness for the settings page: Resend when it is set up or switched on, otherwise SMTP. */
+async function emailChannelStatus() {
+  const [smtp, resend] = await Promise.all([channelStatus('smtp'), channelStatus('resend')]);
+  return resend.enabled || resend.status !== 'not_configured' || resend.usingEnvFallback ? resend : smtp;
+}
+
 adminSystemRoutes.get(
   '/settings',
   requireAnyPermission('settings:write', 'business:write', 'payments:manage'),
@@ -279,7 +285,7 @@ adminSystemRoutes.get(
         emailConfigured: emailConfigured(),
         whatsappConfigured: whatsappConfigured(),
         // Q28: status of the configuration saved in the admin (not environment variables).
-        email: await channelStatus('smtp'),
+        email: await emailChannelStatus(),
         whatsapp: await channelStatus('whatsapp'),
       },
       hosting: hostingInfo(),

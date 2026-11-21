@@ -3,7 +3,7 @@ import { devFallbacksAllowed, env } from '../../config/env';
 import { logger } from '../../lib/logger';
 import { buildKeyRing, decryptSecret, encryptSecret, fingerprint, type KeyRing } from '../../lib/secrets';
 import { IntegrationCredential, WITH_SECRETS } from '../../models/IntegrationCredential';
-import { INTEGRATIONS, inferModeFromKey, missingRequired, upgradeValues, verificationSubject, type IntegrationKey, type Mode } from './definitions';
+import { INTEGRATIONS, inferModeFromKey, missingRequired, parseSender, upgradeValues, verificationSubject, type IntegrationKey, type Mode } from './definitions';
 
 /**
  * Resolves the credentials each integration should use right now.
@@ -95,6 +95,18 @@ function fromEnv(provider: IntegrationKey): ResolvedIntegration {
       values: upgradeValues('smtp', { host: env.SMTP_HOST, port: String(env.SMTP_PORT), user: env.SMTP_USER, pass: env.SMTP_PASS, from: env.EMAIL_FROM }),
       // No built-in sender address: the legacy fallback needs EMAIL_FROM too.
       configured: Boolean(env.EMAIL_FROM),
+    };
+  }
+  if (provider === 'resend' && env.RESEND_API_KEY) {
+    // Same sender variable as the SMTP fallback; "Name <address>" or a bare address.
+    const sender = parseSender(env.EMAIL_FROM);
+    return {
+      provider,
+      source: 'env',
+      enabled: Boolean(sender),
+      mode: 'live',
+      values: { apiKey: env.RESEND_API_KEY, fromEmail: sender?.email ?? '', fromName: sender?.name ?? '', replyTo: env.EMAIL_REPLY_TO },
+      configured: Boolean(sender),
     };
   }
   if (provider === 'whatsapp' && env.WHATSAPP_ACCESS_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID) {

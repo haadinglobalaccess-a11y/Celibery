@@ -451,7 +451,7 @@ export function SettingsPage() {
             onSave={() => save({ orderNotifications: s.orderNotifications })}
           />
           {canPayments ? (
-            <Integrations only={['smtp', 'whatsapp']} onChanged={() => void get<{ integrations: Diagnostics }>('/api/admin/settings').then((r) => setDiag(r.integrations)).catch(() => undefined)} />
+            <Integrations only={['resend', 'smtp', 'whatsapp']} onChanged={() => void get<{ integrations: Diagnostics }>('/api/admin/settings').then((r) => setDiag(r.integrations)).catch(() => undefined)} />
           ) : (
             <Card title="Email & WhatsApp providers">
               <p className="muted">Only Super Administrators (permission “payments:manage”) can view or change the email (SMTP) and WhatsApp credentials.</p>
@@ -1129,7 +1129,7 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
   const sendTest = () =>
     run('test', async () => {
       const r = await post<{ sent: boolean; to: string; from: string }>(`/api/admin/integrations/${i.key}/test-message`, { to: testTo.trim() || undefined });
-      toast(i.key === 'smtp' ? `Test email sent to ${r.to} from ${r.from}` : `Test WhatsApp message sent to +${r.to} from +${r.from}`);
+      toast(i.key === 'smtp' || i.key === 'resend' ? `Test email sent to ${r.to} from ${r.from}` : `Test WhatsApp message sent to +${r.to} from +${r.from}`);
     });
   const requestActivate = (enabled: boolean, target: 'test' | 'live') => {
     if (enabled && i.kind === 'payment' && target === 'live' && !(i.enabled && i.activeMode === 'live')) setConfirmLive({ enabled, mode: target });
@@ -1237,19 +1237,19 @@ function GatewayCard({ integration: i, canStore, production, onChanged }: { inte
               {busy === 'verify' ? 'Testing…' : 'Test connection'}
             </button>
           ) : null}
-          {i.key === 'smtp' || i.key === 'whatsapp' ? (
+          {i.key === 'smtp' || i.key === 'resend' || i.key === 'whatsapp' ? (
             <span className="test-send" style={{ display: 'inline-flex', gap: 6 }}>
               <input
                 className="input ltr"
                 style={{ width: 220 }}
-                type={i.key === 'smtp' ? 'email' : 'tel'}
-                aria-label={i.key === 'smtp' ? 'Test recipient email' : 'Test recipient WhatsApp number'}
-                placeholder={i.key === 'smtp' ? 'recipient@example.com' : '9665XXXXXXXX'}
+                type={i.key === 'whatsapp' ? 'tel' : 'email'}
+                aria-label={i.key === 'whatsapp' ? 'Test recipient WhatsApp number' : 'Test recipient email'}
+                placeholder={i.key === 'whatsapp' ? '9665XXXXXXXX' : 'recipient@example.com'}
                 value={testTo}
                 onChange={(e) => setTestTo(e.target.value)}
               />
               <button className="btn btn--outline btn--sm" disabled={dirty || Boolean(busy) || m.missing.length > 0 || !testTo.trim()} onClick={() => void sendTest()} title={dirty ? 'Save first' : 'Sends a real message with the saved settings'}>
-                {busy === 'test' ? 'Sending…' : i.key === 'smtp' ? 'Send test email' : 'Send test WhatsApp message'}
+                {busy === 'test' ? 'Sending…' : i.key === 'whatsapp' ? 'Send test WhatsApp message' : 'Send test email'}
               </button>
             </span>
           ) : null}

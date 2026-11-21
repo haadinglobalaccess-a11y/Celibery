@@ -2,7 +2,7 @@ import { env } from '../../config/env';
 import { conflict, notFound, unprocessable } from '../../lib/errors';
 import { logger } from '../../lib/logger';
 import { Notification, Order, OrderNotification, getSettings, templateOverride } from '../../models';
-import { activeSmtp, smtpError, smtpFrom, smtpTransport, type SmtpConfig } from './providers';
+import { activeEmail, emailError, emailServerLabel, sendEmailWith, type EmailConfig } from './providers';
 import { button, esc, fill, layout, paragraphs, resolveContent, templateDef, validateOverride, type Lang, type TemplateOverride } from './templates';
 import { clickToChat, whatsappNumber } from './whatsapp-channel';
 
@@ -251,8 +251,8 @@ async function storeNameFor(lang: Lang) {
   return (s?.business?.name as { ar?: string; en?: string } | undefined)?.[lang] || L[lang].store;
 }
 
-async function sendSmtp(smtp: SmtpConfig, to: string, content: { subject: string; html: string; text: string }) {
-  await smtpTransport(smtp).sendMail({ from: smtpFrom(smtp), replyTo: smtp.replyTo || undefined, to, subject: content.subject, html: content.html, text: content.text });
+async function sendSmtp(account: EmailConfig, to: string, content: { subject: string; html: string; text: string }) {
+  await sendEmailWith(account, to, content);
 }
 
 const hist = (action: string, status: string, detail = '', by?: string) => ({ at: new Date(), action, status, detail: detail.slice(0, 500), ...(by ? { by } : {}) });
@@ -325,7 +325,7 @@ export async function processConfirmationEmail(id: unknown, opts: { link?: strin
   const to = clean(order.contact?.email).toLowerCase();
   if (!to) return finish({ status: 'skipped', nextAttemptAt: null, lastError: 'The order has no email address' }, hist('skipped', 'skipped', 'The order has no email address'));
 
-  const smtp = await activeSmtp();
+  const smtp = await activeEmail();
   if (!smtp) {
     const detail = 'Email (SMTP) not configured or disabled — use "Send now" once it is set up';
     await Notification.create({ channel: 'email', to, template: TEMPLATE_KEY, order: order._id, status: 'skipped', detail });
@@ -338,10 +338,10 @@ export async function processConfirmationEmail(id: unknown, opts: { link?: strin
     const content = buildConfirmationEmail(order as unknown as ConfirmationOrder, lang, override, opts.link || confirmationLink(order), await storeNameFor(lang));
     await sendSmtp(smtp, to, content);
     await Notification.create({ channel: 'email', to, template: TEMPLATE_KEY, order: order._id, status: 'sent' });
-    const note = `Accepted by the mail server ${smtp.host} (attempt ${claimed.attempts})${problems.length ? ` — the saved template was invalid, the default wording was used (${problems.join(' | ')})` : ''}`;
+    const note = `Accepted by ${emailServerLabel(smtp)} (attempt ${claimed.attempts})${problems.length ? ` — the saved template was invalid, the default wording was used (${problems.join(' | ')})` : ''}`;
     return finish({ status: 'sent', to, subject: content.subject, sentAt: new Date(), nextAttemptAt: null, lastError: '' }, hist('sent', 'sent', note));
   } catch (err) {
-    const detail = smtpError(err, smtp);
+    const detail = emailError(err, smtp);
     logger.warn('Order confirmation email failed', { orderNumber: order.orderNumber, attempt: claimed.attempts, err: detail });
     await Notification.create({ channel: 'email', to, template: TEMPLATE_KEY, order: order._id, status: 'failed', detail: detail.slice(0, 300) }).catch(() => undefined);
     const final = claimed.attempts >= (claimed.maxAttempts ?? 5);
@@ -501,7 +501,7 @@ export async function orderNotificationsView(orderId: string) {
   const [recs, settings, smtp] = await Promise.all([
     OrderNotification.find({ order: order._id, kind: KIND }).populate('history.by', 'name').populate('confirmedBy', 'name').lean(),
     getSettings(),
-    activeSmtp(),
+    activeEmail(),
   ]);
   const email = recs.find((r) => r.channel === 'email') ?? null;
   const wa = recs.find((r) => r.channel === 'whatsapp') ?? null;
@@ -576,14 +576,14 @@ export async function previewConfirmation(lang: Lang, override: TemplateOverride
 
 /** Sends the confirmation email with sample data to `to` (Settings → Order confirmation → Send test). */
 export async function sendTestConfirmationEmail(to: string, lang: Lang) {
-  const smtp = await activeSmtp();
+  const smtp = await activeEmail();
   if (!smtp) throw unprocessable('EMAIL_NOT_CONFIGURED', 'Email (SMTP) is not configured or not switched on. Set it up under "Email & WhatsApp providers" first.');
   const { override } = safeOverride((await templateOverride(TEMPLATE_KEY)) as TemplateOverride);
   const p = await previewConfirmation(lang, override);
   try {
     await sendSmtp(smtp, to, { ...p.email, subject: `[TEST] ${p.email.subject}` });
   } catch (err) {
-    const detail = smtpError(err, smtp);
+    const detail = emailError(err, smtp);
     await Notification.create({ channel: 'email', to, template: `${TEMPLATE_KEY}.test`, status: 'failed', detail: detail.slice(0, 300) });
     throw unprocessable('SEND_FAILED', `The test email could not be sent: ${detail}`);
   }

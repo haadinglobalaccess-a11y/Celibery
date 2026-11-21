@@ -1,7 +1,7 @@
 import { logger } from '../../lib/logger';
 import { Notification, getSettings, templateOverride } from '../../models';
 import { integration } from '../credentials';
-import { activeSmtp, activeWhatsApp, smtpFrom, smtpTransport, whatsappMessagesUrl, whatsappTemplateBody, type SmtpConfig, type WhatsAppConfig } from './providers';
+import { activeEmail, activeWhatsApp, emailError, sendEmailWith, whatsappMessagesUrl, whatsappTemplateBody, type EmailConfig, type WhatsAppConfig } from './providers';
 import { orderEmail, passwordResetEmail, staffInviteEmail, whatsappStatusText, type OrderEvent } from './templates';
 
 /**
@@ -13,19 +13,14 @@ import { orderEmail, passwordResetEmail, staffInviteEmail, whatsappStatusText, t
  */
 
 /** Synchronous status (the credentials snapshot is refreshed on every API request). */
-export const emailConfigured = () => integration('smtp').enabled;
+export const emailConfigured = () => integration('resend').enabled || integration('smtp').enabled;
 export const whatsappConfigured = () => integration('whatsapp').enabled;
 
 type Ctx = { template: string; order?: unknown; user?: unknown };
 
-/** Sends one email with the given SMTP account (administrator-selected sender and reply-to). Throws on failure. */
-export async function deliverEmail(smtp: SmtpConfig, to: string, content: { subject: string; html: string; text: string }, opts: { fresh?: boolean } = {}) {
-  const t = smtpTransport(smtp, opts);
-  try {
-    await t.sendMail({ from: smtpFrom(smtp), replyTo: smtp.replyTo || undefined, to, subject: content.subject, html: content.html, text: content.text });
-  } finally {
-    if (opts.fresh) t.close();
-  }
+/** Sends one email with the given account (SMTP or Resend; administrator-selected sender and reply-to). Throws on failure. */
+export async function deliverEmail(account: EmailConfig, to: string, content: { subject: string; html: string; text: string }, opts: { fresh?: boolean } = {}) {
+  await sendEmailWith(account, to, content, opts);
 }
 
 /** Sends the approved order-update template from the administrator-selected WhatsApp number. Throws on failure. */
@@ -43,18 +38,19 @@ export async function deliverWhatsApp(wa: WhatsAppConfig, to: string, lang: 'ar'
 }
 
 export async function sendEmail(to: string, content: { subject: string; html: string; text: string }, ctx: Ctx) {
-  const smtp = await activeSmtp();
-  if (!smtp) {
-    await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'skipped', detail: 'Email (SMTP) not configured or disabled' });
+  const account = await activeEmail();
+  if (!account) {
+    await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'skipped', detail: 'Email not configured or disabled' });
     return { status: 'skipped' as const };
   }
   try {
-    await deliverEmail(smtp, to, content);
+    await deliverEmail(account, to, content);
     await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'sent' });
     return { status: 'sent' as const };
   } catch (err) {
-    logger.warn('Email send failed', { template: ctx.template, err: String(err) });
-    await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'failed', detail: String(err).slice(0, 300) });
+    const detail = emailError(err, account);
+    logger.warn('Email send failed', { template: ctx.template, err: detail });
+    await Notification.create({ channel: 'email', to, template: ctx.template, order: ctx.order, user: ctx.user, status: 'failed', detail: detail.slice(0, 300) });
     return { status: 'failed' as const };
   }
 }
