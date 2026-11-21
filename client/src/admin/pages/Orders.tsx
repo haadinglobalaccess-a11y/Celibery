@@ -9,6 +9,7 @@ import { useAT } from '../i18n';
 import { AIcon } from '../icons';
 import { EmptyState, ErrorBox, ErrorPanel, F, Modal, Skeleton, SkeletonTable, Status, usePerms } from '../kit';
 import { OrderConfirmationPanel } from './OrderConfirmation';
+import { OrderDocument } from './OrderDocument';
 
 type OrderRow = {
   _id: string;
@@ -460,17 +461,14 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
   const [refundKey, setRefundKey] = useState('');
   const [refundBusy, setRefundBusy] = useState(false);
   const [ledgerKey, setLedgerKey] = useState(0);
-  const [printing, setPrinting] = useState(false);
+  const [printing, setPrinting] = useState<'invoice' | 'packing' | null>(null);
 
   useEffect(() => {
     if (!printing) return;
-    const done = () => setPrinting(false);
+    // The document opens the print dialog itself once the store details and logo have loaded.
+    const done = () => setPrinting(null);
     window.addEventListener('afterprint', done);
-    const id = setTimeout(() => window.print(), 50);
-    return () => {
-      clearTimeout(id);
-      window.removeEventListener('afterprint', done);
-    };
+    return () => window.removeEventListener('afterprint', done);
   }, [printing]);
 
   const title = useMemo(() => (data ? (lang === 'ar' ? `الطلب ${data.order.orderNumber}` : `Order ${data.order.orderNumber}`) : ''), [data, lang]);
@@ -609,7 +607,10 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
               {t.order.checkGateway}
             </button>
           ) : null}
-          <button type="button" className="a-btn a-btn--secondary" onClick={() => setPrinting(true)}>
+          <button type="button" className="a-btn a-btn--secondary" onClick={() => setPrinting('invoice')} data-testid="print-invoice">
+            <AIcon name="printer" size={16} /> {t.order.printInvoice}
+          </button>
+          <button type="button" className="a-btn a-btn--secondary" onClick={() => setPrinting('packing')} data-testid="print-packing">
             <AIcon name="printer" size={16} /> {t.order.printSlip}
           </button>
         </div>
@@ -1064,53 +1065,7 @@ export function OrderDetail({ perms }: { perms: Set<string> }) {
         </Modal>
       ) : null}
 
-      {printing ? <PackingSlip order={o} /> : null}
-    </div>
-  );
-}
-
-/** Printable packing slip from the order record (no prices — for the warehouse and the parcel). */
-function PackingSlip({ order: o }: { order: Detail['order'] }) {
-  const { t, lang, n, dt } = useAT();
-  const a = o.shippingAddress;
-  return (
-    <div className="a-print" aria-hidden="true">
-      <h1>
-        CELIBERY International — {t.order.printSlip}
-      </h1>
-      <p>
-        <strong className="ltr">{o.orderNumber}</strong> · {dt(o.createdAt)} · {t.method[o.paymentMethod] ?? o.paymentMethod}
-        {o.paymentMethod === 'cod' ? ` · ${t.order.codAmount}: ${(o.total / 100).toFixed(2)} SAR` : ''}
-      </p>
-      <p>
-        {a.fullName} · {a.phone}
-        <br />
-        {a.street} {a.buildingNumber}, {a.district}, {a.city} {a.postalCode}
-        {a.shortAddress ? ` · ${a.shortAddress}` : ''}
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>{t.order.itemsHead[1]}</th>
-            <th>{t.order.itemsHead[0]}</th>
-            <th>{t.order.itemsHead[2]}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {o.items.map((i) => (
-            <tr key={i.sku}>
-              <td>{i.sku}</td>
-              <td>{lang === 'ar' ? i.name.ar || i.name.en : i.name.en || i.name.ar}</td>
-              <td>{n(i.quantity)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {o.customerNote ? (
-        <p>
-          {t.order.customerNote}: {o.customerNote}
-        </p>
-      ) : null}
+      {printing ? <OrderDocument order={o} variant={printing} onReady={() => window.print()} /> : null}
     </div>
   );
 }
