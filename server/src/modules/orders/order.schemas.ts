@@ -58,6 +58,8 @@ export const trackSchema = z.object({
   orderNumber: z.string().trim().toUpperCase().max(30),
   token: z.string().trim().min(10).max(100).optional(),
   phone: saudiPhone.optional(),
+  /** Alternative to the phone: the email address used for the order. */
+  email: z.string().trim().toLowerCase().email().max(200).optional(),
 });
 
 export const statusUpdateSchema = z.object({

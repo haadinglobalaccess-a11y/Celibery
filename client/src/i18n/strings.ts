@@ -455,8 +455,9 @@ const ar = {
   },
   track: {
     title: 'تتبع طلبك',
-    text: 'أدخل رقم الطلب ورقم الجوال المستخدم في الطلب.',
+    text: 'أدخل رقم الطلب مع رقم الجوال أو البريد الإلكتروني المستخدم في الطلب. تجد رقم الطلب في رسالة تأكيد الطلب.',
     orderNumber: 'رقم الطلب',
+    contact: 'رقم الجوال أو البريد الإلكتروني',
     submit: 'تتبع',
     notFound: 'لم نجد طلباً بهذه البيانات.',
   },
@@ -985,8 +986,9 @@ const en: Dict = {
   },
   track: {
     title: 'Track your order',
-    text: 'Enter your order number and the mobile number used for the order.',
+    text: 'Enter your order number with the mobile number or email used for the order. Your order number is in the order confirmation email.',
     orderNumber: 'Order number',
+    contact: 'Mobile number or email',
     submit: 'Track',
     notFound: 'We could not find an order with these details.',
   },

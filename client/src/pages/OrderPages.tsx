@@ -166,7 +166,10 @@ export function TrackOrder() {
     setNotFound(false);
     try {
       const num = orderNumber.trim().toUpperCase();
-      const r = await get<{ order: OrderView }>(`/api/orders/track${qs({ orderNumber: num, phone: phone.replace(/\s/g, '') })}`);
+      // One field: an email address when it contains @, otherwise the mobile number.
+      const value = phone.trim();
+      const who = value.includes('@') ? { email: value.toLowerCase() } : { phone: value.replace(/\s/g, '') };
+      const r = await get<{ order: OrderView }>(`/api/orders/track${qs({ orderNumber: num, ...who })}`);
       setOrder(r.order);
       setParams({ order: num });
     } catch {
@@ -196,8 +199,8 @@ export function TrackOrder() {
           <Field label={t.track.orderNumber}>
             <input className="input" dir="ltr" required value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} placeholder="CEL-100001" />
           </Field>
-          <Field label={t.checkout.phone}>
-            <input className="input" dir="ltr" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05XXXXXXXX" />
+          <Field label={t.track.contact}>
+            <input className="input" dir="ltr" type="text" inputMode="email" autoComplete="email" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05XXXXXXXX / name@example.com" data-testid="track-contact" />
           </Field>
           {notFound ? <p className="alert alert--error">{t.track.notFound}</p> : null}
           <button className="btn btn--primary" disabled={busy}>

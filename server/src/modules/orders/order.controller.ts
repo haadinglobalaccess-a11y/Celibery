@@ -92,13 +92,15 @@ export async function getOrder(req: Request, res: Response) {
   return ok(res, svc.toCustomerOrder(order));
 }
 
-/** Public tracking by order number + token (full view) or + phone (limited view, no personal data). */
+/** Public tracking by order number + token (full view) or + phone / email used for the order (limited view, no personal data). */
 export async function track(req: Request, res: Response) {
   const input = q(req, trackSchema);
   const order = await Order.findOne({ orderNumber: input.orderNumber }).select('+accessTokenHash').lean();
   if (!order) throw notFound('Order');
   if (input.token && order.accessTokenHash && safeEqual(sha256(input.token), String(order.accessTokenHash))) return ok(res, { full: true, order: svc.toCustomerOrder(order) });
-  if (input.phone && normalizeSaudiPhone(input.phone) === normalizeSaudiPhone(order.contact.phone)) {
+  const phoneMatches = Boolean(input.phone) && normalizeSaudiPhone(input.phone!) === normalizeSaudiPhone(order.contact.phone);
+  const emailMatches = Boolean(input.email) && Boolean(order.contact.email) && safeEqual(input.email!, String(order.contact.email).trim().toLowerCase());
+  if (phoneMatches || emailMatches) {
     const v = svc.toCustomerOrder(order);
     return ok(res, {
       full: false,
@@ -109,7 +111,7 @@ export async function track(req: Request, res: Response) {
         paymentStatus: v.paymentStatus,
         total: v.total,
         items: v.items.map((i) => ({ name: i.name, quantity: i.quantity, image: i.image })),
-        delivery: { courier: v.delivery?.courier, trackingNumber: v.delivery?.trackingNumber, trackingUrl: v.delivery?.trackingUrl, shippedAt: v.delivery?.shippedAt, deliveredAt: v.delivery?.deliveredAt },
+        delivery: { courier: v.delivery?.courier, trackingNumber: v.delivery?.trackingNumber, trackingUrl: v.delivery?.trackingUrl, shippedAt: v.delivery?.shippedAt, deliveredAt: v.delivery?.deliveredAt, estimatedDelivery: v.delivery?.estimatedDelivery },
         history: v.history,
       },
     });
