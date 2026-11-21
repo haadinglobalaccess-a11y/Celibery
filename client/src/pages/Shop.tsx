@@ -5,7 +5,7 @@ import { ProductCard, ProductGridSkeleton } from '../components/ProductCard';
 import { Crumbs, EmptyState, ErrorState, NotFound } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
 import { api, qs } from '../lib/api';
-import { connectorLabel, formatInt, L, placeholderFor } from '../lib/format';
+import { colourName, connectorLabel, formatInt, L, placeholderFor } from '../lib/format';
 import { cloudinaryAt, responsiveImg } from '../lib/media';
 import { useApi, useCached } from '../lib/hooks';
 import { useSeo } from '../lib/useSeo';
@@ -91,7 +91,7 @@ function FiltersPanel({ facets, params, set, setRange }: { facets: Facets; param
             {facets.color.map((c) => (
               <button key={c.value} className="cx-chip" aria-pressed={list('color').includes(c.value)} onClick={() => toggle('color', c.value)}>
                 {c.hex ? <span className="swatch" style={{ background: c.hex }} /> : null}
-                {L(c.name, lang) || c.value}
+                {colourName(c.name, lang, c.value)}
               </button>
             ))}
           </div>
@@ -268,7 +268,7 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
           {visual ? (
             <div className="cx-listhead__visual" aria-hidden="true">
               <span className="cx-listhead__halo" />
-              <img {...responsiveImg(visual, '(max-width: 959px) 70vw, 36vw', [480, 800, 1200])} alt="" decoding="async" fetchPriority="high" />
+              <img {...responsiveImg(visual, '(max-width: 959px) 70vw, 36vw', [480, 800, 1200])} alt="" decoding="async" {...{ fetchpriority: 'high' }} />
             </div>
           ) : null}
         </div>

@@ -57,7 +57,7 @@ export function CampaignPage() {
         {data.heroImageUrl ? (
           <picture className="campaign-hero__art">
             {data.heroMobileImageUrl ? <source media="(max-width: 639px)" srcSet={cloudinarySrcSet(data.heroMobileImageUrl, [480, 800, 1200]) || data.heroMobileImageUrl} sizes="100vw" /> : null}
-            <img {...responsiveImg(data.heroImageUrl, '100vw', [800, 1200, 1600, 2000])} alt="" decoding="async" fetchPriority="high" />
+            <img {...responsiveImg(data.heroImageUrl, '100vw', [800, 1200, 1600, 2000])} alt="" decoding="async" {...{ fetchpriority: 'high' }} />
           </picture>
         ) : null}
       </section>

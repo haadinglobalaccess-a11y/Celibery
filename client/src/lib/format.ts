@@ -42,6 +42,27 @@ export function L(v: Localized | undefined | null, lang: Lang) {
   return v[lang] || v[lang === 'ar' ? 'en' : 'ar'] || '';
 }
 
+/** Arabic for common colour names, used only when a product's colour has no Arabic name in the Admin. */
+const AR_COLOURS: Record<string, string> = {
+  black: 'أسود', white: 'أبيض', grey: 'رمادي', gray: 'رمادي', silver: 'فضي', gold: 'ذهبي', blue: 'أزرق', navy: 'كحلي', red: 'أحمر',
+  green: 'أخضر', pink: 'وردي', rose: 'وردي', orange: 'برتقالي', purple: 'بنفسجي', yellow: 'أصفر', brown: 'بني', beige: 'بيج',
+  lilac: 'ليلكي', lavender: 'لافندر', coral: 'مرجاني', olive: 'زيتوني', ivory: 'عاجي', charcoal: 'فحمي', graphite: 'جرافيتي',
+  gunmetal: 'رمادي معدني', midnight: 'كحلي داكن', champagne: 'شامبانيا', sand: 'رملي', teal: 'أزرق مخضر', turquoise: 'فيروزي', cyan: 'سماوي',
+  'navy blue': 'كحلي', 'sky blue': 'أزرق سماوي', 'space grey': 'رمادي فلكي', 'space gray': 'رمادي فلكي', 'matte black': 'أسود مطفي',
+  'midnight black': 'أسود داكن', 'pearl white': 'أبيض لؤلؤي', 'ivory white': 'أبيض عاجي', 'silver white': 'أبيض فضي', 'sand beige': 'بيج رملي',
+  'rose pink': 'وردي', 'olive green': 'أخضر زيتوني', 'sage green': 'أخضر مريمي', 'champagne gold': 'ذهبي شامبانيا', 'rose gold': 'ذهبي وردي',
+};
+
+/** A colour's name in the active language; in Arabic, a common English colour name is translated when the Arabic name is empty. */
+export function colourName(name: Localized | undefined | null, lang: Lang, key?: string) {
+  if (lang === 'ar' && !name?.ar?.trim()) {
+    const en = (name?.en || key || '').trim();
+    const parts = en.split('/').map((x) => AR_COLOURS[x.trim().toLowerCase().replace(/\s+/g, ' ')]);
+    if (en && parts.every(Boolean)) return parts.join(' / ');
+  }
+  return L(name, lang) || key || '';
+}
+
 /** List separator for the active language: the Arabic comma in Arabic, ", " in English. */
 export function listSep(lang: Lang) {
   return lang === 'ar' ? '، ' : ', ';

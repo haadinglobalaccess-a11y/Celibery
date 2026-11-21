@@ -139,9 +139,7 @@
   .a-grid-2 {
     grid-template-columns: 2fr 1fr;
   }
-  .a-grid-even {
-    grid-template-columns: 1fr 1fr;
-  }
+  
 }
 .a-filters {
   display: flex;
@@ -335,9 +333,6 @@ iframe.media-preview { border: 0; }
 .secret-row code { padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
 
 /* Refund ledger (admin/pages/Orders.tsx) */
-.refund-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.refund-list li { display: grid; gap: 4px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
-.refund-list__head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 
 /* CELIBERY — Premium Admin UI Refresh (Phase 1: visual only) */
 .admin {
@@ -489,10 +484,6 @@ iframe.media-preview { border: 0; }
   grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
   gap: 16px;
   align-items: start;
-}
-
-.a-grid-even {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .a-filters {
@@ -661,60 +652,10 @@ iframe.media-preview { border: 0; }
   .a-card {
     padding: 15px;
   }
-  .a-grid-even {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  
 }
 
 /* CELIBERY — Orders page refinement */
-.admin .orders-filters {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) 210px;
-  align-items: center;
-  gap: 12px;
-  padding: 14px;
-}
-.admin .orders-search-form {
-  min-width: 0;
-  width: 100%;
-  margin: 0;
-}
-.admin .orders-search-input {
-  width: 100%;
-  min-width: 0;
-  height: 42px;
-}
-.admin .orders-status-select {
-  width: 100%;
-  min-width: 0;
-  height: 42px;
-}
-.admin .orders-table-card {
-  padding: 0;
-  overflow: hidden;
-}
-.admin .orders-table {
-  min-width: 900px;
-}
-.admin .orders-table th {
-  height: 46px;
-}
-.admin .orders-table td {
-  white-space: nowrap;
-}
-.admin .orders-table td:nth-child(3) {
-  white-space: normal;
-  min-width: 170px;
-}
-.admin .orders-table td .muted {
-  margin-top: 3px;
-  font-size: 11px;
-}
-@media (max-width: 700px) {
-  .admin .orders-filters {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 
 /* CELIBERY — Products page refinement */
 .admin .products-filters {
@@ -1002,56 +943,6 @@ iframe.media-preview { border: 0; }
 }
 
 /* CELIBERY — Reports page refinement */
-.admin .reports-filters {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 240px));
-  gap: 14px;
-  padding: 14px;
-}
-.admin .reports-filters .input {
-  min-height: 42px;
-}
-.admin .reports-kpis {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-.admin .reports-kpis .kpi {
-  min-height: 112px;
-}
-.admin .reports-chart-card {
-  margin-bottom: 16px;
-}
-.admin .reports-chart-card .chart {
-  min-height: 260px;
-}
-.admin .reports-grid {
-  align-items: stretch;
-}
-.admin .reports-grid > * {
-  min-width: 0;
-}
-.admin .reports-grid .table {
-  min-width: 0;
-}
-.admin .reports-grid .table td {
-  padding: 12px 10px;
-}
-.admin .reports-grid .table td:first-child {
-  overflow-wrap: anywhere;
-}
-@media (max-width: 1200px) {
-  .admin .reports-kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (max-width: 640px) {
-  .admin .reports-filters {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .admin .reports-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 /* CELIBERY — Staff & Roles refinement */
 .admin .staff-table-card {
@@ -1283,32 +1174,6 @@ iframe.media-preview { border: 0; }
 .page-history-table td:last-child { width:100px; }
 
 /* Website Content — Customer Reviews */
-.reviews-note {
-  padding: 12px 14px;
-  margin-bottom: 16px;
-  background: #F8F9FB;
-  border: 1px solid var(--admin-border);
-  border-radius: 9px;
-  line-height: 1.6;
-}
-.reviews-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 18px 16px;
-  margin-bottom: 10px;
-  border: 1px solid var(--admin-divider);
-  border-radius: 10px;
-  background: #FFF;
-}
-.reviews-row > div:first-child { min-width: 0; }
-.reviews-row strong { color: #D69B24; letter-spacing: 2px; }
-.reviews-row .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
-.reviews-row .muted { font-size: 12px; }
-@media(max-width:700px) {
-  .reviews-row { flex-direction: column; gap: 12px; }
-  .reviews-row .actions { justify-content: flex-start; }
-}
 
 /* Media Library — Gallery polish */
 .media-library-card { padding:20px; }

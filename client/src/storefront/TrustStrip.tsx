@@ -39,9 +39,9 @@ export function TrustStrip() {
   const items = useServicePromises();
   if (!items.length) return null;
   const row = (hidden: boolean) => (
-    <ul className="cx-trust__row" aria-hidden={hidden || undefined}>
+    <ul className="cx-strip__row" aria-hidden={hidden || undefined}>
       {items.map((w) => (
-        <li key={w.key} className="cx-trust__item">
+        <li key={w.key} className="cx-strip__item">
           <Icon name={w.icon} />
           <span>{w.t}</span>
         </li>
@@ -49,8 +49,8 @@ export function TrustStrip() {
     </ul>
   );
   return (
-    <div className="cx-trust">
-      <div className="cx-trust__track">
+    <div className="cx-strip">
+      <div className="cx-strip__track">
         {row(false)}
         {row(true)}
         {row(true)}
