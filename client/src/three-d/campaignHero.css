@@ -59,7 +59,7 @@ body:has(.campaign-hero-slider) .header:not(.is-scrolled) .logo { color: #fff; }
 .campaign-indicators span { transform-origin: left !important; }
 .campaign-indicators { flex: 1; min-width: 0; }
 .campaign-indicators button { flex: 1; max-width: 90px; min-width: 10px; }
-.campaign-description { margin-top: 12px; }
+
 @media (prefers-reduced-motion: reduce) { .campaign-video { transition: none; } }
 
 .campaign-indicators span { transition: transform 160ms linear; }
@@ -137,7 +137,6 @@ html[lang='ar'] .campaign-copy .cine__title {
   letter-spacing: 0;
   line-height: 1.2;
 }
-
 
 /* CELIBERY SIGNATURE — LUXURY CINEMATIC VISUAL LAYER */
 .campaign-hero-slider {
@@ -297,7 +296,6 @@ html[lang='ar'] .campaign-copy .cine__title {
 
 /* Logo/nav centre-line alignment lives with the logo sizing in styles/celibery.css (.header__brand). */
 
-
 /* UGREEN-inspired refined editorial headline */
 .campaign-copy .cine__title { font-size: clamp(2.4rem, 3.8vw, 4.2rem); font-weight: 550; line-height: 1.08; letter-spacing: -.035em; text-transform: none; max-width: 620px; }
 @media (max-width: 639px) { .campaign-copy .cine__title { font-size: clamp(2.2rem, 8vw, 3rem); font-weight: 550; line-height: 1.12; } }
@@ -307,5 +305,4 @@ html[lang='ar'] .campaign-copy .cine__title {
 .campaign-copy .cine__ctas a { background: transparent !important; color: #fff !important; border: 1px solid rgba(255,255,255,.85) !important; transition: all 250ms ease !important; }
 .campaign-copy .cine__ctas a:hover,
 .campaign-copy .cine__ctas a:focus-visible { background: var(--accent) !important; color: var(--accent-ink) !important; border-color: var(--accent) !important; }
-
 

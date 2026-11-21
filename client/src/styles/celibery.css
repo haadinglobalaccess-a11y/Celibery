@@ -1790,42 +1790,6 @@ html[lang='ar'] .cx-pdp .cx-pdp__title {
 .cx-buy__wish[aria-pressed='true'] .icon {
   fill: currentColor;
 }
-.cx-services {
-  list-style: none;
-  margin: 22px 0 0;
-  padding: 18px 0 0;
-  border-top: 1px solid var(--cx-line);
-  display: grid;
-  gap: 14px;
-}
-.cx-services li {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-.cx-services .icon {
-  width: 36px;
-  height: 36px;
-  padding: 8px;
-  border-radius: 12px;
-  background: var(--cx-cloud);
-  color: var(--cx-ink);
-}
-.cx-services strong {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-.cx-services span,
-.cx-services a {
-  font-size: 0.8125rem;
-  color: var(--cx-muted);
-}
-.cx-services a:hover {
-  color: var(--cx-ink);
-  text-decoration: underline;
-}
 
 /* At a glance: key attributes as large figures */
 .cx-facts {
@@ -2953,6 +2917,26 @@ html[lang='ar'] .cx-footer h3 {
     opacity: 1;
     translate: none;
     scale: 1;
+  }
+}
+/* Items inside a swipe carousel rise without scaling: a scaled item moves its snap edge, the
+   carousel snapped a few pixels in and the first card's left edge stayed cut off. */
+@keyframes fx-rise {
+  from {
+    opacity: 0;
+    translate: 0 48px;
+  }
+  to {
+    opacity: 1;
+    translate: none;
+  }
+}
+.cx-theatre [data-fx='stagger'].fx-in .cx-rail__item {
+  animation-name: fx-rise;
+}
+@media (max-width: 959px) {
+  .cx-theatre [data-fx='stagger'].fx-in > .cx-eco__node {
+    animation-name: fx-rise;
   }
 }
 

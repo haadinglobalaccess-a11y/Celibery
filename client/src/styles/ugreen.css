@@ -7,7 +7,7 @@
    ========================================================================== */
 
 /* ---------- Service strip (TrustStrip) ---------- */
-.cx-trust {
+.cx-strip {
   position: relative;
   overflow: hidden;
   background: var(--surface);
@@ -16,25 +16,25 @@
   /* Soft fade at both ends, so items drift in and out instead of being cut. */
   mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
-.cx-trust__track {
+.cx-strip__track {
   display: flex;
   width: max-content;
-  animation: cx-trust-drift 48s linear infinite;
+  animation: cx-strip-drift 48s linear infinite;
 }
-[dir='rtl'] .cx-trust__track {
-  animation-name: cx-trust-drift-rtl;
+[dir='rtl'] .cx-strip__track {
+  animation-name: cx-strip-drift-rtl;
 }
-.cx-trust:hover .cx-trust__track {
+.cx-strip:hover .cx-strip__track {
   animation-play-state: paused;
 }
-.cx-trust__row {
+.cx-strip__row {
   display: flex;
   flex: none;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.cx-trust__item {
+.cx-strip__item {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -45,33 +45,33 @@
   letter-spacing: -0.005em;
   white-space: nowrap;
 }
-html[lang='ar'] .cx-trust__item {
+html[lang='ar'] .cx-strip__item {
   letter-spacing: 0;
 }
-.cx-trust__item .icon {
+.cx-strip__item .icon {
   width: 18px;
   height: 18px;
   color: var(--accent-text);
 }
-@keyframes cx-trust-drift {
+@keyframes cx-strip-drift {
   to { transform: translateX(-25%); }
 }
-@keyframes cx-trust-drift-rtl {
+@keyframes cx-strip-drift-rtl {
   to { transform: translateX(25%); }
 }
 /* Reduced motion: one still, centred row that wraps when needed. */
 @media (prefers-reduced-motion: reduce) {
-  .cx-trust { mask-image: none; }
-  .cx-trust__track {
+  .cx-strip { mask-image: none; }
+  .cx-strip__track {
     width: auto;
     justify-content: center;
     animation: none;
   }
-  .cx-trust__row { flex-wrap: wrap; justify-content: center; }
-  .cx-trust__row[aria-hidden] { display: none; }
+  .cx-strip__row { flex-wrap: wrap; justify-content: center; }
+  .cx-strip__row[aria-hidden] { display: none; }
 }
 @media (max-width: 639px) {
-  .cx-trust__item {
+  .cx-strip__item {
     height: 44px;
     font-size: 0.8125rem;
   }

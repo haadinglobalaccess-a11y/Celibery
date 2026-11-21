@@ -31,7 +31,7 @@
   transform: translateX(-125%);
   pointer-events: none;
 }
-.product-motion__card--visible.card--3d .card__shine { animation: luxury-sweep-entry 2200ms var(--luxury-sweep-ease) calc(var(--product-delay, 100ms) + 350ms) both; }
+
 .card--3d .tilt__glare {
   background: radial-gradient(ellipse at var(--gx, 50%) var(--gy, 50%), rgb(255 247 231 / .28), transparent 62%);
   opacity: calc(var(--tz, 0) * .5);
@@ -56,18 +56,9 @@
   .card--3d:hover .card__media {
     box-shadow: inset 0 1px 0 rgb(255 255 255 / .86), 0 4px 8px -5px rgb(17 17 17 / .15), 0 28px 48px -30px rgb(17 17 17 / .36);
   }
-  .product-motion__card--visible.card--3d:hover .card__shine { animation: luxury-sweep-hover 2200ms var(--luxury-sweep-ease) both; }
-  .product-story__slide[data-active='true'] .product-story__image:hover::after,
-  .auto-showcase__slide.is-in-view .auto-showcase__image:hover::after { animation: luxury-sweep-hover 2200ms var(--luxury-sweep-ease) both; }
+
 }
-.product-story__image, .auto-showcase__image { overflow: hidden; }
-.product-story__image::after, .auto-showcase__image::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
-  background: linear-gradient(112deg, transparent 32%, rgb(226 204 167 / .15) 42%, rgb(255 250 237 / .65) 50%, rgb(239 223 195 / .22) 57%, transparent 68%);
-  transform: translateX(-125%);
-}
-.product-story__slide[data-active='true'] .product-story__image::after,
-.auto-showcase__slide.is-in-view .auto-showcase__image::after { animation: luxury-sweep-entry 2200ms var(--luxury-sweep-ease) 350ms both; }
+
 @keyframes luxury-sweep-entry {
   0% { transform: translateX(-125%); opacity: 0; }
   12%, 80% { opacity: 1; }
@@ -84,10 +75,7 @@
 .luxury-heading.is-in-view {
   animation: luxury-heading 1400ms var(--luxury-ease) both;
 }
-.section__head.reveal.is-visible .section__lead,
-.product-motion__heading--visible .section__lead {
-  animation: luxury-caption 1000ms var(--luxury-ease) 140ms both;
-}
+
 @keyframes luxury-heading {
   from { clip-path: inset(100% 0 0); opacity: .2; }
   to { clip-path: inset(-.12em -.05em -.18em); opacity: 1; }

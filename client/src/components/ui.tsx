@@ -116,6 +116,28 @@ export function Field({ label, error, hint, children, className = '' }: { label:
   );
 }
 
+/**
+ * Product names with joined terms ("USB-C", "Flush-Fit", "2-in-1") never break at the hyphen, so a
+ * title never ends a line with "USB-" and starts the next with "C".
+ */
+export function ProductName({ text }: { text: string }) {
+  const parts = text.split(/(\S+-\S+)/);
+  if (parts.length === 1) return <>{text}</>;
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 ? (
+          <span key={i} style={{ whiteSpace: 'nowrap' }}>
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 export function Crumbs({ items }: { items: { label: string; to?: string }[] }) {
   const i18n = useMaybeI18n();
   return (

@@ -789,7 +789,7 @@ const en: Dict = {
     members: 'for signed-in customers',
     firstOrder: 'on your first order',
     ends: (d: string) => `until ${d}`,
-    automatic: 'Applied automatically in your bag',
+    automatic: 'Applied automatically in your cart',
   },
   bundle: {
     worth: (a: string) => `Items bought separately: ${a}`,
@@ -849,7 +849,7 @@ const en: Dict = {
       minOrder: (amount: string) => `The minimum order for this code is ${amount}.`,
       alreadyUsed: 'You have already used this discount code.',
       notApplicable: 'This discount code does not apply to the items in your cart.',
-      betterOffer: 'The code was not applied because your bag already gets a better offer.',
+      betterOffer: 'The code was not applied because your cart already gets a better offer.',
       signIn: 'This offer is for signed-in customers — sign in to use it.',
       firstOrder: 'This offer is for first orders only.',
     },

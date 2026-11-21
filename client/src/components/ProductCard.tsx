@@ -9,7 +9,7 @@ import { useWishlist } from '../state/wishlist';
 import { flyToCart } from '../three-d/flyToCart';
 import { ArtFrame, ProductImage } from './ArtFrame';
 import { Icon } from './Icon';
-import { Price } from './ui';
+import { Price, ProductName } from './ui';
 
 export { ProductImage } from './ArtFrame';
 
@@ -64,7 +64,9 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
         {/* The brand itself is not a series: every product is CELIBERY, so repeating it is noise. */}
         {product.series && product.series.trim().toLowerCase() !== 'celibery' ? <span className="cx-card__meta">{product.series}</span> : null}
         <h3 className="cx-card__title">
-          <Link to={href}>{name}</Link>
+          <Link to={href}>
+            <ProductName text={name} />
+          </Link>
         </h3>
         {specs ? <p className="cx-card__specs">{specs}</p> : null}
         <div className="cx-card__foot">

@@ -6,9 +6,9 @@ import { ProductReviews } from '../components/ProductReviews';
 import { ProductTrust } from '../components/ProductTrust';
 import { RestockForm } from '../components/RestockForm';
 import { RichText } from '../components/RichText';
-import { Crumbs, ErrorState, NotFound, Price, Quantity, Spinner } from '../components/ui';
+import { Crumbs, ErrorState, NotFound, Price, ProductName, Quantity, Spinner } from '../components/ui';
 import { useI18n } from '../i18n/I18n';
-import { connectorLabel, formatDate, formatInt, L, listSep } from '../lib/format';
+import { colourName, connectorLabel, formatDate, formatInt, L, listSep } from '../lib/format';
 import { useApi } from '../lib/hooks';
 import { absoluteUrl, useSeo } from '../lib/useSeo';
 import type { ProductDetail } from '../lib/types';
@@ -98,7 +98,7 @@ export default function ProductPage() {
   if (data.attributes?.capacityMah) attrs.push([t.shop.capacity, formatInt(data.attributes.capacityMah, lang)]);
   if (data.attributes?.powerW) attrs.push([t.shop.power, `${data.attributes.powerW}W`]);
   if (data.attributes?.connectors?.length) attrs.push([t.shop.connector, data.attributes.connectors.map((c) => connectorLabel(c, lang)).join(listSep(lang))]);
-  if (data.attributes?.color) attrs.push([t.shop.color, L(data.attributes.color.name, lang)]);
+  if (data.attributes?.color) attrs.push([t.shop.color, colourName(data.attributes.color.name, lang, data.attributes.color.key)]);
 
   const c = storeCopy(lang);
   const specRows: [string, string][] = [...attrs, ...data.specs.map((s) => [L(s.label, lang), L(s.value, lang)] as [string, string])];
@@ -134,7 +134,9 @@ export default function ProductPage() {
                   </Link>
                 ) : null}
               </div>
-              <h1 className="cx-pdp__title">{name}</h1>
+              <h1 className="cx-pdp__title">
+                <ProductName text={name} />
+              </h1>
               {L(data.shortDescription, lang) ? <p className="cx-pdp__lead">{L(data.shortDescription, lang)}</p> : null}
 
               <div className="pdp__meta cx-pdp__meta">
