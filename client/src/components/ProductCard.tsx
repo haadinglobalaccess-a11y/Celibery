@@ -60,7 +60,8 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
 
       <div className="cx-card__body">
         {/* Series only (a customer-facing range name); internal model codes stay on the product page. */}
-        {product.series ? <span className="cx-card__meta">{product.series}</span> : null}
+        {/* The brand itself is not a series: every product is CELIBERY, so repeating it is noise. */}
+        {product.series && product.series.trim().toLowerCase() !== 'celibery' ? <span className="cx-card__meta">{product.series}</span> : null}
         <h3 className="cx-card__title">
           <Link to={href}>{name}</Link>
         </h3>
@@ -68,7 +69,7 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
           <Price price={product.price} compareAt={product.compareAtPrice} />
           <button
             type="button"
-            className={`cx-card__add ${justAdded ? 'is-added' : ''}`}
+            className={`cx-card__add cx-card__add--pill ${justAdded ? 'is-added' : ''}`}
             disabled={!product.available}
             aria-label={`${t.product.addToCart}: ${name}`}
             onClick={() => {
@@ -79,7 +80,10 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
               requestAnimationFrame(() => setTimeout(() => flyToCart(media), 0));
             }}
           >
-            <Icon name={justAdded ? 'check' : 'plus'} />
+            <Icon name={justAdded ? 'check' : 'bag'} />
+            <span className="cx-card__add-label" aria-hidden="true">
+              {!product.available ? t.product.outOfStock : justAdded ? t.product.added : t.product.addToCart}
+            </span>
           </button>
         </div>
       </div>
@@ -92,7 +96,7 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
     <div className="cx-grid" aria-hidden="true">
       {Array.from({ length: count }, (_, i) => (
         <div key={i}>
-          <div className="skeleton" style={{ aspectRatio: '4 / 5', borderRadius: 24 }} />
+          <div className="skeleton" style={{ aspectRatio: '4 / 5', borderRadius: 16 }} />
           <div className="skeleton" style={{ height: 14, marginTop: 14, width: '80%' }} />
           <div className="skeleton" style={{ height: 14, marginTop: 8, width: '40%' }} />
         </div>
