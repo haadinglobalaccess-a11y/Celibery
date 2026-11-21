@@ -1,18 +1,11 @@
 import { useI18n } from '../i18n/I18n';
 import { formatDate, formatPrice, L, listSep } from '../lib/format';
 import type { OrderView } from '../lib/types';
-import { Icon } from './Icon';
 import { ProductImage } from './ProductCard';
-
-const STEPS = ['confirmed', 'processing', 'shipped', 'delivered'];
+import { TrackingPanel } from './TrackingPanel';
 
 export function OrderDetails({ order }: { order: OrderView }) {
   const { t, lang } = useI18n();
-  const reached = (s: string) => {
-    if (['cancelled', 'returned'].includes(order.status)) return false;
-    const idx = STEPS.indexOf(order.status);
-    return idx >= STEPS.indexOf(s);
-  };
   return (
     <div data-testid="order-details">
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
@@ -28,35 +21,9 @@ export function OrderDetails({ order }: { order: OrderView }) {
         {t.order.placedOn}: {formatDate(order.createdAt, lang, true)}
       </p>
 
-      {!['cancelled', 'returned', 'pending'].includes(order.status) ? (
-        <div className="status-steps" aria-hidden="true">
-          {STEPS.map((s) => (
-            <div key={s} data-done={reached(s)}>
-              {t.order.status[s]}
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {order.delivery?.trackingNumber ? (
-        <div className="info-row" style={{ marginBlock: 16 }}>
-          <div>
-            <strong>
-              {t.order.tracking}: <span className="ltr">{order.delivery.trackingNumber}</span>
-            </strong>
-            <span className="muted">
-              {t.order.courier}: {order.delivery.courier}
-            </span>
-            {order.delivery.trackingUrl ? (
-              <div>
-                <a href={order.delivery.trackingUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>
-                  {t.order.trackShipment} <Icon name="external" className="icon icon--inline icon--flip-rtl" />
-                </a>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      <div style={{ marginTop: 20 }}>
+        <TrackingPanel order={order} />
+      </div>
 
       <h3 style={{ marginTop: 24 }}>{t.order.items}</h3>
       {order.items.map((i, idx) => (

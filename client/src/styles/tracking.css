@@ -1,0 +1,249 @@
+/* Order tracking panel (components/TrackingPanel.tsx) — CELIBERY ink, cloud grey and turquoise. */
+.trk {
+  margin-bottom: 28px;
+  padding: clamp(20px, 3vw, 32px);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.trk__eyebrow {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+html[lang='ar'] .trk__eyebrow {
+  letter-spacing: 0;
+  font-size: 0.8125rem;
+}
+.trk__title {
+  margin: 6px 0 0;
+  font-size: clamp(1.5rem, 1.15rem + 1.4vw, 2.25rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+html[lang='ar'] .trk__title {
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+.trk--delivered .trk__title {
+  color: var(--success, #15803d);
+}
+.trk--cancelled .trk__title,
+.trk--returned .trk__title {
+  color: var(--danger, #b42318);
+}
+.trk__sub {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.trk__eta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 0.9375rem;
+}
+.trk__eta .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-text);
+}
+
+/* Progress: dots joined by a line; reached steps in turquoise, the current one ringed. */
+.trk__steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.trk__step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.trk__step::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  inset-inline-end: 50%;
+  width: 100%;
+  height: 3px;
+  background: var(--line);
+  z-index: 0;
+}
+.trk__step:first-child::before {
+  display: none;
+}
+.trk__step.is-done::before {
+  background: var(--accent);
+}
+.trk__dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+.trk__step.is-done .trk__dot {
+  background: var(--accent);
+  box-shadow: none;
+  color: var(--accent-ink, #111);
+}
+.trk__step.is-current .trk__dot {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.trk__dot .icon {
+  width: 16px;
+  height: 16px;
+}
+.trk__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.trk__step.is-done .trk__label {
+  color: var(--ink);
+}
+.trk__date {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Shipment card */
+.trk__ship {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px 20px;
+  margin-top: 26px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.trk__ship-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.trk__ship-icon .icon {
+  width: 24px;
+  height: 24px;
+}
+.trk__ship-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 32px;
+  margin: 0;
+}
+.trk__ship-info dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.trk__ship-info dd {
+  margin: 2px 0 0;
+  font-weight: 650;
+}
+.trk__number {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.trk__copy {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.trk__copy:hover {
+  background: var(--accent-soft);
+}
+.trk__courier {
+  white-space: nowrap;
+}
+.trk__wait {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.trk__wait .icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.trk__help {
+  margin: 22px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.trk__help a {
+  color: var(--accent-text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 639px) {
+  /* Phones: the progress reads top to bottom. */
+  .trk__steps {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .trk__step {
+    grid-template-columns: 32px 1fr auto;
+    justify-items: start;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    text-align: start;
+  }
+  .trk__step::before {
+    top: auto;
+    bottom: 50%;
+    inset-inline-start: 15px;
+    inset-inline-end: auto;
+    width: 3px;
+    height: 100%;
+  }
+  .trk__date {
+    justify-self: end;
+  }
+  .trk__ship {
+    grid-template-columns: auto 1fr;
+  }
+  .trk__courier {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+}

@@ -186,6 +186,12 @@ describe('order access and tracking', () => {
     expect(limited.body.data.order.shippingAddress).toBeUndefined();
     expect(limited.body.data.order.contact).toBeUndefined();
     expect((await c.get(`/api/orders/track?orderNumber=${order.orderNumber}&phone=0559999999`)).status).toBe(404);
+    // The email used for the order works the same way (case-insensitive), a different one does not.
+    const byEmail = await c.get(`/api/orders/track?orderNumber=${order.orderNumber}&email=${encodeURIComponent(contact.email.toUpperCase())}`);
+    expect(byEmail.status).toBe(200);
+    expect(byEmail.body.data.full).toBe(false);
+    expect(byEmail.body.data.order.contact).toBeUndefined();
+    expect((await c.get(`/api/orders/track?orderNumber=${order.orderNumber}&email=someone.else@example.com`)).status).toBe(404);
     expect((await c.get(`/api/orders/${order.orderNumber}`)).status).toBe(404);
   });
 

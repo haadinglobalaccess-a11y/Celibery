@@ -5,7 +5,8 @@ import { notFound } from '../../lib/errors';
 import { ah, escapeRegex, ok } from '../../lib/http';
 import { requirePermission } from '../../middleware/auth';
 import { q, validate } from '../../middleware/validate';
-import { Notification, Order, Payment, Refund } from '../../models';
+import { Notification, Order, Payment, Refund, getSettings } from '../../models';
+import { manualCourier } from '../../integrations/shipping';
 import { notifyOrder } from '../../integrations/notifications';
 import { adminOrderListQuery, refundSchema, statusUpdateSchema } from '../orders/order.schemas';
 import { orderLink, releaseExpiredReservations, transitionOrder } from '../orders/order.service';
@@ -179,7 +180,12 @@ adminOrderRoutes.post(
   ah(async (req, res) => {
     const set: Record<string, string> = { 'delivery.trackingNumber': req.body.trackingNumber };
     if (req.body.courier) set['delivery.courier'] = req.body.courier;
-    if (req.body.trackingUrl !== undefined) set['delivery.trackingUrl'] = req.body.trackingUrl;
+    if (req.body.trackingUrl !== undefined && req.body.trackingUrl !== '') set['delivery.trackingUrl'] = req.body.trackingUrl;
+    else {
+      // No link entered: build it from the courier's tracking-link template (Settings → Delivery), as "Mark as shipped" does.
+      const settings = await getSettings();
+      set['delivery.trackingUrl'] = manualCourier.trackingUrl(req.body.trackingNumber, settings?.commerce?.courierTrackingUrlTemplate ?? '');
+    }
     const o = await Order.findByIdAndUpdate(req.params.id, { $set: set }, { new: true }).lean();
     if (!o) throw notFound('Order');
     await audit(req, 'tracking', 'order', req.params.id, req.body.trackingNumber);
