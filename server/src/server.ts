@@ -2,6 +2,7 @@ import path from 'node:path';
 import { assertProductionConfig, env } from './config/env';
 import { connectDb, disconnectDb } from './db/connect';
 import { startScheduler } from './jobs';
+import { flushErrorReports } from './lib/error-reporting';
 import { logger } from './lib/logger';
 import { createApp } from './app';
 import { startPublicCacheWarmup } from './modules/catalog/catalog.service';
@@ -50,6 +51,11 @@ async function main() {
 // A failed background task (a notification, a log write) must never take the whole store offline:
 // log it and keep serving. Programming errors outside a request still restart the process.
 process.on('unhandledRejection', (reason) => logger.error('Unhandled promise rejection', { err: reason instanceof Error ? reason.stack : String(reason) }));
+// A crash still restarts the process (the host starts a fresh one), but is reported first.
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught exception — restarting', { err: err?.stack ?? String(err) });
+  void flushErrorReports(2000).finally(() => process.exit(1));
+});
 
 main().catch((err) => {
   // Full stack on stderr: the most useful line in a host's deploy log when start-up fails.

@@ -47,6 +47,17 @@ export function sanitizeOrigins(list: (string | null | undefined)[]): string[] {
   return [...out];
 }
 
+/** Origin the browser sends error reports to (from VITE_SENTRY_DSN), or null. */
+export function dsnOrigin(dsn: string | undefined | null): string | null {
+  if (!dsn) return null;
+  try {
+    const u = new URL(dsn.trim());
+    return u.protocol === 'https:' && u.username ? u.origin : null;
+  } catch {
+    return null;
+  }
+}
+
 export function cspDirectives(opts: CspOptions = {}): Record<string, string[]> {
   const d: Record<string, string[]> = {
     'default-src': ["'self'"],

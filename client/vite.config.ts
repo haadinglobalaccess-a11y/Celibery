@@ -1,7 +1,7 @@
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
-import { buildCsp } from '../server/src/lib/csp';
+import { buildCsp, dsnOrigin } from '../server/src/lib/csp';
 
 /**
  * Writes the production Content-Security-Policy into index.html (Vercel serves the storefront as
@@ -21,7 +21,7 @@ function cspPlugin(mode: string): Plugin {
     }
   }
   const apiOrigin = env.VITE_API_BASE_URL ? new URL(env.VITE_API_BASE_URL).origin : null;
-  const policy = buildCsp({ connectSrc: [uploadOrigin, apiOrigin, env.CSP_CONNECT_SRC], headerOnlyDirectives: false });
+  const policy = buildCsp({ connectSrc: [uploadOrigin, apiOrigin, dsnOrigin(env.VITE_SENTRY_DSN), env.CSP_CONNECT_SRC], headerOnlyDirectives: false });
   return {
     name: 'celibery-csp',
     apply: 'build',

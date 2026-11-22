@@ -5,7 +5,7 @@ import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 import { corsOrigins, env, isProd } from './config/env';
-import { API_CSP, MEDIA_CSP, buildCsp } from './lib/csp';
+import { API_CSP, MEDIA_CSP, buildCsp, dsnOrigin } from './lib/csp';
 import { integrationsMiddleware } from './integrations/credentials';
 import { localDir, uploadOrigin } from './integrations/storage';
 import { forbidden } from './lib/errors';
@@ -69,7 +69,7 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   // Content-Security-Policy (lib/csp.ts — the same policy is written into index.html at build time
   // and sent by Vercel for the static site). JSON API responses get an even stricter policy.
   const siteCsp = buildCsp({
-    connectSrc: [uploadOrigin(), env.CSP_CONNECT_SRC],
+    connectSrc: [uploadOrigin(), dsnOrigin(process.env.VITE_SENTRY_DSN), env.CSP_CONNECT_SRC],
     reportUri: env.CSP_REPORT_URI || undefined,
     upgradeInsecureRequests: isProd,
   });
