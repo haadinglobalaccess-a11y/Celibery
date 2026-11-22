@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { StoreLayout } from './components/StoreLayout';
 import { NotFound, Spinner } from './components/ui';
 import { preferredLang } from './i18n/I18n';
@@ -66,55 +67,67 @@ function LegacyRedirect({ kind }: { kind: 'product' | 'collection' }) {
 }
 
 export default function App() {
+  const { pathname } = useLocation();
   useEffect(() => {
     if (!window.location.pathname.startsWith('/admin')) prefetchSecondaryPages();
+    // The page loaded fine: a later stale-chunk error (next deploy) may reload once again.
+    const t = setTimeout(() => {
+      try {
+        sessionStorage.removeItem('cel_chunk_reload');
+      } catch {
+        /* storage blocked */
+      }
+    }, 10_000);
+    return () => clearTimeout(t);
   }, []);
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to={`/${preferredLang()}`} replace />} />
-      <Route path="/faq" element={<Navigate to={`/${preferredLang()}/faq`} replace />} />
-      <Route path="/products/:handle" element={<LegacyRedirect kind="product" />} />
-      <Route path="/collections/:handle" element={<LegacyRedirect kind="collection" />} />
-      <Route
-        path="/admin/*"
-        element={
-          <Suspense fallback={<Spinner label="Loading admin…" />}>
-            <AdminApp />
-          </Suspense>
-        }
-      />
-      <Route path="/:lang" element={<StoreLayout />}>
-        <Route index element={<Home />} />
-        <Route path="shop" element={<Shop mode="all" />} />
-        <Route path="c/:slug" element={<Shop mode="category" />} />
-        <Route path="collection/:slug" element={<Shop mode="collection" />} />
-        <Route path="bundles" element={<Shop mode="collection" collectionSlug="bundles" />} />
-        <Route path="search" element={<Shop mode="search" />} />
-        <Route path="p/:slug" element={<ProductPage />} />
-        <Route path="cart" element={<CartPage />} />
-        <Route path="checkout" element={<Checkout />} />
-        <Route path="checkout/return" element={<CheckoutReturn />} />
-        <Route path="sandbox-pay/:ref" element={<SandboxPay />} />
-        <Route path="track" element={<TrackOrder />} />
-        <Route path="wishlist" element={<WishlistPage />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
-        <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="reset-password" element={<ResetPassword />} />
-        <Route path="page/:slug" element={<PolicyPage />} />
-        <Route path="faq" element={<FaqPage />} />
-        <Route path="about" element={<CustomerInfo mode="about" />} />
-        <Route path="support" element={<CustomerInfo mode="support" />} />
-        <Route path="contact" element={<CustomerInfo mode="contact" />} />
-        <Route path="campaign/:slug" element={<CampaignPage />} />
-        <Route path="account" element={<AccountLayout />}>
-          <Route index element={<AccountOrders />} />
-          <Route path="orders/:orderNumber" element={<AccountOrderDetail />} />
-          <Route path="addresses" element={<AccountAddresses />} />
-          <Route path="profile" element={<AccountProfile />} />
+    <ErrorBoundary resetKey={pathname}>
+      <Routes>
+        <Route path="/" element={<Navigate to={`/${preferredLang()}`} replace />} />
+        <Route path="/faq" element={<Navigate to={`/${preferredLang()}/faq`} replace />} />
+        <Route path="/products/:handle" element={<LegacyRedirect kind="product" />} />
+        <Route path="/collections/:handle" element={<LegacyRedirect kind="collection" />} />
+        <Route
+          path="/admin/*"
+          element={
+            <Suspense fallback={<Spinner label="Loading admin…" />}>
+              <AdminApp />
+            </Suspense>
+          }
+        />
+        <Route path="/:lang" element={<StoreLayout />}>
+          <Route index element={<Home />} />
+          <Route path="shop" element={<Shop mode="all" />} />
+          <Route path="c/:slug" element={<Shop mode="category" />} />
+          <Route path="collection/:slug" element={<Shop mode="collection" />} />
+          <Route path="bundles" element={<Shop mode="collection" collectionSlug="bundles" />} />
+          <Route path="search" element={<Shop mode="search" />} />
+          <Route path="p/:slug" element={<ProductPage />} />
+          <Route path="cart" element={<CartPage />} />
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="checkout/return" element={<CheckoutReturn />} />
+          <Route path="sandbox-pay/:ref" element={<SandboxPay />} />
+          <Route path="track" element={<TrackOrder />} />
+          <Route path="wishlist" element={<WishlistPage />} />
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
+          <Route path="page/:slug" element={<PolicyPage />} />
+          <Route path="faq" element={<FaqPage />} />
+          <Route path="about" element={<CustomerInfo mode="about" />} />
+          <Route path="support" element={<CustomerInfo mode="support" />} />
+          <Route path="contact" element={<CustomerInfo mode="contact" />} />
+          <Route path="campaign/:slug" element={<CampaignPage />} />
+          <Route path="account" element={<AccountLayout />}>
+            <Route index element={<AccountOrders />} />
+            <Route path="orders/:orderNumber" element={<AccountOrderDetail />} />
+            <Route path="addresses" element={<AccountAddresses />} />
+            <Route path="profile" element={<AccountProfile />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
         </Route>
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
+      </Routes>
+    </ErrorBoundary>
   );
 }

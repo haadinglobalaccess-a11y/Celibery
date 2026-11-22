@@ -17,6 +17,7 @@
     "build": "npm run build -w server && npm run build -w client",
     "build:vercel": "npm run build -w client",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w client && tsc -p api/tsconfig.json --noEmit",
+    "lint": "eslint .",
     "test": "npm run test -w server",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "start": "npm run start -w server",
@@ -29,8 +30,14 @@
     "repair:text": "npm run repair:text -w server --"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.48.0",
     "@types/node": "^22.20.5",
-    "typescript": "^5.6.0"
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.73.0"
   }
 }

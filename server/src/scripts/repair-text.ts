@@ -21,7 +21,7 @@ run(async () => {
   const lost = findings.filter((f) => f.after === null);
   for (const f of findings) {
     const show = (s: string) => JSON.stringify(s.length > 120 ? `${s.slice(0, 120)}…` : s);
-    console.log(`${f.after === null ? 'UNRECOVERABLE' : 'repairable   '} ${f.collection} ${f.id} ${f.path}: ${show(f.before)}${f.after === null ? '' : ` → ${show(f.after)}`}`); // eslint-disable-line no-console
+    console.log(`${f.after === null ? 'UNRECOVERABLE' : 'repairable   '} ${f.collection} ${f.id} ${f.path}: ${show(f.before)}${f.after === null ? '' : ` → ${show(f.after)}`}`);
   }
   const summary = { scanned: 'products, categories, collections, banners, campaigns, pages, settings, message templates, order item names', repairable: fixable.length, unrecoverable: lost.length };
   if (arg('apply') === undefined) return { ...summary, mode: 'dry run — nothing changed. Re-run with --apply to repair (a backup is written first).' };

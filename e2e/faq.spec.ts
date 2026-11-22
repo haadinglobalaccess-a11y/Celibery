@@ -125,6 +125,8 @@ test.describe.serial('FAQ management → storefront', () => {
     const first = (await (await page.request.get('/api/admin/faq?q=Jeddah')).json()).data[0]._id;
     expect((await page.request.post('/api/admin/faq/reorder', { headers: H, data: { ids: [secondId, first] } })).ok()).toBe(true);
     await page.goto('/en/faq');
+    // allTextContents() does not wait: read the list only once it has rendered.
+    await expect(page.getByTestId('faq-item').filter({ hasText: 'Is installation included' })).toBeVisible();
     const texts = await page.getByTestId('faq-item').allTextContents();
     const iSecond = texts.findIndex((t) => t.includes('Is installation included'));
     const iFirst = texts.findIndex((t) => t.includes('Do you deliver to Jeddah'));

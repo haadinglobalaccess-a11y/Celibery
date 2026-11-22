@@ -93,7 +93,7 @@ for (const p of ['/.env', '/../.env', '/%2e%2e/.env', '/..%2f..%2fserver%2f.env'
 
 // ---------- 8. Accounts: mass assignment, enumeration, brute force ----------
 const email = `probe${Date.now()}@example.com`;
-let cust = '';
+let cust;
 {
   const r = await api('/api/auth/register', { method: 'POST', body: { name: 'Probe', email, password: 'Str0ng!Passw0rd-x', type: 'staff', role: 'admin', permissions: ['settings:write'], tokenVersion: 99, mfa: { enabled: true } } });
   cust = cookieOf(r);
@@ -141,7 +141,7 @@ let cust = '';
 }
 
 // ---------- 10. Orders: IDOR + price manipulation ----------
-let orderNumber = '', orderToken = '';
+let orderNumber;
 {
   const prods = (await j(await api('/api/products?limit=5')))?.data ?? [];
   const p = prods.find((x) => x.available) ?? prods[0];
@@ -154,7 +154,6 @@ let orderNumber = '', orderToken = '';
   const r = await api('/api/checkout', { method: 'POST', body });
   const b = await j(r);
   orderNumber = b?.data?.order?.orderNumber ?? b?.data?.orderNumber ?? '';
-  orderToken = b?.data?.accessToken ?? b?.data?.order?.accessToken ?? '';
   const total = b?.data?.order?.total ?? b?.data?.total;
   rec('PRICE-01', 'client-sent price/total ignored', r.status < 300 ? total === undefined || total >= p.price : r.status === 400, `status ${r.status} total=${total} catalogue price=${p.price} ${r.status >= 300 ? JSON.stringify(b?.error ?? b).slice(0, 160) : ''}`);
   if (orderNumber) {

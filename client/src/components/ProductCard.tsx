@@ -75,7 +75,8 @@ export function ProductCard({ product, categorySlug, index, tone = 'light', size
             type="button"
             className={`cx-card__add cx-card__add--pill ${justAdded ? 'is-added' : ''}`}
             disabled={!product.available}
-            aria-label={`${t.product.addToCart}: ${name}`}
+            // Starts with the visible wording (WCAG 2.5.3 Label in Name), then says which product.
+            aria-label={`${!product.available ? t.product.outOfStock : justAdded ? t.product.added : t.product.addToCart}: ${name}`}
             onClick={() => {
               cart.add(product, 1);
               setJustAdded(true);

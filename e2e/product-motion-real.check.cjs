@@ -3,7 +3,6 @@ const assert = require('node:assert/strict');
 const { expect } = require('@playwright/test');
 const fs = require('node:fs');
 const base = 'http://localhost:5173';
-const wait = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const home = (await (await fetch(base + '/api/home')).json()).data;
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
@@ -32,7 +31,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
           names.push(name);
           for (let cycle = 0; cycle < 3; cycle++) {
             await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, 0); });
-            const box = await card.boundingBox();
+            await card.boundingBox();
             // Move the page so the card is below the viewport before entering from below.
             await card.evaluate(el => window.scrollTo(0, Math.max(0, el.getBoundingClientRect().top + window.scrollY - innerHeight - 150)));
             await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })); await page.waitForTimeout(200);

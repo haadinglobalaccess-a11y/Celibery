@@ -2,13 +2,13 @@ import type { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { currentRequestId } from '../lib/request-context';
 
 export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: `Route ${req.method} ${req.path} not found` } });
 }
 
 /** Central error handler. Internal details and stack traces are logged, never returned. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
   if (err instanceof AppError) {
     // Temporary conditions (sign-in overload, database outage): tell clients and proxies when to retry.
@@ -45,5 +45,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return res.status(clientStatus).json({ ok: false, error: { code, message: 'The request could not be processed' } });
   }
   logger.error('Unhandled error', { path: req.path, method: req.method, err: err instanceof Error ? err.stack : String(err) });
-  return res.status(500).json({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.' } });
+  // The reference lets support find this exact failure in the logs (no internal detail is exposed).
+  const requestId = currentRequestId();
+  return res.status(500).json({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.', ...(requestId ? { requestId } : {}) } });
 }

@@ -23,7 +23,7 @@ A settings form in the Admin Dashboard does **not** count as "configured". Only 
 | 1 | Review the working-tree changes and approve a commit + redeploy of **both** Railway services | Owner | ⏳ APPROVAL |
 | 2 | Stop accepting sandbox "payments": enter Moyasar (and Tabby) **live** keys in Admin → Settings → Payments, set `PAYMENT_GATEWAY=moyasar`, delete `ALLOW_SANDBOX_PAYMENTS`. Until then, consider switching card / Apple Pay / STC Pay / Tabby off (COD only) | Owner | ⏳ CREDENTIALS — **P0** (☑ live: `gateway: sandbox`) |
 | 3 | Check for paid orders with the history note "TEST payment (sandbox gateway)" before shipping anything (after deploy) | Operations | ⏳ APPROVAL |
-| 4 | Each administrator turns on two-factor authentication (Admin → Profile), then set `STAFF_MFA_REQUIRED=true` | Staff, then owner | ✅ TESTED / ⏳ APPROVAL |
+| 4 | At handover to the client: set `STAFF_MFA_REQUIRED=true` (off during owner/client testing). Staff without 2FA then see the enrolment screen after signing in. Needs `CREDENTIALS_ENCRYPTION_KEY` | Owner | ✅ TESTED / ⏳ AT HANDOVER |
 | 5 | After redeploy: `curl -I https://<storefront>/admin` shows `X-Frame-Options: DENY` and `Strict-Transport-Security` | Developer | ✅ CODE / ⏳ APPROVAL (☑ live today: headers missing) |
 
 ---
@@ -40,7 +40,7 @@ A settings form in the Admin Dashboard does **not** count as "configured". Only 
 | `COOKIE_SAMESITE`: leave empty (= `none`) while the store and API are on different `*.up.railway.app` sites. Set `lax` only after moving to one origin (custom domain with `/api` on the same site, or `SERVE_CLIENT=1`), and test sign-in after the change | ⚙ PROVIDER |
 | `TRUST_PROXY_HOPS=1` (Railway edge only); `2` if Cloudflare is put in front | ⚙ PROVIDER (✅ CODE) |
 | `RATE_LIMIT_STORE=mongo` (default) | ✅ TESTED |
-| `STAFF_MFA_REQUIRED=true` after enrolment | ⏳ APPROVAL |
+| `STAFF_MFA_REQUIRED=true` at handover | ⏳ AT HANDOVER |
 | Storefront service: redeploy so `vite preview` sends the security headers. Better: serve `client/dist` from the API service with `SERVE_CLIENT=1` (one origin, so `COOKIE_SAMESITE=lax` becomes possible) or from a static host | ✅ CODE / ⏳ APPROVAL |
 | Railway project members: least privilege, 2FA on every Railway account | ⚙ PROVIDER |
 | Only the HTTP port is exposed (no extra TCP proxies); no public MongoDB on Railway | ⚙ PROVIDER |

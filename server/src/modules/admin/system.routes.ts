@@ -186,11 +186,13 @@ adminSystemRoutes.get(
 
 adminSystemRoutes.get(
   '/reports/orders.csv',
-  requirePermission('reports:read'),
+  // Contains customer names, emails, phones and cities: reports access alone is not enough.
+  requirePermission('reports:read', 'customers:read'),
   validate(reportQuery, 'query'),
   ah(async (req, res) => {
     const query = q(req, reportQuery);
     const csv = await reports.ordersCsv(query.from, query.to);
+    await audit(req, 'export', 'report', 'orders', `${query.from?.toISOString().slice(0, 10) ?? ''} → ${query.to?.toISOString().slice(0, 10) ?? ''}`);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="celibery-orders-${new Date().toISOString().slice(0, 10)}.csv"`);
     res.send('\ufeff' + csv); // BOM so Excel opens Arabic text correctly
@@ -322,7 +324,11 @@ adminSystemRoutes.put(
     await getSettings();
     const set = toSetPaths(body as Record<string, unknown>);
     const unset: Record<string, 1> = {};
-    for (const [k, v] of Object.entries(set)) if (v === null) (unset[k] = 1), delete set[k];
+    for (const [k, v] of Object.entries(set)) {
+      if (v !== null) continue;
+      unset[k] = 1;
+      delete set[k];
+    }
     const updated = await Settings.findOneAndUpdate({ key: 'store' }, { $set: set, ...(Object.keys(unset).length ? { $unset: unset } : {}) }, { new: true, runValidators: true }).lean();
     const changed = [...Object.keys(set), ...Object.keys(unset)];
     await audit(req, legalKeys.length ? 'update_legal' : 'update', 'settings', 'store', changed.join(', '));

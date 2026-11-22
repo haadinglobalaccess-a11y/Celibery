@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import { ah } from '../../lib/http';
-import { requireCustomer } from '../../middleware/auth';
-import { newsletterLimiter, reviewLimiter, searchLimiter } from '../../middleware/security';
+import { newsletterLimiter, searchLimiter } from '../../middleware/security';
 import { validate } from '../../middleware/validate';
 import * as c from './catalog.controller';
 import { publicFaq } from '../faq/faq.routes';
-import { newsletterSchema, productListQuery, reviewSchema, slugParam } from './catalog.schemas';
+import { newsletterSchema, productListQuery, slugParam } from './catalog.schemas';
 
 export const catalogRoutes = Router();
 

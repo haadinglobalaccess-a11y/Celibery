@@ -115,7 +115,7 @@ export function cleanRichText(input: string | null | undefined): string {
   let s = repairMojibake(String(input).replace(/\r\n?/g, '\n'));
   s = s.replace(/[\ufeff\u200b\u00ad]/g, '');
   if (HAS_TAG.test(s)) s = htmlToText(s);
-  s = decodeEntities(s).replace(/ /g, ' ');
+  s = decodeEntities(s).replace(/\u00a0/g, ' ');
   const lines = s.split('\n').map((line) =>
     line
       .replace(/[ \t\f\v]+/g, ' ')

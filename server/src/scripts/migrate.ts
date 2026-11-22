@@ -29,7 +29,7 @@ import { run } from './_run';
 
 const dry = process.argv.includes('--dry-run');
 const reencrypt = process.argv.includes('--reencrypt');
-const log = (msg: string) => console.log(`${dry ? '[dry-run] ' : ''}${msg}`); // eslint-disable-line no-console
+const log = (msg: string) => console.log(`${dry ? '[dry-run] ' : ''}${msg}`);
 
 const OLD_NAMES: Record<string, string> = { admin: 'Administrator', content_editor: 'Content Editor' };
 
