@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { flushErrorReports } from '../lib/error-reporting';
 import { currentRequestId } from '../lib/request-context';
 
 export function notFoundHandler(req: Request, res: Response) {
@@ -47,5 +48,8 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   logger.error('Unhandled error', { path: req.path, method: req.method, err: err instanceof Error ? err.stack : String(err) });
   // The reference lets support find this exact failure in the logs (no internal detail is exposed).
   const requestId = currentRequestId();
-  return res.status(500).json({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.', ...(requestId ? { requestId } : {}) } });
+  const body = { ok: false, error: { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.', ...(requestId ? { requestId } : {}) } };
+  // Serverless functions may be frozen right after the response: let the error report leave first
+  // (at most 2 s, only on this rare path; immediate when error reporting is off).
+  void flushErrorReports().finally(() => res.status(500).json(body));
 }

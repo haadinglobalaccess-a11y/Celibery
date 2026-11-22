@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import { installErrorReporting } from './lib/errorReporting';
 import { AuthProvider } from './state/auth';
 import { CartProvider } from './state/cart';
 import { initCurrency } from './state/currency';
@@ -21,6 +22,9 @@ import './styles/celibery.css';
 import './styles/commerce.css';
 import './styles/structure.css';
 import './styles/ugreen.css';
+
+// Error tracking (no-op unless VITE_SENTRY_DSN was set at build time).
+installErrorReporting();
 
 // Brand fonts load without blocking first paint (index.html marks the stylesheet media="print").
 document.querySelector('link[data-brand-fonts]')?.setAttribute('media', 'all');

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportError } from '../lib/errorReporting';
 
 /**
  * Last line of defence for rendering errors: without it, one failing component unmounts the whole
@@ -39,6 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
     // eslint-disable-next-line no-console
     console.error('Render error', error, info.componentStack);
+    reportError(error, { source: 'react' });
   }
 
   componentDidUpdate(prev: Props) {
