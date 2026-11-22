@@ -38,7 +38,7 @@ describe('FAQ workflow: admin → API → storefront', () => {
 
     // 4–5. Published → on /api/faq (with its category), not yet on the homepage.
     expect((await editor.patch(`/api/admin/faq/${id}/status`).send({ status: 'published' })).status).toBe(200);
-    let page = await publicFaqs();
+    const page = await publicFaqs();
     const pub = page.items.find((f) => f.id === id)!;
     expect(pub.question.en).toContain('How does delivery work A');
     expect(pub.question.ar).toContain('كيف يعمل التوصيل');

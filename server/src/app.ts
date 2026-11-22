@@ -30,6 +30,7 @@ import { orderRoutes } from './modules/orders/order.routes';
 import { draftRoutes } from './modules/checkout-drafts/draft.routes';
 import { paymentRoutes } from './modules/payments/payment.routes';
 import { metricsSnapshot, requestMetrics } from './lib/metrics';
+import { requestContext } from './lib/request-context';
 import { bumpPublicCacheVersion } from './lib/public-cache';
 import { databaseGate } from './middleware/db-gate';
 import type { NextFunction, Request, Response } from 'express';
@@ -59,6 +60,7 @@ function invalidatePublicCacheOnAdminWrite(req: Request, res: Response, next: Ne
 export function createApp(opts: { serveClient?: string } = {}): Express {
   const app = express();
   app.disable('x-powered-by');
+  app.use(requestContext);
   app.use(requestMetrics);
   // Exactly the number of proxies in front of the app (TRUST_PROXY_HOPS): req.ip is then the real
   // client address and a forged X-Forwarded-For cannot dodge per-IP rate limits.

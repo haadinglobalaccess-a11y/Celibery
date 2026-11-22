@@ -339,7 +339,7 @@ export type PublicHomeVideo = {
 };
 
 function toPublic(v: HomeVideoDoc & { media?: unknown }, asset: { url: string; mime?: string | null; posterUrl?: string | null; durationSec?: number | null; createdAt?: Date } | null): PublicHomeVideo | null {
-  let source: ShowcaseSource | null = null;
+  let source: ShowcaseSource;
   if (v.sourceType === 'upload') {
     if (!asset) return null; // file missing or not ready: never show a broken player
     source = { provider: 'file', id: '', canonicalUrl: asset.url };

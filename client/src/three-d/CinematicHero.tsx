@@ -46,7 +46,7 @@ export function CinematicHero({ data }: { data: HomeData }) {
   const [visible, setVisible] = useState(!document.hidden);
   const [inView, setInView] = useState(true);
   const [visit, setVisit] = useState(0);
-  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; addEventListener?: Function; removeEventListener?: Function } }).connection;
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; addEventListener?: (type: string, cb: () => void) => void; removeEventListener?: (type: string, cb: () => void) => void } }).connection;
   const [saveData, setSaveData] = useState(Boolean(connection?.saveData));
   const products = (data.featured.length ? data.featured : data.categoryProducts.flatMap(c => c.items)).slice(0, 6);
   const slides: { id: string; image?: string; poster?: string; mobileImage?: string; video?: string; mobileVideo?: string; title: string; subtitle: string; cta?: string; link?: string; product: boolean; description?: string; sortOrder?: number; durationSec?: number; videoDurationSec?: number; videoFallbackSec?: number }[] = [

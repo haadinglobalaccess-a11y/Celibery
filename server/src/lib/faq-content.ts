@@ -12,6 +12,7 @@
  *  - control characters are removed and line endings normalised.
  * Arabic, English and any other Unicode text is kept exactly as typed.
  */
+// eslint-disable-next-line no-control-regex -- stripping control characters is the point
 const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const HTML_TAG = /<\s*\/?\s*[a-z!?][^>]*>/i;
 const LINK = /\[([^\]\n]{1,200})\]\(([^)\s]{0,1000})\)/g;

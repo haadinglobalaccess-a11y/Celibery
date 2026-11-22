@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions -- compact SMTP command table (comma expressions) */
 import net from 'node:net';
 
 /**

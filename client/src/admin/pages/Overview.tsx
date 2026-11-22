@@ -150,7 +150,7 @@ export function Overview() {
               </label>
             </>
           ) : null}
-          {perms.has('reports:read') ? (
+          {perms.has('reports:read') && perms.has('customers:read') ? (
             <a className="a-btn a-btn--secondary" href={apiUrl(`/api/admin/reports/orders.csv${qs(range)}`)} download title={t.dash.exportHint}>
               <AIcon name="download" size={16} /> {t.common.export}
             </a>

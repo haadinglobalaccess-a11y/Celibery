@@ -69,7 +69,7 @@ export function classifyShowcaseUrl(raw: string): ClassifyResult {
 
   // YouTube
   if (host === 'youtu.be' || host === 'youtube.com' || host === 'youtube-nocookie.com' || host === 'music.youtube.com') {
-    let id: string | null = null;
+    let id: string | null;
     if (host === 'youtu.be') id = u.pathname.slice(1).split('/')[0];
     else if (u.pathname === '/watch') id = u.searchParams.get('v');
     else id = /^\/(?:embed|shorts|live|v)\/([^/?#]+)/.exec(u.pathname)?.[1] ?? null;

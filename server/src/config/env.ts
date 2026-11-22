@@ -67,7 +67,7 @@ const schema = z.object({
   /** Where rate-limit counters live: "mongo" (shared by every instance) or "memory" (one process only). */
   RATE_LIMIT_STORE: z.enum(['mongo', 'memory']).default('mongo'),
   /** When true, staff accounts must enrol two-factor authentication before using the admin. */
-  STAFF_MFA_REQUIRED: bool(false),
+  STAFF_MFA_REQUIRED: z.string().optional(),
   /** Open cash-on-delivery orders allowed per phone number (0 = no limit). Default 3; tests default to no limit. */
   MAX_OPEN_COD_ORDERS_PER_PHONE: z.coerce.number().int().min(0).max(100).optional(),
 
@@ -155,7 +155,21 @@ export const env = {
   ...parsed.data,
   PUBLIC_CACHE_TTL_SECONDS: parsed.data.PUBLIC_CACHE_TTL_SECONDS ?? (parsed.data.NODE_ENV === 'test' ? 0 : 30),
   PASSWORD_HASH_THREADS: parsed.data.PASSWORD_HASH_THREADS ?? (process.env.VERCEL ? 0 : 2),
+  STAFF_MFA_REQUIRED: staffMfaRequired(parsed.data),
 };
+
+/**
+ * Whether staff must enrol two-factor authentication before using the admin.
+ *
+ * Currently OFF unless STAFF_MFA_REQUIRED=true is set: the site is in owner/client testing and
+ * repeated 2FA prompts are not wanted yet. At handover to the client, set STAFF_MFA_REQUIRED=true on
+ * the production server (it needs CREDENTIALS_ENCRYPTION_KEY — the 2FA secrets are encrypted with it).
+ * Staff can still turn 2FA on for their own account at any time (Admin → profile).
+ */
+export function staffMfaRequired(e: { STAFF_MFA_REQUIRED?: string }): boolean {
+  const raw = (e.STAFF_MFA_REQUIRED ?? '').trim().toLowerCase();
+  return ['1', 'true', 'yes'].includes(raw);
+}
 export const isProd = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
 
@@ -212,6 +226,14 @@ export function assertProductionConfig() {
     } catch (e) {
       problems.push(String((e as Error).message));
     }
+  }
+  if (!env.STAFF_MFA_REQUIRED) {
+    // Not fatal (a start-up failure would take the whole store offline), but loud in the deploy log.
+    // eslint-disable-next-line no-console
+    console.warn('NOTICE: staff two-factor authentication is not required (testing phase). Set STAFF_MFA_REQUIRED=true before handing the site to the client.');
+  } else if (!env.CREDENTIALS_ENCRYPTION_KEY) {
+    // eslint-disable-next-line no-console
+    console.warn('SECURITY WARNING: STAFF_MFA_REQUIRED=true but CREDENTIALS_ENCRYPTION_KEY is not set — staff cannot enrol two-factor authentication and are locked out of the admin.');
   }
   if (env.TRUST_PROXY_HOPS > 2) problems.push('TRUST_PROXY_HOPS above 2 lets clients spoof their IP address; use the real number of proxies');
   if (problems.length) throw new Error('Unsafe production configuration: ' + problems.join('; '));

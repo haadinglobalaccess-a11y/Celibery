@@ -154,7 +154,7 @@ export function Orders() {
           <p className="a-muted">{t.ordersPage.count(meta.total)}</p>
         </div>
         <div className="a-pagehead__actions">
-          {perms.has('reports:read') ? (
+          {perms.has('reports:read') && perms.has('customers:read') ? (
             <button type="button" className="a-btn a-btn--secondary" onClick={() => setExportOpen(true)}>
               <AIcon name="download" size={16} /> {t.ordersPage.exportAll}
             </button>

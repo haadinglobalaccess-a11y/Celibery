@@ -1,7 +1,7 @@
 import { bcryptCompare, bcryptHash } from '../../lib/password-hash';
 import jwt from 'jsonwebtoken';
 import { env, isTest, jwtSecret } from '../../config/env';
-import { AppError, badRequest, conflict, unauthorized } from '../../lib/errors';
+import { AppError, badRequest, conflict } from '../../lib/errors';
 import { decryptSecret, encryptSecret } from '../../lib/secrets';
 import { randomToken, safeEqual, sha256 } from '../../lib/tokens';
 import { generateRecoveryCodes, generateTotpSecret, normalizeRecoveryCode, otpauthUri, verifyTotp } from '../../lib/totp';
