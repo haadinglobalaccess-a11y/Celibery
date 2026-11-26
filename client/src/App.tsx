@@ -24,6 +24,7 @@ const loadCheckout = () => import('./pages/Checkout');
 const loadOrders = () => import('./pages/OrderPages');
 const loadContent = () => import('./pages/ContentPages');
 const loadFaq = () => import('./pages/FaqPage');
+const loadBlog = () => import('./pages/Blog');
 const AccountLayout = lazy(() => loadAccount().then((m) => ({ default: m.AccountLayout })));
 const AccountOrders = lazy(() => loadAccount().then((m) => ({ default: m.AccountOrders })));
 const AccountOrderDetail = lazy(() => loadAccount().then((m) => ({ default: m.AccountOrderDetail })));
@@ -41,6 +42,8 @@ const TrackOrder = lazy(() => loadOrders().then((m) => ({ default: m.TrackOrder 
 const PolicyPage = lazy(() => loadContent().then((m) => ({ default: m.PolicyPage })));
 const CampaignPage = lazy(() => loadContent().then((m) => ({ default: m.CampaignPage })));
 const FaqPage = lazy(loadFaq);
+const BlogList = lazy(() => loadBlog().then((m) => ({ default: m.BlogList })));
+const BlogPost = lazy(() => loadBlog().then((m) => ({ default: m.BlogPost })));
 const CustomerInfo = lazy(() => import('./pages/CustomerInfo'));
 
 let prefetched = false;
@@ -115,6 +118,8 @@ export default function App() {
           <Route path="reset-password" element={<ResetPassword />} />
           <Route path="page/:slug" element={<PolicyPage />} />
           <Route path="faq" element={<FaqPage />} />
+          <Route path="blog" element={<BlogList />} />
+          <Route path="blog/:slug" element={<BlogPost />} />
           <Route path="about" element={<CustomerInfo mode="about" />} />
           <Route path="support" element={<CustomerInfo mode="support" />} />
           <Route path="contact" element={<CustomerInfo mode="contact" />} />

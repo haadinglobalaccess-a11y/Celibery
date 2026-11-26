@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test';
  * Automated checks find roughly a third of accessibility problems: keyboard and screen-reader
  * reviews are still needed.
  */
-const PAGES = ['/ar', '/en', '/ar/c/power-banks', '/en/shop', '/en/p/demo-power-bank-20000', '/ar/cart', '/en/checkout', '/en/track', '/en/login', '/ar/faq'];
+const PAGES = ['/ar', '/en', '/ar/c/power-banks', '/en/shop', '/en/p/demo-power-bank-20000', '/ar/cart', '/en/checkout', '/en/track', '/en/login', '/ar/faq', '/en/blog'];
 
 for (const url of PAGES) {
   test(`no serious accessibility violations: ${url}`, async ({ page }) => {

@@ -5,6 +5,7 @@ import { env } from '../../config/env';
 import { databaseReady } from '../../db/connect';
 import { logger } from '../../lib/logger';
 import { Category, Page, Product, getSettings } from '../../models';
+import { getPublishedPost, listPublishedPosts } from '../blog/blog.service';
 import * as catalog from '../catalog/catalog.service';
 import { publicFaqPage } from '../faq/faq.service';
 import { isBot } from './bots';
@@ -52,6 +53,47 @@ const paras = (s: string) =>
     .filter(Boolean)
     .map((x) => `<p>${esc(x)}</p>`)
     .join('');
+/** Storefront rich text (paragraphs, "### " sub-headings, "- " lists, **bold**) as HTML for crawlers. */
+export function richHtml(s: string) {
+  const inline = (x: string) => esc(x).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  const out: string[] = [];
+  const blocks = s
+    .replace(/<[^>]+>/g, ' ')
+    .split(/\r?\n\s*\r?\n/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+  for (const block of blocks) {
+    let list: string[] = [];
+    let para: string[] = [];
+    const flushPara = () => {
+      if (para.length) out.push(`<p>${para.map(inline).join('<br>')}</p>`);
+      para = [];
+    };
+    const flushList = () => {
+      if (list.length) out.push(`<ul>${list.map((l) => `<li>${inline(l)}</li>`).join('')}</ul>`);
+      list = [];
+    };
+    for (const raw of block.split(/\r?\n/)) {
+      const l = raw.trim();
+      if (!l) continue;
+      if (/^#{2,4}\s+/.test(l)) {
+        flushPara();
+        flushList();
+        out.push(`<h2>${inline(l.replace(/^#{2,4}\s+/, ''))}</h2>`);
+      } else if (/^[-•]\s+/.test(l)) {
+        flushPara();
+        list.push(l.replace(/^[-•]\s+/, ''));
+      } else {
+        flushList();
+        para.push(l);
+      }
+    }
+    flushPara();
+    flushList();
+  }
+  return out.join('');
+}
+
 const clip = (s: string, n = 158) => {
   const t = plain(s).replace(/\s+/g, ' ');
   return t.length <= n ? t : `${t.slice(0, n - 1).replace(/\s+\S*$/, '')}…`;
@@ -83,6 +125,11 @@ const T = {
     supportDesc: 'دعم سيليبري: تتبع الطلب والتوصيل والدفع والضمان والإرجاع وطرق التواصل مع فريقنا.',
     bundlesDesc: 'أطقم جاهزة للسفر والعمرة والهدايا.',
     track: 'تتبع الطلب',
+    blog: 'المدونة',
+    blogTitle: 'مدونة سيليبري وأدلة الشراء',
+    blogDesc: 'أدلة شراء ونصائح من سيليبري: كيف تختار الباور بانك والشاحن والكابل المناسب لجوالك وسفرك.',
+    productsInArticle: 'منتجات في هذا المقال',
+    moreArticles: 'مقالات أخرى',
     policies: 'السياسات',
     featured: 'منتجات مختارة',
     related: 'منتجات ذات صلة',
@@ -120,6 +167,11 @@ const T = {
     supportDesc: 'CELIBERY support: order tracking, delivery, payment, warranty and returns, and how to reach our team.',
     bundlesDesc: 'Ready-made kits for travel, Umrah and gifting.',
     track: 'Track order',
+    blog: 'Blog',
+    blogTitle: 'CELIBERY blog and buying guides',
+    blogDesc: 'Buying guides and tips from CELIBERY: how to choose the right power bank, charger and cable for your phone and travel.',
+    productsInArticle: 'Products in this article',
+    moreArticles: 'More articles',
     policies: 'Policies',
     featured: 'Featured products',
     related: 'Related products',
@@ -464,6 +516,99 @@ function infoPage(c: Ctx, kind: 'about' | 'contact' | 'support'): Built {
   return { status: 200, title, description: clip(kind === 'about' ? story : kind === 'contact' ? t.contactDesc : t.supportDesc), h1: title, body, crumbs: [{ name: title, path: `/${kind}` }], ld: [{ '@type': kind === 'about' ? 'AboutPage' : kind === 'contact' ? 'ContactPage' : 'WebPage', name: title }] };
 }
 
+type BlogCard = { slug: string; title?: Loc; excerpt?: Loc; coverImage?: { url?: string } | null; publishedAt?: Date | string | null; updatedAt?: Date | string | null };
+const dateText = (d: Date | string | null | undefined, lang: Lang) =>
+  d ? new Date(d).toLocaleDateString(lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+
+async function blogListPage(c: Ctx): Promise<Built> {
+  const { lang, base } = c;
+  const t = T[lang];
+  const { items } = await listPublishedPosts(1, 48);
+  const posts = items as unknown as BlogCard[];
+  const body = posts.length
+    ? `<p>${esc(t.blogDesc)}</p><ul class="seo-posts">${posts
+        .map(
+          (p) =>
+            `<li><article><h2><a href="${base}/${lang}/blog/${esc(p.slug)}">${esc(L(p.title, lang))}</a></h2>${p.publishedAt ? `<time datetime="${new Date(p.publishedAt).toISOString()}">${esc(dateText(p.publishedAt, lang))}</time>` : ''}${L(p.excerpt, lang) ? `<p>${esc(L(p.excerpt, lang))}</p>` : ''}</article></li>`,
+        )
+        .join('')}</ul>`
+    : `<p>${esc(t.blogDesc)}</p>`;
+  return {
+    status: 200,
+    title: t.blogTitle,
+    description: clip(t.blogDesc),
+    h1: t.blogTitle,
+    body,
+    crumbs: [{ name: t.blog, path: '/blog' }],
+    ld: [
+      {
+        '@type': 'Blog',
+        name: t.blogTitle,
+        url: `${base}/${lang}/blog`,
+        inLanguage: lang === 'ar' ? 'ar-SA' : 'en-SA',
+        publisher: { '@id': `${base}/#organization` },
+        blogPost: posts.slice(0, 48).map((p) => ({ '@type': 'BlogPosting', headline: L(p.title, lang), url: `${base}/${lang}/blog/${p.slug}`, ...(p.publishedAt ? { datePublished: new Date(p.publishedAt).toISOString() } : {}) })),
+      },
+    ],
+  };
+}
+
+async function blogPostPage(c: Ctx, slug: string): Promise<Built | null> {
+  const { lang, base } = c;
+  const t = T[lang];
+  let post: Awaited<ReturnType<typeof getPublishedPost>>;
+  try {
+    post = await getPublishedPost(slug);
+  } catch {
+    return null;
+  }
+  const p = post as unknown as BlogCard & { body?: Loc; author?: string; tags?: string[]; seo?: { title?: Loc; description?: Loc }; products?: ListProduct[]; more?: BlogCard[]; coverImage?: { url?: string; alt?: Loc } };
+  const title = L(p.title, lang);
+  const excerpt = L(p.excerpt, lang);
+  const bodyText = L(p.body, lang);
+  const url = `${base}/${lang}/blog/${slug}`;
+  const cover = p.coverImage?.url || '';
+  const body = [
+    p.publishedAt ? `<p><time datetime="${new Date(p.publishedAt).toISOString()}">${esc(dateText(p.publishedAt, lang))}</time> · ${esc(p.author || 'CELIBERY')}</p>` : '',
+    cover ? `<img src="${esc(cover)}" alt="${esc(L(p.coverImage?.alt, lang) || title)}" width="1600" height="900">` : '',
+    excerpt ? `<p><strong>${esc(excerpt)}</strong></p>` : '',
+    `<article>${richHtml(bodyText)}</article>`,
+    p.products?.length ? `<section><h2>${esc(t.productsInArticle)}</h2>${productList(p.products, lang, base)}</section>` : '',
+    p.more?.length ? `<section><h2>${esc(t.moreArticles)}</h2><ul>${p.more.map((m) => `<li><a href="${base}/${lang}/blog/${esc(m.slug)}">${esc(L(m.title, lang))}</a></li>`).join('')}</ul></section>` : '',
+    `<p><a href="${base}/${lang}/blog">${esc(t.blogTitle)}</a></p>`,
+  ].join('');
+  return {
+    status: 200,
+    title: L(p.seo?.title, lang) || title,
+    description: clip(L(p.seo?.description, lang) || excerpt || bodyText),
+    h1: title,
+    body,
+    image: cover || p.products?.[0]?.images?.[0]?.url,
+    crumbs: [
+      { name: t.blog, path: '/blog' },
+      { name: title, path: `/blog/${slug}` },
+    ],
+    ld: [
+      {
+        '@type': 'BlogPosting',
+        '@id': `${url}#article`,
+        headline: title.slice(0, 110),
+        ...(excerpt ? { description: excerpt } : {}),
+        url,
+        mainEntityOfPage: url,
+        inLanguage: lang === 'ar' ? 'ar-SA' : 'en-SA',
+        ...(cover ? { image: [abs(cover, base)] } : {}),
+        ...(p.publishedAt ? { datePublished: new Date(p.publishedAt).toISOString() } : {}),
+        ...(p.updatedAt ? { dateModified: new Date(p.updatedAt).toISOString() } : {}),
+        author: { '@type': 'Organization', name: p.author || 'CELIBERY', url: `${base}/${lang}` },
+        publisher: { '@id': `${base}/#organization` },
+        ...(p.tags?.length ? { keywords: p.tags.join(', ') } : {}),
+        ...(p.products?.length ? { mentions: p.products.map((x) => ({ '@type': 'Product', name: L(x.name, lang), url: `${base}/${lang}/p/${x.slug}` })) } : {}),
+      },
+    ],
+  };
+}
+
 const PRIVATE = new Set(['cart', 'checkout', 'track', 'wishlist', 'login', 'register', 'forgot-password', 'reset-password', 'account', 'search', 'sandbox-pay']);
 
 /** Builds the page for a storefront path (without the /ar or /en prefix). */
@@ -478,6 +623,7 @@ export async function buildPage(lang: Lang, rest: string, base: string): Promise
   else if (parts.length === 1 && a === 'shop') page = await shopPage(c);
   else if (parts.length === 1 && a === 'bundles') page = await bundlesPage(c);
   else if (parts.length === 1 && a === 'faq') page = await faqPage(c);
+  else if (parts.length === 1 && a === 'blog') page = await blogListPage(c);
   else if (parts.length === 1 && (a === 'about' || a === 'contact' || a === 'support')) page = infoPage(c, a);
   else if (parts.length === 2 && /^[a-z0-9-]{1,100}$/.test(b)) {
     if (a === 'c') page = await categoryPage(c, b);
@@ -485,6 +631,7 @@ export async function buildPage(lang: Lang, rest: string, base: string): Promise
     else if (a === 'page') page = await contentPage(c, b);
     else if (a === 'campaign') page = await campaignPage(c, b);
     else if (a === 'collection') page = await collectionPage(c, b);
+    else if (a === 'blog') page = await blogPostPage(c, b);
   }
   if (page) return page;
   const t = T[lang];
@@ -497,8 +644,8 @@ function chrome(c: { lang: Lang; base: string; categories: Ctx['categories'] }, 
   const { lang, base } = c;
   const t = T[lang];
   const other: Lang = lang === 'ar' ? 'en' : 'ar';
-  const header = `<header><a href="${base}/${lang}">${esc(t.brand)}</a><nav aria-label="${esc(t.categories)}"><ul><li><a href="${base}/${lang}/shop">${esc(t.shop)}</a></li>${c.categories.map((x) => `<li><a href="${base}/${lang}/c/${esc(x.slug)}">${esc(L(x.name as Loc, lang))}</a></li>`).join('')}<li><a href="${base}/${lang}/bundles">${esc(t.bundles)}</a></li></ul></nav><a href="${base}/${other}${rest}" hreflang="${other}" lang="${other}">${esc(t.other)}</a></header>`;
-  const footer = `<footer><nav aria-label="${esc(t.policies)}"><ul><li><a href="${base}/${lang}/about">${esc(t.about)}</a></li><li><a href="${base}/${lang}/faq">${esc(t.faq)}</a></li><li><a href="${base}/${lang}/support">${esc(t.support)}</a></li><li><a href="${base}/${lang}/contact">${esc(t.contact)}</a></li><li><a href="${base}/${lang}/track">${esc(t.track)}</a></li>${pages.map((p) => `<li><a href="${base}/${lang}/page/${esc(p.slug)}">${esc(L(p.title, lang) || p.slug)}</a></li>`).join('')}</ul></nav><p>© ${new Date().getFullYear()} CELIBERY International</p></footer>`;
+  const header = `<header><a href="${base}/${lang}">${esc(t.brand)}</a><nav aria-label="${esc(t.categories)}"><ul><li><a href="${base}/${lang}/shop">${esc(t.shop)}</a></li>${c.categories.map((x) => `<li><a href="${base}/${lang}/c/${esc(x.slug)}">${esc(L(x.name as Loc, lang))}</a></li>`).join('')}<li><a href="${base}/${lang}/bundles">${esc(t.bundles)}</a></li><li><a href="${base}/${lang}/blog">${esc(t.blog)}</a></li></ul></nav><a href="${base}/${other}${rest}" hreflang="${other}" lang="${other}">${esc(t.other)}</a></header>`;
+  const footer = `<footer><nav aria-label="${esc(t.policies)}"><ul><li><a href="${base}/${lang}/about">${esc(t.about)}</a></li><li><a href="${base}/${lang}/blog">${esc(t.blog)}</a></li><li><a href="${base}/${lang}/faq">${esc(t.faq)}</a></li><li><a href="${base}/${lang}/support">${esc(t.support)}</a></li><li><a href="${base}/${lang}/contact">${esc(t.contact)}</a></li><li><a href="${base}/${lang}/track">${esc(t.track)}</a></li>${pages.map((p) => `<li><a href="${base}/${lang}/page/${esc(p.slug)}">${esc(L(p.title, lang) || p.slug)}</a></li>`).join('')}</ul></nav><p>© ${new Date().getFullYear()} CELIBERY International</p></footer>`;
   return { header, footer };
 }
 
