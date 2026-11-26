@@ -35,6 +35,8 @@ export type SeoOptions = {
 };
 
 const LD_ID = 'celibery-page-ld';
+/** The page the server rendered for crawlers (modules/seo/prerender.ts): its extra head tags stay for it only. */
+const FIRST_PATH = typeof window !== 'undefined' ? window.location.pathname : '';
 
 /** Sets title, description, canonical, hreflang alternates, social preview tags and structured data. */
 export function useSeo(title: string, description?: string, opts: SeoOptions = {}) {
@@ -49,9 +51,12 @@ export function useSeo(title: string, description?: string, opts: SeoOptions = {
     const rest = pathname.replace(/^\/(ar|en)(?=\/|$)/, '');
     const lang = pathname.startsWith('/en') ? 'en' : 'ar';
     setMeta('link[rel="canonical"]', 'rel', 'canonical', origin + pathname);
+    // Server-rendered structured data describes the first page only; drop it after in-app navigation.
+    if (pathname !== FIRST_PATH) document.head.querySelectorAll('[data-ssr]').forEach((el) => el.remove());
     for (const [l, hreflang] of [
       ['ar', 'ar-SA'],
       ['en', 'en-SA'],
+      ['ar', 'x-default'], // Arabic is the default language
     ]) {
       let link = document.head.querySelector<HTMLLinkElement>(`link[hreflang="${hreflang}"]`);
       if (!link) {
@@ -80,7 +85,10 @@ export function useSeo(title: string, description?: string, opts: SeoOptions = {
     else removeMeta('meta[name="robots"]');
 
     let script = document.getElementById(LD_ID);
-    if (ld) {
+    // On the page the server rendered, its structured data (same data, plus breadcrumbs) is already in
+    // the head: adding the app's copy would describe the same product twice.
+    const serverLd = pathname === FIRST_PATH && document.getElementById('celibery-ssr-ld');
+    if (ld && !serverLd) {
       if (!script) {
         script = document.createElement('script');
         script.id = LD_ID;

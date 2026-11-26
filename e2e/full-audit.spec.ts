@@ -112,6 +112,8 @@ test.describe('full-site audit crawl', () => {
     // Every Settings tab.
     current = '/admin/settings (tabs)';
     await page.goto('/admin/settings');
+    // allTextContents() does not wait: wait for the tab list to render first.
+    await expect(page.locator('.settings-tabs [role="tab"]').first()).toBeVisible();
     const tabs = await page.locator('.settings-tabs [role="tab"]').allTextContents();
     for (const t of tabs) {
       current = `/admin/settings → ${t}`;

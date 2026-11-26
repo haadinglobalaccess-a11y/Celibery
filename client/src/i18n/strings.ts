@@ -208,6 +208,8 @@ const ar = {
   },
   shop: {
     title: 'كل المنتجات',
+    metaAll: 'تسوق كل منتجات سيليبري في السعودية: شواحن وباور بانك وكابلات وسماعات وإكسسوارات. الأسعار بالريال شاملة الضريبة.',
+    metaCategory: (name: string) => `تسوق ${name} من سيليبري في السعودية. الأسعار بالريال شاملة الضريبة.`,
     results: (n: number) => arCount(n, AR_PRODUCTS),
     sort: 'ترتيب',
     sortOptions: { featured: 'المميزة', newest: 'الأحدث', price_asc: 'السعر: من الأقل', price_desc: 'السعر: من الأعلى', name: 'الاسم' } as Record<string, string>,
@@ -739,6 +741,8 @@ const en: Dict = {
   },
   shop: {
     title: 'All products',
+    metaAll: 'Shop all CELIBERY products in Saudi Arabia: chargers, power banks, cables, headphones and accessories. Prices in SAR including VAT.',
+    metaCategory: (name: string) => `Shop CELIBERY ${name} in Saudi Arabia. Prices in SAR including VAT.`,
     results: (n: number) => `${n} ${n === 1 ? 'product' : 'products'}`,
     sort: 'Sort',
     sortOptions: { featured: 'Featured', newest: 'Newest', price_asc: 'Price: low to high', price_desc: 'Price: high to low', name: 'Name' },

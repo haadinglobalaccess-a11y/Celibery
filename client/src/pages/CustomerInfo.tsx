@@ -16,7 +16,15 @@ export default function CustomerInfo({ mode }: { mode: 'about' | 'support' | 'co
   const { data: home, error } = useCached<HomeData>('/api/home');
   const text = (en: string, ar: string) => lang === 'ar' ? ar : en;
   const title = mode === 'about' ? text('About CELIBERY', 'عن سيليبري') : mode === 'contact' ? text('Contact us', 'تواصل معنا') : text('How can we help?', 'كيف يمكننا مساعدتك؟');
-  useSeo(title);
+  // Each page has its own description (duplicate descriptions weaken search results).
+  const story = L(home?.brandStory.text, lang).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const description =
+    mode === 'about'
+      ? story || t.home.storyFallback
+      : mode === 'contact'
+        ? text('Contact CELIBERY International customer service in Saudi Arabia by email, phone or WhatsApp.', 'تواصل مع خدمة عملاء سيليبري إنترناشونال في السعودية عبر البريد الإلكتروني أو الهاتف أو واتساب.')
+        : text('CELIBERY support: order tracking, delivery, payment, warranty and returns, and how to reach our team.', 'دعم سيليبري: تتبع الطلب والتوصيل والدفع والضمان والإرجاع وطرق التواصل مع فريقنا.');
+  useSeo(title, description);
   if (error && mode === 'about') return <ErrorState onRetry={() => window.location.reload()} />;
   if (!settings || (mode === 'about' && !home)) return <Spinner />;
   const business = settings.business;
