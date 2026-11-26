@@ -100,6 +100,38 @@ adminProductRoutes.get(
   }),
 );
 
+// Bulk actions from the product list: set the status of, or delete, many products at once.
+// Delete follows the single-product rule: products that appear in orders are archived instead.
+adminProductRoutes.post(
+  '/bulk',
+  requirePermission('products:write'),
+  validate(z.object({ ids: z.array(objectId).min(1).max(500), action: z.enum(['active', 'draft', 'archived', 'delete']) })),
+  ah(async (req, res) => {
+    const ids = [...new Set(req.body.ids as string[])];
+    const action = req.body.action as 'active' | 'draft' | 'archived' | 'delete';
+    const found = await Product.find({ _id: { $in: ids } }).select('_id sku status').lean();
+    const result = { requested: ids.length, updated: 0, deleted: 0, archived: 0, notFound: ids.length - found.length };
+    if (action === 'delete') {
+      for (const p of found) {
+        const r = await svc.deleteProduct(String(p._id));
+        if (r.deleted) result.deleted++;
+        else result.archived++;
+        await audit(req, r.deleted ? 'delete' : 'archive', 'product', p._id, `${p.sku} (bulk)`);
+      }
+    } else {
+      const change = found.filter((p) => p.status !== action);
+      if (change.length) {
+        await Product.updateMany({ _id: { $in: change.map((p) => p._id) } }, { $set: { status: action } });
+        for (const p of change) await audit(req, 'update', 'product', p._id, `${p.sku}: status ${p.status} → ${action} (bulk)`);
+      }
+      result.updated = change.length;
+    }
+    // Status decides what the shop shows: bundles that use these products follow, waiting customers are told.
+    triggerRestock(await syncBundleStock(found.map((p) => String(p._id))));
+    return ok(res, result);
+  }),
+);
+
 adminProductRoutes.post(
   '/',
   requirePermission('products:write'),

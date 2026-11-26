@@ -23,12 +23,16 @@ export function Products({ canWrite }: { canWrite: boolean }) {
   const [importing, setImporting] = useState(false);
   const [bulkPhotos, setBulkPhotos] = useState(false);
   const [listError, setListError] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const toast = useToast();
   const cats = useApi<Category[]>('/api/admin/categories');
-  const query = qs({ q: params.get('q') ?? undefined, status: params.get('status') ?? undefined, placement: params.get('placement') ?? undefined, category: params.get('category') ?? undefined, page: params.get('page') ?? undefined, limit: 25 });
+  const query = qs({ q: params.get('q') ?? undefined, status: params.get('status') ?? undefined, placement: params.get('placement') ?? undefined, category: params.get('category') ?? undefined, page: params.get('page') ?? undefined, limit: params.get('limit') ?? 25 });
   const [nonce, setNonce] = useState(0);
   useEffect(() => {
     setRows(null);
     setListError(false);
+    setSelected(new Set());
     api<Row[]>(`/api/admin/products${query}`)
       .then((r) => {
         setRows(r.data);
@@ -42,6 +46,32 @@ export function Products({ canWrite }: { canWrite: boolean }) {
     else n.delete(k);
     if (k !== 'page') n.delete('page');
     setParams(n);
+  };
+  const toggle = (id: string) =>
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const allOnPage = Boolean(rows?.length) && (rows ?? []).every((r) => selected.has(r._id));
+  const runBulk = async (action: 'active' | 'draft' | 'archived' | 'delete') => {
+    const ids = [...selected];
+    if (!ids.length) return;
+    const what = `${ids.length} product${ids.length === 1 ? '' : 's'}`;
+    if (action === 'archived' && !window.confirm(`Archive ${what}? Archived products are hidden from the shop. You can make them active again later.`)) return;
+    if (action === 'delete' && !window.confirm(`Delete ${what}? This cannot be undone. Products that appear in past orders are archived instead of deleted.`)) return;
+    setBulkBusy(true);
+    try {
+      const r = await post<{ updated: number; deleted: number; archived: number }>('/api/admin/products/bulk', { ids, action });
+      if (action === 'delete') toast(`${r.deleted} deleted${r.archived ? `, ${r.archived} archived (they appear in past orders)` : ''}`);
+      else toast(`${r.updated} product${r.updated === 1 ? '' : 's'} set to ${action}`);
+      setNonce((x) => x + 1);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not update the selected products');
+    } finally {
+      setBulkBusy(false);
+    }
   };
   return (
     <>
@@ -110,6 +140,26 @@ export function Products({ canWrite }: { canWrite: boolean }) {
           ))}
         </select>
       </div>
+      {canWrite && selected.size ? (
+        <div className="products-bulk-bar" role="toolbar" aria-label="Bulk actions" data-testid="products-bulk-bar">
+          <strong>{selected.size} selected</strong>
+          <button className="btn btn--primary btn--sm" disabled={bulkBusy} onClick={() => void runBulk('active')}>
+            Set active
+          </button>
+          <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('draft')}>
+            Set draft
+          </button>
+          <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('archived')}>
+            Archive
+          </button>
+          <button className="btn btn--outline btn--sm products-bulk-delete" disabled={bulkBusy} onClick={() => void runBulk('delete')}>
+            Delete
+          </button>
+          <button className="btn btn--ghost btn--sm" disabled={bulkBusy} onClick={() => setSelected(new Set())}>
+            Clear selection
+          </button>
+        </div>
+      ) : null}
       <div className="a-card table-wrap products-table-card">
         {listError ? (
           <ErrorState onRetry={() => setNonce((n) => n + 1)} />
@@ -119,6 +169,11 @@ export function Products({ canWrite }: { canWrite: boolean }) {
           <table className="table products-table">
             <thead>
               <tr>
+                {canWrite ? (
+                  <th className="products-check">
+                    <input type="checkbox" aria-label="Select all products on this page" checked={allOnPage} onChange={() => setSelected(allOnPage ? new Set() : new Set(rows.map((r) => r._id)))} />
+                  </th>
+                ) : null}
                 <th></th>
                 <th>Product</th>
                 <th>Category</th>
@@ -129,11 +184,16 @@ export function Products({ canWrite }: { canWrite: boolean }) {
             </thead>
             <tbody>
               {rows.map((p) => (
-                <tr key={p._id}>
+                <tr key={p._id} className={selected.has(p._id) ? 'is-selected' : undefined}>
+                  {canWrite ? (
+                    <td className="products-check">
+                      <input type="checkbox" aria-label={`Select ${en(p.name)}`} checked={selected.has(p._id)} onChange={() => toggle(p._id)} />
+                    </td>
+                  ) : null}
                   <td>
                     <img className="thumb" src={p.images?.[0]?.url || '/placeholders/tech-essentials.svg'} alt="" />
                   </td>
-                  <td>
+                  <td className="products-name">
                     <Link to={`/admin/products/${p._id}`}>{en(p.name)}</Link>
                     <div className="muted">
                       {p.sku} {p.model ? `· ${p.model}` : ''} {p.dataSource === 'demo' ? <span className="badge badge--sample">sample</span> : null} {p.featured ? <span className="badge badge--featured" data-testid="badge-featured">Featured</span> : null} {p.flagship ? <span className="badge badge--flagship" data-testid="badge-flagship">Flagship</span> : null}
@@ -151,7 +211,19 @@ export function Products({ canWrite }: { canWrite: boolean }) {
           </table>
         )}
         {rows && !rows.length ? <p className="muted">No products yet. Import the product list (CSV) or add products one by one.</p> : null}
-        <Pager page={meta.page} pages={meta.pages} onPage={(pg) => set('page', String(pg))} />
+        <div className="products-pager">
+          <label className="muted">
+            Show{' '}
+            <select className="select" aria-label="Products per page" value={params.get('limit') ?? '25'} onChange={(e) => set('limit', e.target.value === '25' ? '' : e.target.value)}>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+            </select>{' '}
+            per page
+          </label>
+          <Pager page={meta.page} pages={meta.pages} onPage={(pg) => set('page', String(pg))} />
+        </div>
       </div>
       {importing ? <ImportModal onClose={() => setImporting(false)} onDone={() => setNonce((n) => n + 1)} /> : null}
       {bulkPhotos ? <BulkImagesModal onClose={() => setBulkPhotos(false)} onDone={() => setNonce((n) => n + 1)} /> : null}
