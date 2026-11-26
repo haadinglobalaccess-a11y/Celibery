@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { toCsv } from '../src/lib/csv';
-import { Category, InventoryMovement, MediaAsset, Product } from '../src/models';
+import { Category, InventoryMovement, MediaAsset, Order, Product } from '../src/models';
 import { matchImageFile } from '../src/modules/admin/product-images.service';
-import { createStaff, useDatabase } from './helpers';
+import { address, client, contact, createStaff, uid, useDatabase } from './helpers';
 
 useDatabase();
 
@@ -167,5 +167,43 @@ describe('bulk photos by SKU file name', () => {
     const viewer = await createStaff('order_manager');
     expect((await viewer.post('/api/admin/products/images/match').send({ files: ['A-1.jpg'] })).status).toBe(403);
     expect((await viewer.post('/api/admin/products/images/attach').send({ mode: 'replace', items: [{ sku: 'AA', mediaIds: ['0123456789abcdef01234567'] }] })).status).toBe(403);
+  });
+});
+
+describe('bulk actions on the product list', () => {
+  it('sets the status of many products at once; delete archives products that are in orders', async () => {
+    const admin = await createStaff('admin');
+    const ids: string[] = [];
+    for (const sku of ['BULK-S1', 'BULK-S2', 'BULK-S3']) ids.push((await makeProduct(admin, sku))._id);
+    const status = async () => (await Product.find({ _id: { $in: ids } }).select('status').lean()).map((p) => p.status);
+
+    const draft = await admin.post('/api/admin/products/bulk').send({ ids, action: 'draft' });
+    expect(draft.body.data).toMatchObject({ requested: 3, updated: 3 });
+    expect(await status()).toEqual(['draft', 'draft', 'draft']);
+    // Only the selected ones change; already-active ones are not counted twice.
+    expect((await admin.post('/api/admin/products/bulk').send({ ids: [ids[0], ids[1]], action: 'active' })).body.data.updated).toBe(2);
+    expect((await admin.post('/api/admin/products/bulk').send({ ids: [ids[0]], action: 'active' })).body.data.updated).toBe(0);
+    expect((await admin.post('/api/admin/products/bulk').send({ ids: [ids[2]], action: 'archived' })).body.data.updated).toBe(1);
+    expect((await Product.find({ _id: { $in: ids } }).sort({ sku: 1 }).select('status').lean()).map((p) => p.status)).toEqual(['active', 'active', 'archived']);
+
+    // A product in a past order is archived, never deleted (order history stays intact).
+    const shop = client();
+    const r = await shop.post('/api/checkout').send({ idempotencyKey: uid(), items: [{ productId: ids[0], quantity: 1 }], contact, shippingAddress: address, paymentMethod: 'card', lang: 'ar' });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    expect(await Order.exists({ 'items.product': ids[0] })).toBeTruthy();
+    const del = await admin.post('/api/admin/products/bulk').send({ ids, action: 'delete' });
+    expect(del.body.data).toMatchObject({ deleted: 2, archived: 1 });
+    const left = await Product.find({ _id: { $in: ids } }).lean();
+    expect(left.map((p) => [p.sku, p.status])).toEqual([['BULK-S1', 'archived']]);
+  });
+
+  it('validates input and needs products:write', async () => {
+    const admin = await createStaff('admin');
+    expect((await admin.post('/api/admin/products/bulk').send({ ids: [], action: 'active' })).status).toBe(400);
+    expect((await admin.post('/api/admin/products/bulk').send({ ids: ['0123456789abcdef01234567'], action: 'publish' })).status).toBe(400);
+    const missing = await admin.post('/api/admin/products/bulk').send({ ids: ['0123456789abcdef01234567'], action: 'active' });
+    expect(missing.body.data).toMatchObject({ updated: 0, notFound: 1 });
+    const viewer = await createStaff('order_manager');
+    expect((await viewer.post('/api/admin/products/bulk').send({ ids: ['0123456789abcdef01234567'], action: 'delete' })).status).toBe(403);
   });
 });
