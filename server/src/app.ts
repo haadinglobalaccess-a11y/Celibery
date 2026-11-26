@@ -20,7 +20,8 @@ import { securityEvent } from './lib/security-log';
 import { accountRoutes } from './modules/account/account.routes';
 import { adminRoutes } from './modules/admin';
 import { authRoutes } from './modules/auth/auth.routes';
-import { llms, robots, sitemap } from './modules/catalog/catalog.controller';
+import { llms, llmsFull, robots, sitemap } from './modules/catalog/catalog.controller';
+import { prerender } from './modules/seo/prerender';
 import { catalogRoutes } from './modules/catalog/catalog.routes';
 import { currencyRoutes } from './modules/currency/currency.routes';
 import { publicHomeVideoRoutes } from './modules/home-videos/home-video.routes';
@@ -137,6 +138,7 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   app.get('/sitemap.xml', databaseGate, ah(sitemap));
   app.get('/robots.txt', databaseGate, ah(robots));
   app.get('/llms.txt', databaseGate, ah(llms));
+  app.get('/llms-full.txt', databaseGate, ah(llmsFull));
 
   // databaseGate first: during a database outage requests fail fast (or serve cached public pages).
   app.use('/api', databaseGate, apiLimiter, csrfGuard, rejectOperatorKeys, integrationsMiddleware, loadUser);
@@ -178,6 +180,11 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   app.use('/api/me', accountRoutes);
   app.use('/api/admin', invalidatePublicCacheOnAdminWrite, adminRoutes);
   app.use('/api', notFoundHandler);
+
+  // Crawlers (search, AI assistants, link previews) get server-rendered pages (modules/seo/prerender.ts).
+  // On Vercel only crawlers are routed here; on a single server people fall through to the storefront.
+  // No databaseGate here: people must always get the storefront; the renderer falls back by itself.
+  app.get(['/', /^\/(ar|en)(\/.*)?$/], prerender(opts.serveClient && fs.existsSync(opts.serveClient) ? opts.serveClient : undefined));
 
   // Optional: serve the built storefront (single-server deployments and E2E tests).
   if (opts.serveClient && fs.existsSync(opts.serveClient)) {
