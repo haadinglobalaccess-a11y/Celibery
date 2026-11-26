@@ -224,6 +224,17 @@ describe('bulk actions on the product list', () => {
     expect(slugs).not.toContain('bulk-f3');
   });
 
+  it('Unarchive brings only archived products back, as draft', async () => {
+    const admin = await createStaff('admin');
+    const ids: string[] = [];
+    for (const sku of ['BULK-U1', 'BULK-U2', 'BULK-U3']) ids.push((await makeProduct(admin, sku))._id); // active
+    await admin.post('/api/admin/products/bulk').send({ ids: [ids[0], ids[1]], action: 'archived' });
+    const r = await admin.post('/api/admin/products/bulk').send({ ids, action: 'unarchive' });
+    expect(r.body.data.updated).toBe(2);
+    const st = (await Product.find({ _id: { $in: ids } }).sort({ sku: 1 }).select('status').lean()).map((p) => p.status);
+    expect(st).toEqual(['draft', 'draft', 'active']); // the active one is not touched
+  });
+
   it('validates input and needs products:write', async () => {
     const admin = await createStaff('admin');
     expect((await admin.post('/api/admin/products/bulk').send({ ids: [], action: 'active' })).status).toBe(400);

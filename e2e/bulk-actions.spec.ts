@@ -60,8 +60,14 @@ test('select products, then Set active, Archive and Delete in one click each', a
     await page.getByRole('checkbox', { name: 'Select all products on this page' }).check();
     await expect(bar).toContainText('3 selected');
     page.once('dialog', (d) => void d.accept());
-    await bar.getByRole('button', { name: 'Archive' }).click();
+    await bar.getByRole('button', { name: 'Archive', exact: true }).click();
     await expect.poll(statusOf).toEqual(['archived', 'archived', 'archived']);
+
+    // Unarchive: archived products come back as draft.
+    await page.getByRole('checkbox', { name: 'Select Bulk Action Item 2' }).check();
+    await bar.getByRole('button', { name: 'Unarchive' }).click();
+    await expect(page.getByText('1 product unarchived (now draft)')).toBeVisible();
+    await expect.poll(statusOf).toEqual(['archived', 'draft', 'archived']);
 
     // Delete: cancelling the confirmation changes nothing; accepting deletes.
     await page.getByRole('checkbox', { name: 'Select Bulk Action Item 3' }).check();

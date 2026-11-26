@@ -55,7 +55,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
       return next;
     });
   const allOnPage = Boolean(rows?.length) && (rows ?? []).every((r) => selected.has(r._id));
-  const runBulk = async (action: 'active' | 'draft' | 'archived' | 'delete' | 'feature' | 'unfeature' | 'flagship' | 'unflagship') => {
+  const runBulk = async (action: 'active' | 'draft' | 'archived' | 'unarchive' | 'delete' | 'feature' | 'unfeature' | 'flagship' | 'unflagship') => {
     const ids = [...selected];
     if (!ids.length) return;
     const what = `${ids.length} product${ids.length === 1 ? '' : 's'}`;
@@ -68,6 +68,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
         active: 'set to active',
         draft: 'set to draft',
         archived: 'archived',
+        unarchive: 'unarchived (now draft)',
         delete: '',
         feature: 'added to Featured',
         unfeature: 'removed from Featured',
@@ -163,6 +164,9 @@ export function Products({ canWrite }: { canWrite: boolean }) {
             </button>
             <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('archived')}>
               Archive
+            </button>
+            <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('unarchive')} title="Archived products come back as Draft, so you can check them before making them active">
+              Unarchive
             </button>
           </div>
           <div className="products-bulk-group" role="group" aria-label="Homepage">

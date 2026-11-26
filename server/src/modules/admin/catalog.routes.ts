@@ -111,12 +111,23 @@ const BULK_FLAGS = {
 adminProductRoutes.post(
   '/bulk',
   requirePermission('products:write'),
-  validate(z.object({ ids: z.array(objectId).min(1).max(500), action: z.enum(['active', 'draft', 'archived', 'delete', 'feature', 'unfeature', 'flagship', 'unflagship']) })),
+  validate(z.object({ ids: z.array(objectId).min(1).max(500), action: z.enum(['active', 'draft', 'archived', 'unarchive', 'delete', 'feature', 'unfeature', 'flagship', 'unflagship']) })),
   ah(async (req, res) => {
     const ids = [...new Set(req.body.ids as string[])];
-    const action = req.body.action as 'active' | 'draft' | 'archived' | 'delete' | keyof typeof BULK_FLAGS;
+    const action = req.body.action as 'active' | 'draft' | 'archived' | 'unarchive' | 'delete' | keyof typeof BULK_FLAGS;
     const found = await Product.find({ _id: { $in: ids } }).select('_id sku status featured flagship').lean();
     const result = { requested: ids.length, updated: 0, deleted: 0, archived: 0, notFound: ids.length - found.length };
+    if (action === 'unarchive') {
+      // Archived products come back as Draft (checked before they go live); other products are left alone.
+      const change = found.filter((p) => p.status === 'archived');
+      if (change.length) {
+        await Product.updateMany({ _id: { $in: change.map((p) => p._id) }, status: 'archived' }, { $set: { status: 'draft' } });
+        for (const p of change) await audit(req, 'update', 'product', p._id, `${p.sku}: status archived → draft (bulk unarchive)`);
+      }
+      result.updated = change.length;
+      triggerRestock(await syncBundleStock(found.map((p) => String(p._id))));
+      return ok(res, result);
+    }
     if (action in BULK_FLAGS) {
       // Featured and Flagship are independent of each other and of the status (as in the product form).
       const [field, value] = BULK_FLAGS[action as keyof typeof BULK_FLAGS];
