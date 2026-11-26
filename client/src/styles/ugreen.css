@@ -81,6 +81,10 @@ html[lang='ar'] .cx-strip__item {
 .storefront .cx-lineup {
   background: var(--paper);
 }
+/* "Shop by category" uses the wide container, so the six tiles are a little larger (~13%) on desktop. */
+.cx-lineup > .container {
+  max-width: var(--container-wide);
+}
 .cx-lineup .cx-lineup__track {
   grid-template-columns: repeat(var(--lineup-cols, 6), minmax(0, 1fr));
   gap: clamp(12px, 1.4vw, 20px);
@@ -110,7 +114,7 @@ html[lang='ar'] .cx-strip__item {
   padding-inline: 0;
 }
 .cx-lineup .cx-lineup__name {
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 .cx-lineup .cx-lineup__go {
@@ -134,11 +138,11 @@ html[lang='ar'] .cx-strip__item {
 }
 @media (max-width: 639px) {
   .cx-lineup .cx-lineup__card {
-    flex: 0 0 38%;
+    flex: 0 0 44%;
     border-radius: 0;
   }
   .cx-lineup .cx-lineup__name {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
   }
 }
 
