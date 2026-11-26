@@ -15,8 +15,11 @@
   --cx-cloud-2: var(--surface-2);
   --cx-line: rgb(17 17 17 / 0.09);
   --cx-muted: var(--muted);
-  --cx-night: var(--brand-midnight); /* client-confirmed CELIBERY near-black for premium sections (Q1/Q2) */
-  --cx-night-2: var(--dark-2);
+  /* Dark premium sections (Flagship, Ecosystem, Story, offer band, footer) use the studio near-black of the
+     CELIBERY product photography (sampled from the graphics team's renders: #08090C–#0C0F12 edges), so
+     product photos on dark sections blend in instead of sitting in a visible box. Still near-black (Q1/Q2). */
+  --cx-night: #0b0e11;
+  --cx-night-2: #12181b; /* raised dark surface (photo mid-tones #0E1418–#1D2528) */
   --cx-night-line: rgb(255 255 255 / 0.1);
   --cx-night-muted: var(--on-dark-muted);
   --cx-ease: cubic-bezier(0.22, 0.7, 0.2, 1);
