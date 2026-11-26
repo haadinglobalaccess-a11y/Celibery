@@ -3,7 +3,7 @@ import { env } from '../../config/env';
 import { conflict, notFound, unprocessable } from '../../lib/errors';
 import { ok } from '../../lib/http';
 import { q } from '../../middleware/validate';
-import { Campaign, Category, NewsletterSubscription, Order, Page, Product, ProductCollection, Review, getSettings } from '../../models';
+import { BlogPost, Campaign, Category, NewsletterSubscription, Order, Page, Product, ProductCollection, Review, getSettings } from '../../models';
 import { availablePaymentMethods } from '../payments/payment.service';
 import * as svc from './catalog.service';
 import { productListQuery } from './catalog.schemas';
@@ -115,6 +115,7 @@ type LlmsInput = {
   categories: { slug: string; name: string; productCount: number }[];
   campaigns: { slug: string; title: string }[];
   pages: { slug: string; title: string; approved: boolean }[];
+  guides?: { slug: string; title: string; excerpt: string }[];
   delivery: string;
   payments: string[];
   contact: { email?: string; phone?: string; whatsapp?: string };
@@ -134,6 +135,7 @@ export function llmsTxt(d: LlmsInput): string {
     out.push('## Shop', ...d.categories.map((c) => `- [${c.name}](${base}/en/c/${c.slug}): ${c.productCount} product${c.productCount === 1 ? '' : 's'}`), `- [Bundles & Gift Kits](${base}/en/bundles)`, '');
   }
   if (d.campaigns.length) out.push('## Current campaigns', ...d.campaigns.map((c) => `- [${c.title}](${base}/en/campaign/${c.slug})`), '');
+  if (d.guides?.length) out.push('## Buying guides', ...d.guides.map((g) => `- [${g.title}](${base}/en/blog/${g.slug})${g.excerpt ? `: ${g.excerpt}` : ''}`), '');
   if (d.pages.length) out.push('## Policies', ...d.pages.map((p) => `- [${p.title}](${base}/en/page/${p.slug})${p.approved ? '' : ' (draft, pending approval)'}`), '');
   const contact = [d.contact.email && `Email: ${d.contact.email}`, d.contact.phone && `Phone: ${d.contact.phone}`, d.contact.whatsapp && `WhatsApp: +${d.contact.whatsapp.replace(/^\+/, '')}`].filter(Boolean);
   if (contact.length) out.push('## Contact', ...contact.map((c) => `- ${c}`), '');
@@ -215,13 +217,14 @@ export async function llmsFull(_req: Request, res: Response) {
 
 export async function llms(_req: Request, res: Response) {
   const now = new Date();
-  const [s, cats, campaigns, pages] = await Promise.all([
+  const [s, cats, campaigns, pages, guides] = await Promise.all([
     getSettings(),
     svc.listCategories(),
     Campaign.find({ active: true, $and: [{ $or: [{ startsAt: null }, { startsAt: { $exists: false } }, { startsAt: { $lte: now } }] }, { $or: [{ endsAt: null }, { endsAt: { $exists: false } }, { endsAt: { $gte: now } }] }] })
       .select('slug title')
       .lean(),
     Page.find().select('slug title status').sort({ slug: 1 }).lean(),
+    BlogPost.find({ status: 'published', publishedAt: { $ne: null, $lte: now } }).select('slug title excerpt').sort({ publishedAt: -1 }).limit(50).lean(),
   ]);
   const en = (l?: { en?: string; ar?: string }) => l?.en || l?.ar || '';
   const c = s?.commerce ?? {};
@@ -242,6 +245,7 @@ export async function llms(_req: Request, res: Response) {
       categories: cats.map((x) => ({ slug: x.slug, name: en(x.name as { en?: string }), productCount: x.productCount })),
       campaigns: campaigns.map((x) => ({ slug: x.slug, title: en(x.title as { en?: string }) })),
       pages: pages.map((p) => ({ slug: p.slug, title: en(p.title as { en?: string }) || p.slug, approved: p.status === 'approved' })),
+      guides: guides.map((g) => ({ slug: g.slug, title: en(g.title as { en?: string }) || g.slug, excerpt: en(g.excerpt as { en?: string }) })),
       delivery: c.warrantyEnabled && c.warrantyMonths ? `${delivery}; ${c.warrantyMonths}-month warranty` : delivery,
       payments,
       contact: { email: s?.business?.email || undefined, phone: s?.business?.phone || undefined, whatsapp: s?.business?.whatsappNumber || undefined },
@@ -253,7 +257,7 @@ const xmlEsc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<':
 
 export async function sitemap(_req: Request, res: Response) {
   const now = new Date();
-  const [cats, prods, pages, collections, campaigns] = await Promise.all([
+  const [cats, prods, pages, collections, campaigns, posts] = await Promise.all([
     Category.find({ active: true }).select('slug updatedAt').lean(),
     Product.find({ status: 'active' }).select('slug updatedAt images name').lean(),
     Page.find({ status: 'approved' }).select('slug updatedAt').lean(),
@@ -261,6 +265,7 @@ export async function sitemap(_req: Request, res: Response) {
     Campaign.find({ active: true, $and: [{ $or: [{ startsAt: null }, { startsAt: { $exists: false } }, { startsAt: { $lte: now } }] }, { $or: [{ endsAt: null }, { endsAt: { $exists: false } }, { endsAt: { $gte: now } }] }] })
       .select('slug updatedAt')
       .lean(),
+    BlogPost.find({ status: 'published', publishedAt: { $ne: null, $lte: now } }).select('slug updatedAt').lean(),
   ]);
   const base = env.PUBLIC_SITE_URL.replace(/\/$/, '');
   const abs = (u: string) => (/^https?:\/\//i.test(u) ? u : `${base}${u.startsWith('/') ? '' : '/'}${u}`);
@@ -285,6 +290,8 @@ export async function sitemap(_req: Request, res: Response) {
     ...collections.map((c) => ({ path: `/collection/${c.slug}`, lastmod: c.updatedAt as Date })),
     ...campaigns.map((c) => ({ path: `/campaign/${c.slug}`, lastmod: c.updatedAt as Date })),
     ...pages.map((p) => ({ path: `/page/${p.slug}`, lastmod: p.updatedAt as Date })),
+    ...(posts.length ? [{ path: '/blog', lastmod: posts.reduce((m, p) => (p.updatedAt && (p.updatedAt as Date) > m ? (p.updatedAt as Date) : m), new Date(0)) }] : []),
+    ...posts.map((p) => ({ path: `/blog/${p.slug}`, lastmod: p.updatedAt as Date })),
   ];
   // The FAQ page is listed only once something is published on it.
   const faqChanged = await lastPublishedChange();

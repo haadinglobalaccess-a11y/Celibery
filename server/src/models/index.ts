@@ -22,3 +22,4 @@ export * from './Security';
 export * from './Faq';
 export * from './HomeVideo';
 export * from './Restock';
+export * from './Blog';

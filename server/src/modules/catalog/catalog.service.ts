@@ -39,7 +39,7 @@ const cachedSettings = () => cached('settings', getSettings);
 export const PUBLIC_PRODUCT_FIELDS =
   'slug sku model name shortDescription category series images price compareAtPrice stock lowStockThreshold featured attributes tags isBundle dataSource createdAt';
 
-type LeanProduct = Record<string, unknown> & { _id: Types.ObjectId; price: number; compareAtPrice?: number | null; stock: number; lowStockThreshold?: number | null };
+export type LeanProduct = Record<string, unknown> & { _id: Types.ObjectId; price: number; compareAtPrice?: number | null; stock: number; lowStockThreshold?: number | null };
 
 /** Public shape: exact stock is not exposed, only availability. */
 /**

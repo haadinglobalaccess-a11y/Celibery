@@ -252,3 +252,18 @@ export const customerStatus = z.object({
   /** Optional note for the audit log (e.g. "fraud report", "customer asked to close account"). */
   reason: z.string().trim().max(200).default(''),
 });
+
+/** Blog article (Admin → Website content → Blog). Body: storefront rich text, up to 20,000 characters per language. */
+export const blogInput = z.object({
+  slug,
+  title: requiredLocalized,
+  excerpt: z.object({ ar: text(400).default(''), en: text(400).default('') }).default({ ar: '', en: '' }),
+  body: localized.default({ ar: '', en: '' }),
+  coverImage: z.object({ url: url.default(''), alt: localizedShort.default({ ar: '', en: '' }) }).default({ url: '', alt: { ar: '', en: '' } }),
+  tags: z.array(z.string().trim().toLowerCase().max(40)).max(20).default([]),
+  relatedProducts: z.array(objectId).max(12).default([]),
+  author: z.string().trim().max(80).default('CELIBERY'),
+  status: z.enum(['draft', 'published']).default('draft'),
+  publishedAt: z.coerce.date().nullable().optional(),
+  seo: z.object({ title: localizedShort.default({ ar: '', en: '' }), description: localizedShort.default({ ar: '', en: '' }) }).default({ title: { ar: '', en: '' }, description: { ar: '', en: '' } }),
+});

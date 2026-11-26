@@ -23,6 +23,7 @@ import { authRoutes } from './modules/auth/auth.routes';
 import { llms, llmsFull, robots, sitemap } from './modules/catalog/catalog.controller';
 import { prerender } from './modules/seo/prerender';
 import { catalogRoutes } from './modules/catalog/catalog.routes';
+import { blogRoutes } from './modules/blog/blog.routes';
 import { currencyRoutes } from './modules/currency/currency.routes';
 import { publicHomeVideoRoutes } from './modules/home-videos/home-video.routes';
 import { publicRestockRoutes } from './modules/restock/restock.routes';
@@ -172,6 +173,7 @@ export function createApp(opts: { serveClient?: string } = {}): Express {
   app.use('/api', paymentRoutes);
   app.use('/api', publicReviewRoutes);
   app.use('/api', catalogRoutes);
+  app.use('/api', blogRoutes);
   app.use('/api', currencyRoutes);
   app.use('/api', publicHomeVideoRoutes);
   app.use('/api', publicRestockRoutes);

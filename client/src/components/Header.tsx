@@ -147,6 +147,7 @@ export function Header() {
             </button>
             <Link to={p('/bundles')}>{t.nav.bundles}</Link>
             <Link to={p('/track')}>{t.nav.track}</Link>
+            <Link to={p('/blog')}>{lang === 'ar' ? 'المدونة' : 'Blog'}</Link>
             <Link to={p('/faq')}>{t.footer.help}</Link>
           </nav>
           <div className="header__actions">
@@ -258,6 +259,7 @@ export function Header() {
                 </Link>
               ))}
               <Link to={p('/bundles')}>{t.nav.bundles}</Link>
+              <Link to={p('/blog')}>{lang === 'ar' ? 'المدونة' : 'Blog'}</Link>
               <Link to={p('/faq')}>{t.footer.help}</Link>
               <Link to={p('/track')} className="mnav__util mnav__util--first">
                 {t.nav.track}

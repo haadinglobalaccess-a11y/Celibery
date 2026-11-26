@@ -205,6 +205,7 @@ export function Footer() {
                 <li><Link to={p('/support')}>{lang === 'ar' ? 'مركز الدعم' : 'Support center'}</Link></li>
                 <li><Link to={p('/contact')}>{lang === 'ar' ? 'تواصل معنا' : 'Contact us'}</Link></li>
                 <li><Link to={p('/about')}>{lang === 'ar' ? 'عن سيليبري' : 'About CELIBERY'}</Link></li>
+                <li><Link to={p('/blog')}>{lang === 'ar' ? 'المدونة وأدلة الشراء' : 'Blog & buying guides'}</Link></li>
                 <li><Link to={p('/track')}>{t.nav.track}</Link></li>
                 <li><Link to={p('/account')}>{t.nav.account}</Link></li>
               </ul>

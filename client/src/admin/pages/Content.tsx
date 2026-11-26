@@ -7,8 +7,9 @@ import { useToast } from '../../state/toast';
 import { Card, dt, en, ErrorBox, F, LocInput, Modal, ProductPicker, Status, Tabs, AHead, usePerms } from '../kit';
 import { MediaField } from '../media';
 import { ReviewsModeration } from './Reviews';
+import { BlogAdmin } from './BlogAdmin';
 
-type TabKey = 'home' | 'banners' | 'collections' | 'campaigns' | 'pages' | 'reviews' | 'trust';
+type TabKey = 'home' | 'banners' | 'collections' | 'campaigns' | 'pages' | 'blog' | 'reviews' | 'trust';
 const emptyL = { ar: '', en: '' };
 const dateIn = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 16) : '');
 const dateOut = (s: string) => (s ? new Date(s).toISOString() : null);
@@ -21,6 +22,7 @@ export function Content({ canSettings, canReviews }: { canSettings: boolean; can
     ['collections', 'Collections & bundles'],
     ['campaigns', 'Seasonal campaigns'],
     ['pages', 'Policy pages'],
+    ['blog', 'Blog'],
     ['trust', 'Product page trust'],
     ...(canReviews ? ([['reviews', 'Reviews']] as [TabKey, string][]) : []),
   ];
@@ -33,6 +35,7 @@ export function Content({ canSettings, canReviews }: { canSettings: boolean; can
       {tab === 'collections' ? <Collections /> : null}
       {tab === 'campaigns' ? <Campaigns /> : null}
       {tab === 'pages' ? <Pages /> : null}
+      {tab === 'blog' ? <BlogAdmin /> : null}
       {tab === 'reviews' ? <Reviews /> : null}
       {tab === 'trust' ? <ProductTrustEditor /> : null}
     </>

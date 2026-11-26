@@ -646,3 +646,147 @@ html[lang='ar'] .storefront .cx-card:not(.cx-card--dark) .cx-card__title {
 .cx-lineup .cx-lineup__media .cx-art[data-kind='art'] {
   background: var(--cx-night);
 }
+
+/* ---------- Blog / buying guides ----------
+   Article cards follow the studio product cards; the article itself is a calm, narrow reading column
+   with the direct answer first (what search and AI assistants quote). */
+.cx-blog__list {
+  padding-block: clamp(32px, 5vw, 64px);
+}
+.cx-posts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: clamp(16px, 2vw, 24px);
+}
+.cx-post {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--cx-night);
+  color: var(--on-dark);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  transition: box-shadow var(--dur-slow) var(--ease-out);
+}
+.cx-post__media {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: radial-gradient(60% 90% at 70% 50%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), var(--cx-night);
+}
+.cx-post__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 900ms var(--ease-out);
+}
+.cx-post__mark {
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: color-mix(in srgb, var(--accent) 70%, #fff);
+  opacity: 0.6;
+}
+.cx-post__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px 22px;
+}
+.cx-post__body time {
+  font-size: 0.8125rem;
+  color: var(--cx-night-muted);
+}
+.cx-post__title {
+  margin: 0;
+  font-size: 1.1875rem;
+  line-height: 1.35;
+}
+.cx-post__title a {
+  color: inherit;
+}
+.cx-post__excerpt {
+  margin: 0;
+  color: var(--cx-night-muted);
+  line-height: 1.6;
+}
+.cx-post .cx-post__more {
+  margin-top: auto;
+  color: var(--accent);
+  font-weight: 600;
+}
+.cx-post__more {
+  font-weight: 600;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cx-post:hover {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08), var(--shadow-md);
+  }
+  .cx-post:hover .cx-post__media img {
+    transform: scale(1.04);
+  }
+  .cx-post__title a:hover {
+    color: var(--accent);
+  }
+}
+
+.cx-article__narrow {
+  max-width: 860px;
+}
+.cx-article__head .crumbs {
+  margin-bottom: 20px;
+}
+.cx-article__meta {
+  margin: 12px 0 0;
+  color: var(--cx-night-muted);
+  font-size: 0.9375rem;
+}
+.cx-article__cover {
+  margin: clamp(24px, 4vw, 40px) 0 0;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--cx-night);
+}
+.cx-article__cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.cx-article__answer {
+  margin: clamp(24px, 4vw, 40px) 0 8px;
+  padding: 18px 22px;
+  border-inline-start: 3px solid var(--accent);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.65;
+}
+html[dir='rtl'] .cx-article__answer {
+  border-radius: var(--r-md) 0 0 var(--r-md);
+}
+.cx-article__body {
+  padding-block: 8px clamp(40px, 6vw, 72px);
+  font-size: 1.0625rem;
+  line-height: 1.8;
+}
+.cx-article__body h3 {
+  margin: 1.8em 0 0.5em;
+  font-size: 1.375rem;
+  line-height: 1.3;
+}
+.cx-article__body ul {
+  padding-inline-start: 1.25em;
+}
+.cx-article__body li {
+  margin-block: 0.35em;
+}
+.cx-article__products .cx-display,
+.cx-article__more .cx-display {
+  margin-bottom: 24px;
+  font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2.25rem);
+}
+.cx-article__more {
+  padding-block: clamp(40px, 6vw, 72px);
+}

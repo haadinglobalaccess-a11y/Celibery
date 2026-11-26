@@ -5,14 +5,15 @@ import { videoUrlError } from '../../lib/media-url';
 import { ah, ok } from '../../lib/http';
 import { requirePermission } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
-import { Banner, Campaign, Page, PageRevision, ProductCollection, Review, Settings, getSettings } from '../../models';
+import { Banner, BlogPost, Campaign, Page, PageRevision, ProductCollection, Review, Settings, getSettings } from '../../models';
 import { DEFAULT_PRODUCT_TRUST, TRUST_ICONS } from '../../models/Settings';
 import { text } from './admin.schemas';
-import { bannerInput, campaignInput, collectionInput, idParam, pageInput, reviewModerate } from './admin.schemas';
+import { bannerInput, blogInput, campaignInput, collectionInput, idParam, pageInput, reviewModerate } from './admin.schemas';
 import { z } from 'zod';
 import type { NextFunction, Request, Response } from 'express';
 import { badRequest } from '../../lib/errors';
 import { crudRouter } from './crud';
+import { addStarterPosts } from '../blog/blog.service';
 
 export const adminContentRoutes = Router();
 
@@ -41,6 +42,28 @@ adminContentRoutes.use(
 adminContentRoutes.use(
   '/campaigns',
   crudRouter(Campaign, campaignInput, { entity: 'campaign', readPermission: 'content:write', writePermission: 'content:write', sort: { startsAt: -1 } }),
+);
+
+// Blog / buying guides (SEO, AEO, GEO). Publishing sets the publish date once; the starter guides are
+// added as drafts for the team to review.
+adminContentRoutes.post(
+  '/blog/starter',
+  requirePermission('content:write'),
+  ah(async (req, res) => {
+    const r = await addStarterPosts();
+    if (r.added.length) await audit(req, 'create', 'blog', '', `starter guides: ${r.added.join(', ')}`);
+    return ok(res, r);
+  }),
+);
+adminContentRoutes.use(
+  '/blog',
+  crudRouter(BlogPost, blogInput, {
+    entity: 'blog',
+    readPermission: 'content:write',
+    writePermission: 'content:write',
+    sort: { status: 1, publishedAt: -1, updatedAt: -1 },
+    transform: (b) => (b.status === 'published' && !b.publishedAt ? { ...b, publishedAt: new Date() } : b),
+  }),
 );
 
 // Product page trust benefits (Phase 4). Order = list order; an empty list hides the block.
