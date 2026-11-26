@@ -18,18 +18,18 @@ for (const width of [320, 360, 375, 390, 414, 430, 820, 1366, 1920]) {
   }
 }
 
-test('price range keeps both bounds and product details expand', async ({ page }) => {
+test('price range keeps both bounds and product details are shown', async ({ page }) => {
   await page.goto('/en/c/power-banks');
   await page.getByRole('textbox', { name: 'Min', exact: true }).fill('100');
   await page.getByRole('textbox', { name: 'Max', exact: true }).fill('250');
   await page.getByRole('button', { name: 'Apply', exact: true }).click();
   await expect(page).toHaveURL(/minPrice=100&maxPrice=250/);
   await page.goto('/en/p/demo-power-bank-20000');
-  const description = page.locator('.cx-overview details');
-  await expect(description).not.toHaveAttribute('open', '');
-  await description.locator('summary').click();
-  await expect(description).toHaveAttribute('open', '');
-  await expect(page.locator('.cx-specs details')).toHaveAttribute('open', '');
+  // Description and specifications are shown open (no toggle to find).
+  await expect(page.locator('.cx-overview__text')).toBeVisible();
+  await expect(page.locator('.cx-overview__text')).not.toBeEmpty();
+  await expect(page.locator('.cx-specs__list')).toBeVisible();
+  await expect(page.locator('.cx-overview details, .cx-specs details')).toHaveCount(0);
 });
 
 test('customer information pages use bilingual layouts on narrow and wide screens', async ({ page }) => {

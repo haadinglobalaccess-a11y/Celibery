@@ -69,7 +69,7 @@ test.describe.serial('product information from product page to stored order', ()
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(p.name[lang]);
         await expect(page.locator('.cx-pdp__lead')).toHaveText(lang === 'en' && p.sku === 'E2E-JRN-ADAPTER' ? 'Compact & foldable' : p.shortDescription[lang]);
         const desc = page.locator('.cx-overview__text .cx-richtext');
-        await page.locator('.cx-overview details > summary').click();
+        // The description is shown open (no toggle).
         await expect(desc.locator('p').first()).toHaveText(p.lead[lang]);
         await expect(desc.locator('li')).toHaveText(p.bullets[lang]);
         // No markup, entities, sample text or other products' text anywhere on the page.
