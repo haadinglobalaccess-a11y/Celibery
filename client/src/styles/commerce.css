@@ -28,6 +28,11 @@ html[lang='ar'] .storefront .cx-display { letter-spacing: 0; line-height: 1.4; }
 .storefront .cx-detail > summary { cursor: pointer; padding-block: 20px; font-weight: 650; min-height: 60px; }
 .storefront .cx-detail[open] > summary { margin-bottom: 12px; }
 .storefront .cx-detail > .cx-specs__list { padding-bottom: 20px; }
+/* Description and specifications shown open (no toggle): a hairline above, comfortable reading. */
+.storefront .cx-detail--open { padding-top: 20px; }
+.storefront .cx-specs .cx-detail--open { border-top: 0; padding-top: 0; } /* the list draws its own top rule */
+.storefront .cx-overview__text.cx-detail--open { font-size: 1.0625rem; line-height: 1.75; color: var(--ink-2, #333); }
+.storefront .cx-overview__text.cx-detail--open p { margin: 0 0 1em; }
 .storefront .cx-content { max-width: 1000px; }
 .storefront .cx-content .page-head { padding-block: 30px; margin-bottom: 24px; border-bottom: 1px solid var(--cx-line); }
 .storefront .cx-content h1, .storefront .page-head h1 { font-size: clamp(1.9rem, 3vw, 3rem); line-height: 1.25; }

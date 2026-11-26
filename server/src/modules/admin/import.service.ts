@@ -174,6 +174,13 @@ export async function importProductsCsv(text: string, userId: string | undefined
   };
   const newSlugs = new Set<string>();
   const seenSkus = new Set<string>();
+  // Every product the file mentions, read in one query (one lookup per row made large files slow).
+  const fileSkus = [...new Set(rows.map((r) => (r.sku ?? '').trim().toUpperCase()).filter(Boolean))];
+  const existingBySku = new Map<string, ExistingProduct>();
+  for (let i = 0; i < fileSkus.length; i += 1000) {
+    const found = await Product.find({ sku: { $in: fileSkus.slice(i, i + 1000) } }).select('_id sku stock name shortDescription description images attributes').lean();
+    for (const p of found) existingBySku.set(p.sku, p as unknown as ExistingProduct);
+  }
 
   for (const [i, r] of rows.entries()) {
     const rowNo = i + 2; // header is row 1
@@ -193,7 +200,7 @@ export async function importProductsCsv(text: string, userId: string | undefined
       fail(rowNo, sku, `Unknown category_slug "${r.category_slug}". Use one of: ${[...catBySlug.keys()].join(', ')}`);
       continue;
     }
-    const existing = (await Product.findOne({ sku }).select('_id stock name shortDescription description images attributes').lean()) as ExistingProduct | null;
+    const existing = existingBySku.get(sku) ?? null;
 
     if (!existing) {
       if (!catId) {

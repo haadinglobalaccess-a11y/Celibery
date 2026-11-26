@@ -234,11 +234,10 @@ export default function ProductPage() {
               <span className="cx-eyebrow">{c.overview}</span>
               <Kinetic text={t.product.description} className="cx-display" />
             </div>
-            <div className="cx-overview__text" data-fx="rise">
-              <details className="cx-detail">
-                <summary>{t.product.description}</summary>
-                <RichText text={L(data.description, lang)} />
-              </details>
+            {/* Shown open: the description is what customers (and search engines) read before buying;
+                the section heading already names it, so there is no second "Description" toggle. */}
+            <div className="cx-overview__text cx-detail cx-detail--open" data-fx="rise">
+              <RichText text={L(data.description, lang)} />
             </div>
           </div>
         </section>
@@ -251,17 +250,16 @@ export default function ProductPage() {
               <span className="cx-eyebrow">{c.techSpecs}</span>
               <Kinetic id="cx-specs-title" text={t.product.specs} className="cx-display" />
             </div>
-            <details className="cx-detail" open>
-            <summary>{t.product.specs}</summary>
-            <dl className="cx-specs__list" data-fx="stagger">
-              {specRows.map(([k, v], i) => (
-                <div key={`${k}-${i}`} className="cx-specs__row">
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-            </details>
+            <div className="cx-detail cx-detail--open">
+              <dl className="cx-specs__list" data-fx="stagger">
+                {specRows.map(([k, v], i) => (
+                  <div key={`${k}-${i}`} className="cx-specs__row">
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
         </section>
       ) : null}

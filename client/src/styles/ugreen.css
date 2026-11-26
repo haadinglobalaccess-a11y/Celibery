@@ -626,3 +626,23 @@ html[lang='ar'] .storefront .cx-card:not(.cx-card--dark) .cx-card__title {
 .cx-pdp .gallery__thumbs button[aria-current='true'] {
   box-shadow: inset 0 0 0 2px var(--accent);
 }
+
+/* Cart lines: a product photo fills its tile on the studio near-black (no light frame around a dark
+   photo); "Photo coming soon" drawings keep the light tile. */
+.cx-bagline__media:not(:has(img[src*='.svg'])) {
+  background: var(--cx-night);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.cx-bag .cx-bagline__media:not(:has(img[src*='.svg'])) img,
+.cx-bagline__media:not(:has(img[src*='.svg'])) img {
+  width: 100%;
+  height: 100%;
+  mix-blend-mode: normal;
+}
+
+/* "Shop by category" tiles: a real category photo sits on the studio near-black like the product
+   photography; the light tile stays for the drawn placeholders. */
+.cx-lineup .cx-lineup__media:has(.cx-art[data-kind='art']),
+.cx-lineup .cx-lineup__media .cx-art[data-kind='art'] {
+  background: var(--cx-night);
+}

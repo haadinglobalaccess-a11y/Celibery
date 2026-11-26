@@ -2,6 +2,7 @@ import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import { buildCsp, dsnOrigin } from '../server/src/lib/csp';
+import { isBot } from '../server/src/modules/seo/bots';
 
 /**
  * Writes the production Content-Security-Policy into index.html (Vercel serves the storefront as
@@ -85,8 +86,62 @@ function immutableAssetsPlugin(): Plugin {
   };
 }
 
+/**
+ * Railway runs the storefront (`vite preview`) and the API as two services. The SEO files and the
+ * pages rendered for crawlers are made by the API (server/src/modules/seo/prerender.ts), but crawlers
+ * request them from the storefront domain, where `vite preview` answered every path with the empty
+ * index.html (verified 27 Nov 2026: sitemap.xml empty, crawlers saw a blank page, no 404s).
+ *
+ * This forwards to the API: /sitemap.xml, /robots.txt, /llms.txt, /llms-full.txt always, and the
+ * storefront pages (/, /ar…, /en…) only for crawlers (modules/seo/bots.ts). People are never
+ * forwarded. If the API fails, crawlers get the normal storefront page instead.
+ */
+function seoForwardPlugin(mode: string): Plugin {
+  const env = { ...loadEnv(mode, path.resolve(__dirname, '..'), ''), ...process.env };
+  let api: string | null = null;
+  try {
+    api = env.VITE_API_BASE_URL ? new URL(env.VITE_API_BASE_URL).origin : null;
+  } catch {
+    api = null;
+  }
+  const FILES = /^\/(?:sitemap\.xml|robots\.txt|llms\.txt|llms-full\.txt)$/;
+  const PAGES = /^\/(?:(?:ar|en)(?:\/.*)?)?$/;
+  return {
+    name: 'celibery-seo-forward',
+    configurePreviewServer(server) {
+      if (!api) return; // one service (SERVE_CLIENT) or Vercel: nothing to forward
+      server.middlewares.use(async (req, res, next) => {
+        const url = req.url ?? '/';
+        const p = url.split('?')[0];
+        if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+        const file = FILES.test(p);
+        const page = !file && PAGES.test(p) && isBot(req.headers['user-agent']);
+        if (!file && !page) return next();
+        try {
+          const r = await fetch(api + url, {
+            method: req.method,
+            headers: { 'user-agent': String(req.headers['user-agent'] ?? ''), accept: String(req.headers.accept ?? '*/*') },
+            redirect: 'manual',
+            signal: AbortSignal.timeout(8000),
+          });
+          if (page && r.status >= 500) return next();
+          res.statusCode = r.status;
+          for (const h of ['content-type', 'cache-control', 'x-robots-tag', 'location']) {
+            const v = r.headers.get(h);
+            if (v) res.setHeader(h, v);
+          }
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          res.end(req.method === 'HEAD' ? undefined : Buffer.from(await r.arrayBuffer()));
+        } catch {
+          next();
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), cspPlugin(mode), preconnectPlugin(mode), immutableAssetsPlugin()],
+  plugins: [react(), cspPlugin(mode), preconnectPlugin(mode), immutableAssetsPlugin(), seoForwardPlugin(mode)],
   envDir: '..',
   preview: {
     allowedHosts: ['celiberyclient-production.up.railway.app'],
