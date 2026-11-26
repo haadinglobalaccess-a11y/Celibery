@@ -100,17 +100,34 @@ adminProductRoutes.get(
   }),
 );
 
-// Bulk actions from the product list: set the status of, or delete, many products at once.
-// Delete follows the single-product rule: products that appear in orders are archived instead.
+// Bulk actions from the product list: status, homepage placement (Featured / Flagship) or delete,
+// for many products at once. Delete follows the single-product rule: products in orders are archived.
+const BULK_FLAGS = {
+  feature: ['featured', true],
+  unfeature: ['featured', false],
+  flagship: ['flagship', true],
+  unflagship: ['flagship', false],
+} as const;
 adminProductRoutes.post(
   '/bulk',
   requirePermission('products:write'),
-  validate(z.object({ ids: z.array(objectId).min(1).max(500), action: z.enum(['active', 'draft', 'archived', 'delete']) })),
+  validate(z.object({ ids: z.array(objectId).min(1).max(500), action: z.enum(['active', 'draft', 'archived', 'delete', 'feature', 'unfeature', 'flagship', 'unflagship']) })),
   ah(async (req, res) => {
     const ids = [...new Set(req.body.ids as string[])];
-    const action = req.body.action as 'active' | 'draft' | 'archived' | 'delete';
-    const found = await Product.find({ _id: { $in: ids } }).select('_id sku status').lean();
+    const action = req.body.action as 'active' | 'draft' | 'archived' | 'delete' | keyof typeof BULK_FLAGS;
+    const found = await Product.find({ _id: { $in: ids } }).select('_id sku status featured flagship').lean();
     const result = { requested: ids.length, updated: 0, deleted: 0, archived: 0, notFound: ids.length - found.length };
+    if (action in BULK_FLAGS) {
+      // Featured and Flagship are independent of each other and of the status (as in the product form).
+      const [field, value] = BULK_FLAGS[action as keyof typeof BULK_FLAGS];
+      const change = found.filter((p) => Boolean(p[field]) !== value);
+      if (change.length) {
+        await Product.updateMany({ _id: { $in: change.map((p) => p._id) } }, { $set: { [field]: value } });
+        for (const p of change) await audit(req, 'update', 'product', p._id, `${p.sku}: ${field} ${value ? 'on' : 'off'} (bulk)`);
+      }
+      result.updated = change.length;
+      return ok(res, result);
+    }
     if (action === 'delete') {
       for (const p of found) {
         const r = await svc.deleteProduct(String(p._id));

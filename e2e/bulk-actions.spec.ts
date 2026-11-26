@@ -42,6 +42,20 @@ test('select products, then Set active, Archive and Delete in one click each', a
     await expect.poll(statusOf).toEqual(['active', 'active', 'draft']);
     await expect(bar).toHaveCount(0); // selection cleared after the action
 
+    // Homepage placement: Feature and Flagship from the same bar; badges show on the rows.
+    await page.getByRole('checkbox', { name: 'Select Bulk Action Item 1' }).check();
+    await page.getByRole('checkbox', { name: 'Select Bulk Action Item 3' }).check();
+    await bar.getByRole('button', { name: 'Feature', exact: true }).click();
+    await expect(page.getByText('2 products added to Featured')).toBeVisible();
+    await expect(page.getByTestId('badge-featured')).toHaveCount(2);
+    await page.getByRole('checkbox', { name: 'Select Bulk Action Item 1' }).check();
+    await bar.getByRole('button', { name: 'Flagship', exact: true }).click();
+    await expect(page.getByTestId('badge-flagship')).toHaveCount(1);
+    await page.getByRole('checkbox', { name: 'Select Bulk Action Item 1' }).check();
+    await bar.getByRole('button', { name: 'Unfeature' }).click();
+    await expect(page.getByTestId('badge-featured')).toHaveCount(1);
+    await expect(page.getByTestId('badge-flagship')).toHaveCount(1); // the other flag is unchanged
+
     // All on the page with the header checkbox, then archive (asks first).
     await page.getByRole('checkbox', { name: 'Select all products on this page' }).check();
     await expect(bar).toContainText('3 selected');
