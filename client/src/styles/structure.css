@@ -944,7 +944,7 @@ html[dir='rtl'] .icon--flip-rtl {
    ===================================================================== */
 .footer.cx-footer {
   padding-top: clamp(56px, 7vw, 96px);
-  background: var(--brand-midnight);
+  background: var(--cx-night); /* same studio near-black as the other dark sections */
 }
 .cx-foot {
   display: grid;
