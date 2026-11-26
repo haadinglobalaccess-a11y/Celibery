@@ -10,6 +10,7 @@ import { Category, Discount, Order, Product, RestockSubscription } from '../../m
 import { categoryInput, discountInput, idParam, objectId, productCreate, productListAdmin, productUpdate, stockAdjust } from './admin.schemas';
 import { crudRouter } from './crud';
 import { exportProductsCsv, importProductsCsv } from './import.service';
+import { attachImages, matchImageFiles } from './product-images.service';
 import { adminRestockRoutes } from '../restock/restock.routes';
 import { triggerRestock } from '../restock/restock.service';
 import { syncBundleStock } from '../catalog/bundles';
@@ -44,6 +45,31 @@ adminProductRoutes.post(
       triggerRestock(waiting.map(String));
     }
     return ok(res, report);
+  }),
+);
+
+// Bulk photos (graphics team): files named after the SKU are matched, uploaded, then attached.
+adminProductRoutes.post(
+  '/images/match',
+  requirePermission('products:write'),
+  validate(z.object({ files: z.array(z.string().trim().min(1).max(200)).min(1).max(500) })),
+  ah(async (req, res) => ok(res, await matchImageFiles(req.body.files))),
+);
+
+adminProductRoutes.post(
+  '/images/attach',
+  requirePermission('products:write'),
+  validate(
+    z.object({
+      mode: z.enum(['replace', 'append']),
+      items: z.array(z.object({ sku: z.string().trim().min(2).max(60), mediaIds: z.array(objectId).min(1).max(40) })).min(1).max(500),
+    }),
+  ),
+  ah(async (req, res) => {
+    const results = await attachImages(req.body.items, req.body.mode);
+    const done = results.filter((r) => r.ok);
+    await audit(req, 'bulk_images', 'product', '', `${req.body.mode}: ${done.length} products, ${done.reduce((s, r) => s + (r.images ?? 0), 0)} photos`);
+    return ok(res, results);
   }),
 );
 

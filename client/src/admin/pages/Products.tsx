@@ -9,6 +9,7 @@ import type { Category, Localized } from '../../lib/types';
 import { useToast } from '../../state/toast';
 import { AHead, Card, dt, en, ErrorBox, F, fromSarInput, LocInput, Modal, Pager, ProductPicker, sar, Status, toSarInput, usePerms } from '../kit';
 import { ImageGallery, ProductVideos, type GalleryImage, type ProductVideoInput } from '../media';
+import { BulkImagesModal } from './BulkImages';
 
 type Row = { _id: string; sku: string; slug: string; model: string; name: Localized; price: number; stock: number; status: string; featured: boolean; flagship?: boolean; dataSource: string; images: { url: string }[]; category?: { name: Localized } };
 
@@ -20,6 +21,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 });
   const [q, setQ] = useState(params.get('q') ?? '');
   const [importing, setImporting] = useState(false);
+  const [bulkPhotos, setBulkPhotos] = useState(false);
   const [listError, setListError] = useState(false);
   const cats = useApi<Category[]>('/api/admin/categories');
   const query = qs({ q: params.get('q') ?? undefined, status: params.get('status') ?? undefined, placement: params.get('placement') ?? undefined, category: params.get('category') ?? undefined, page: params.get('page') ?? undefined, limit: 25 });
@@ -56,6 +58,9 @@ export function Products({ canWrite }: { canWrite: boolean }) {
           <>
             <button className="btn btn--outline btn--sm" onClick={() => setImporting(true)}>
               Import CSV
+            </button>
+            <button className="btn btn--outline btn--sm" onClick={() => setBulkPhotos(true)} title="Upload many product photos at once: files named after the SKU (CEL-PB-20000-1.jpg) go to that product">
+              Bulk photos
             </button>
             <Link className="btn btn--primary btn--sm" to="/admin/products/new">
               + New product
@@ -149,6 +154,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
         <Pager page={meta.page} pages={meta.pages} onPage={(pg) => set('page', String(pg))} />
       </div>
       {importing ? <ImportModal onClose={() => setImporting(false)} onDone={() => setNonce((n) => n + 1)} /> : null}
+      {bulkPhotos ? <BulkImagesModal onClose={() => setBulkPhotos(false)} onDone={() => setNonce((n) => n + 1)} /> : null}
     </>
   );
 }
@@ -174,7 +180,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
   return (
     <Modal title="Import products from CSV" onClose={onClose} wide>
       <p className="muted">
-        Use the template in <code>docs/product-import-template.csv</code> (one row per product, prices in SAR). Products are matched by SKU: new SKUs are created, existing ones updated. Validate first, then import.
+        Use the template in <code>docs/product-import-template.csv</code> (one row per product, prices in SAR). Products are matched by SKU: new SKUs are created, existing ones updated. For existing products, only filled-in cells change: an empty cell or a missing column keeps the current value, so a file can carry just <code>sku</code> plus the columns you want to change. An empty <code>slug</code> is made from the English name. Photos are easiest with <strong>Bulk photos</strong>. Validate first, then import.
       </p>
       <input
         type="file"

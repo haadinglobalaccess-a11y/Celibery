@@ -50,7 +50,8 @@ const externalInput = z.object({
 });
 const patchInput = z.object({ title: z.string().trim().max(200).optional(), alt: loc.optional(), tags: z.array(z.string().trim().max(40)).max(20).optional() });
 
-const uploadLimiter = limiter(10 * 60_000, 120);
+// Bulk product photos upload a few hundred files at once (each file: one request, plus one per size on local storage).
+const uploadLimiter = limiter(10 * 60_000, 1000, 'media-upload');
 
 adminMediaRoutes.get(
   '/config',

@@ -1,12 +1,17 @@
 import { csvToObjects, toCsv } from '../../lib/csv';
 import { Category, InventoryMovement, Product } from '../../models';
-import { productCreate } from './admin.schemas';
+import { slugify } from '../../lib/slug';
+import { productCreate, productUpdate } from './admin.schemas';
 import { createProduct, updateProduct } from './products.service';
 
 /**
  * Imports CELIBERY's product list (Q14) from the CSV template in docs/product-import-template.csv.
  * Upserts by SKU. Rows are validated with the same rules as the admin product form; invalid rows
  * are reported and skipped. Stock for existing products is set through the inventory ledger.
+ *
+ * Existing products: only filled-in cells change anything. An empty cell, or a column the file does
+ * not have, keeps the current value. So the details team can import text without touching the
+ * photos, and a photos-only file never wipes names, prices or stock. New products need the full row.
  */
 const split = (v: string) => (v ? v.split('|').map((x) => x.trim()).filter(Boolean) : []);
 const num = (v: string) => (v === '' ? undefined : Number(v));
@@ -50,49 +55,197 @@ export function rowToProduct(r: Record<string, string>, categoryId: string | und
   };
 }
 
+type Loc = { ar?: string | null; en?: string | null } | null | undefined;
+type ExistingImage = { url: string; alt?: Loc; mediaId?: unknown; variants?: { width: number; url: string }[] | null; width?: number | null; height?: number | null };
+type ExistingProduct = {
+  _id: unknown;
+  stock: number;
+  name?: Loc;
+  shortDescription?: Loc;
+  description?: Loc;
+  images?: ExistingImage[] | null;
+  attributes?: { capacityMah?: number | null; powerW?: number | null; connectors?: string[] | null; color?: { key?: string | null; name?: Loc; hex?: string | null } | null } | null;
+};
+
+const filled = (r: Record<string, string>, k: string) => (r[k] ?? '').trim() !== '';
+const LOCALIZED: [field: 'name' | 'shortDescription' | 'description', column: string][] = [
+  ['name', 'name'],
+  ['shortDescription', 'short_description'],
+  ['description', 'description'],
+];
+const yes = (v: string) => ['1', 'true', 'yes'].includes(v.trim().toLowerCase());
+
+/** An image already on a product, in the shape the product schema accepts (keeps responsive sizes). */
+export function keepImage(old: ExistingImage) {
+  return {
+    url: old.url,
+    alt: { ar: old.alt?.ar ?? '', en: old.alt?.en ?? '' },
+    ...(old.mediaId ? { mediaId: String(old.mediaId) } : {}),
+    ...(old.variants?.length ? { variants: old.variants.map((v) => ({ width: v.width, url: v.url })) } : {}),
+    ...(old.width ? { width: old.width } : {}),
+    ...(old.height ? { height: old.height } : {}),
+  };
+}
+
+/**
+ * The changes one CSV row makes to an existing product: only the cells that are filled in.
+ * One language of a pair keeps the other language's current text. Photos that are already on the
+ * product keep their media-library data (responsive sizes) when the same URL is listed again.
+ */
+export function rowToUpdate(r: Record<string, string>, existing: ExistingProduct, categoryId: string | undefined) {
+  const full = rowToProduct(r, categoryId);
+  const u: Record<string, unknown> = {};
+  if (filled(r, 'slug')) u.slug = full.slug;
+  if (filled(r, 'model')) u.model = full.model;
+  if (filled(r, 'category_slug')) u.category = categoryId ?? '';
+  for (const [field, col] of LOCALIZED) {
+    if (!filled(r, `${col}_ar`) && !filled(r, `${col}_en`)) continue;
+    u[field] = { ar: filled(r, `${col}_ar`) ? r[`${col}_ar`] : (existing[field]?.ar ?? ''), en: filled(r, `${col}_en`) ? r[`${col}_en`] : (existing[field]?.en ?? '') };
+  }
+  if (filled(r, 'series')) u.series = full.series;
+  if (filled(r, 'image_urls')) {
+    const byUrl = new Map((existing.images ?? []).map((i) => [i.url, i]));
+    const name = (u.name as Loc) ?? existing.name;
+    u.images = split(r.image_urls).map((url) => {
+      const old = byUrl.get(url);
+      return old ? keepImage(old) : { url, alt: { ar: name?.ar ?? '', en: name?.en ?? '' } };
+    });
+  }
+  if (filled(r, 'price_sar')) u.price = full.price;
+  if (filled(r, 'compare_at_price_sar')) u.compareAtPrice = full.compareAtPrice;
+  if (filled(r, 'status')) u.status = r.status.trim().toLowerCase();
+  if (filled(r, 'featured')) u.featured = yes(r.featured);
+  if (filled(r, 'flagship')) u.flagship = yes(r.flagship);
+  if (filled(r, 'flagship_order')) u.flagshipOrder = full.flagshipOrder;
+  if (filled(r, 'warranty_months')) u.warrantyMonths = full.warrantyMonths;
+  if (filled(r, 'tags')) u.tags = full.tags;
+
+  const colorCols = ['color_key', 'color_name_ar', 'color_name_en', 'color_hex'];
+  if (['capacity_mah', 'power_w', 'connectors', ...colorCols].some((c) => filled(r, c))) {
+    const a = existing.attributes ?? {};
+    const old = a.color ?? null;
+    let color: { key: string; name: { ar: string; en: string }; hex: string } | null = old?.key ? { key: old.key, name: { ar: old.name?.ar ?? '', en: old.name?.en ?? '' }, hex: old.hex ?? '' } : null;
+    if (colorCols.some((c) => filled(r, c))) {
+      const key = filled(r, 'color_key') ? r.color_key.trim().toLowerCase() : (old?.key ?? '');
+      color = key
+        ? {
+            key,
+            name: { ar: filled(r, 'color_name_ar') ? r.color_name_ar : (old?.name?.ar ?? ''), en: filled(r, 'color_name_en') ? r.color_name_en : (old?.name?.en ?? '') },
+            hex: filled(r, 'color_hex') ? r.color_hex : (old?.hex ?? ''),
+          }
+        : null;
+    }
+    u.attributes = {
+      capacityMah: filled(r, 'capacity_mah') ? full.attributes.capacityMah : (a.capacityMah ?? null),
+      powerW: filled(r, 'power_w') ? full.attributes.powerW : (a.powerW ?? null),
+      connectors: filled(r, 'connectors') ? full.attributes.connectors : (a.connectors ?? []),
+      color,
+    };
+  }
+  // Specifications are one list: any filled spec cell replaces the whole list with the file's rows.
+  if (Object.keys(r).some((k) => /^spec\d+_/.test(k) && filled(r, k))) u.specs = full.specs;
+  return u;
+}
+
+/** URL part for a new product when the slug cell is empty: from the English name (else the SKU). */
+async function autoSlug(r: Record<string, string>, taken: Set<string>) {
+  const base = (slugify(r.name_en ?? '') || slugify(r.sku ?? '') || 'product').slice(0, 80);
+  for (let n = 1; n < 50; n++) {
+    const candidate = n === 1 ? base : `${base.slice(0, 76)}-${n}`;
+    if (!taken.has(candidate) && !(await Product.exists({ slug: candidate }))) return candidate;
+  }
+  return `${base.slice(0, 70)}-${Date.now().toString(36)}`;
+}
+
+const errorText = (e: unknown) => {
+  const x = e as { code?: number; keyValue?: Record<string, unknown>; message?: string };
+  if (x?.code === 11000) return `Another product already uses this ${Object.keys(x.keyValue ?? {}).join(', ') || 'value'}`;
+  return x?.message ? String(x.message).slice(0, 300) : 'Could not be saved';
+};
+
 export async function importProductsCsv(text: string, userId: string | undefined, dryRun: boolean) {
   const rows = csvToObjects(text);
   const cats = await Category.find().select('slug').lean();
   const catBySlug = new Map(cats.map((c) => [c.slug, String(c._id)]));
   const report = { rows: rows.length, created: 0, updated: 0, skipped: 0, errors: [] as { row: number; sku: string; errors: unknown }[] };
+  const fail = (row: number, sku: string, errors: unknown) => {
+    report.skipped++;
+    report.errors.push({ row, sku, errors });
+  };
+  const newSlugs = new Set<string>();
+  const seenSkus = new Set<string>();
 
   for (const [i, r] of rows.entries()) {
     const rowNo = i + 2; // header is row 1
-    const catId = catBySlug.get((r.category_slug ?? '').toLowerCase());
-    if (!catId) {
-      report.skipped++;
-      report.errors.push({ row: rowNo, sku: r.sku, errors: `Unknown category_slug "${r.category_slug}"` });
+    const sku = (r.sku ?? '').trim().toUpperCase();
+    if (!sku) {
+      fail(rowNo, '', 'SKU is empty: every row needs the product SKU');
       continue;
     }
-    const parsed = productCreate.safeParse(rowToProduct(r, catId));
+    if (seenSkus.has(sku)) {
+      fail(rowNo, sku, 'This SKU is listed twice in the file: keep one row per product');
+      continue;
+    }
+    seenSkus.add(sku);
+    const catSlug = (r.category_slug ?? '').trim().toLowerCase();
+    const catId = catBySlug.get(catSlug);
+    if (catSlug && !catId) {
+      fail(rowNo, sku, `Unknown category_slug "${r.category_slug}". Use one of: ${[...catBySlug.keys()].join(', ')}`);
+      continue;
+    }
+    const existing = (await Product.findOne({ sku }).select('_id stock name shortDescription description images attributes').lean()) as ExistingProduct | null;
+
+    if (!existing) {
+      if (!catId) {
+        fail(rowNo, sku, 'New product: category_slug is required');
+        continue;
+      }
+      const row: Record<string, string> = { ...r, sku };
+      if (!filled(r, 'slug')) row.slug = await autoSlug(r, newSlugs);
+      const parsed = productCreate.safeParse(rowToProduct(row, catId));
+      if (!parsed.success) {
+        fail(rowNo, sku, parsed.error.flatten().fieldErrors);
+        continue;
+      }
+      newSlugs.add(parsed.data.slug);
+      if (dryRun) continue;
+      try {
+        await createProduct(parsed.data, userId ?? '');
+        report.created++;
+      } catch (e) {
+        fail(rowNo, sku, errorText(e));
+      }
+      continue;
+    }
+
+    const parsed = productUpdate.safeParse(rowToUpdate(r, existing, catId));
     if (!parsed.success) {
-      report.skipped++;
-      report.errors.push({ row: rowNo, sku: r.sku, errors: parsed.error.flatten().fieldErrors });
+      fail(rowNo, sku, parsed.error.flatten().fieldErrors);
+      continue;
+    }
+    const stock = filled(r, 'stock') ? Number(r.stock) : undefined;
+    if (stock !== undefined && !(Number.isInteger(stock) && stock >= 0 && stock <= 1_000_000)) {
+      fail(rowNo, sku, `Stock "${r.stock}" must be a whole number of 0 or more`);
       continue;
     }
     if (dryRun) continue;
-    const existing = await Product.findOne({ sku: parsed.data.sku }).select('_id stock').lean();
-    if (!existing) {
-      await createProduct(parsed.data, userId ?? '');
-      report.created++;
-    } else {
-      const { stock, ...rest } = parsed.data;
-      // Files without the flagship columns (older template) never reset the Admin's Flagship selection.
-      const update: Partial<typeof rest> = { ...rest };
-      if (!('flagship' in r)) delete update.flagship;
-      if (!('flagship_order' in r)) delete update.flagshipOrder;
-      await updateProduct(String(existing._id), update);
-      if (r.stock !== '' && stock !== existing.stock) {
-        // Only when stock has not moved since it was read (an order may have reserved units meanwhile).
-        const set = await Product.updateOne({ _id: existing._id, stock: existing.stock }, { $set: { stock } });
-        if (set.modifiedCount === 1) {
-          await InventoryMovement.create({ product: existing._id, type: 'import', delta: stock - existing.stock, stockAfter: stock, reason: 'CSV import', user: userId });
-        } else {
-          report.errors.push({ row: rowNo, sku: r.sku, errors: 'Stock changed during the import (new order or adjustment); product details were updated but stock was left unchanged — import again or adjust stock in Inventory' });
-        }
-      }
-      report.updated++;
+    try {
+      if (Object.keys(parsed.data).length) await updateProduct(String(existing._id), parsed.data);
+    } catch (e) {
+      fail(rowNo, sku, errorText(e));
+      continue;
     }
+    // Stock only when the stock cell is filled in (a photos-only or text-only file never touches it).
+    if (stock !== undefined && stock !== existing.stock) {
+      // Only when stock has not moved since it was read (an order may have reserved units meanwhile).
+      const set = await Product.updateOne({ _id: existing._id, stock: existing.stock }, { $set: { stock } });
+      if (set.modifiedCount === 1) {
+        await InventoryMovement.create({ product: existing._id, type: 'import', delta: stock - existing.stock, stockAfter: stock, reason: 'CSV import', user: userId });
+      } else {
+        report.errors.push({ row: rowNo, sku, errors: 'Stock changed during the import (new order or adjustment); product details were updated but stock was left unchanged — import again or adjust stock in Inventory' });
+      }
+    }
+    report.updated++;
   }
   return report;
 }
