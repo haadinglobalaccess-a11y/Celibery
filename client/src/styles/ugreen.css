@@ -538,3 +538,91 @@ html[lang='ar'] .storefront .cx-card:not(.cx-card--dark) .cx-card__title {
     translate: none;
   }
 }
+
+/* ---------- Product photos sit on the studio near-black ----------
+   CELIBERY product photography is shot on a near-black studio backdrop (--cx-night, sampled from the
+   graphics team's renders). Photo frames on the Shop pages and the product page use that same colour,
+   so a photo fills its frame seamlessly instead of showing a light grey border. The "Photo coming soon"
+   drawings (data-kind="cutout", .svg) keep their light frame. */
+/* Product cards are studio cards: the whole card is the photo's near-black, so the photo, the frame
+   and the card read as one piece (same layout, padding and centred details as before). Cards inside
+   dark sections (.cx-card--dark) are unchanged. */
+.storefront .cx-card:not(.cx-card--dark) {
+  background: var(--cx-night);
+  color: var(--on-dark);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__media,
+.storefront .cx-card:not(.cx-card--dark) .cx-card__img--alt,
+.storefront .cx-card:not(.cx-card--dark) .cx-art {
+  background: var(--cx-night);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__title,
+.storefront .cx-card:not(.cx-card--dark) .price__now {
+  color: var(--on-dark);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__title a:hover {
+  color: var(--accent);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__meta,
+.storefront .cx-card:not(.cx-card--dark) .cx-card__specs,
+.storefront .cx-card:not(.cx-card--dark) .price__was {
+  color: var(--cx-night-muted); /* #A3ADB2 on the studio near-black: about 8:1 */
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__add:not(:disabled):not(.is-added) {
+  background: #fff;
+  color: var(--cx-ink);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__add:not(:disabled):not(.is-added):hover {
+  background: var(--accent);
+  color: var(--accent-ink, #111);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-card__add:disabled {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--cx-night-muted);
+}
+/* "Photo coming soon" drawings (white artwork with a dark icon): shown inverted, a light icon on the
+   raised studio grey, so cards without a photo still match. */
+.storefront .cx-card:not(.cx-card--dark) .cx-art[data-kind='cutout'] {
+  background: var(--cx-night-2);
+}
+.storefront .cx-card:not(.cx-card--dark) .cx-art[data-kind='cutout'] > img {
+  /* inverted white becomes black; "screen" drops the black so the studio grey shows through */
+  mix-blend-mode: screen;
+  filter: invert(1) hue-rotate(180deg);
+  opacity: 0.8;
+}
+
+/* Product page: the main stage and the thumbnails take the studio colour while a photo is shown.
+   The multiply blend (made for white-background photos on a light stage) would crush dark photos to
+   black on a dark stage, so photos are drawn normally here. */
+.cx-pdp .gallery__main:not(:has(img[src*='.svg'])) {
+  background: var(--cx-night);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06), 0 40px 80px -50px rgb(0 0 0 / 0.45);
+}
+.cx-pdp .gallery__main:not(:has(img[src*='.svg'])) .gallery__frame,
+.cx-pdp .gallery__main:not(:has(img[src*='.svg'])) img {
+  mix-blend-mode: normal;
+}
+.cx-pdp .gallery__thumbs button:not(:has(img[src*='.svg'])) {
+  background: var(--cx-night);
+}
+.cx-pdp .gallery__thumbs button:not(:has(img[src*='.svg'])) img {
+  mix-blend-mode: normal;
+}
+/* Unselected thumbnails were dimmed with opacity, which turns a dark tile grey on the white page:
+   they are dimmed inside the tile instead. */
+.cx-pdp .gallery__thumbs button:not(:has(img[src*='.svg'])):not([aria-current='true']) {
+  opacity: 1;
+}
+.cx-pdp .gallery__thumbs button:not(:has(img[src*='.svg'])):not([aria-current='true']) img {
+  opacity: 0.7;
+  transition: opacity 240ms var(--cx-ease);
+}
+.cx-pdp .gallery__thumbs button:not(:has(img[src*='.svg'])):hover img {
+  opacity: 1;
+}
+/* The selected thumbnail ring: dark ink is invisible on a dark tile, so it uses the brand turquoise. */
+.cx-pdp .gallery__thumbs button[aria-current='true'] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
