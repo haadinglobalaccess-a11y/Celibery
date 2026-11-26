@@ -197,6 +197,33 @@ describe('bulk actions on the product list', () => {
     expect(left.map((p) => [p.sku, p.status])).toEqual([['BULK-S1', 'archived']]);
   });
 
+  it('Feature / Unfeature and Flagship / Unflagship many products; status and the other flag stay as they are', async () => {
+    const admin = await createStaff('admin');
+    const ids: string[] = [];
+    for (const sku of ['BULK-F1', 'BULK-F2', 'BULK-F3']) ids.push((await makeProduct(admin, sku))._id); // all featured, active
+    const state = async () => (await Product.find({ _id: { $in: ids } }).sort({ sku: 1 }).select('featured flagship status').lean()).map((p) => [p.featured, p.flagship, p.status]);
+
+    expect((await admin.post('/api/admin/products/bulk').send({ ids: [ids[0], ids[1]], action: 'unfeature' })).body.data.updated).toBe(2);
+    expect((await admin.post('/api/admin/products/bulk').send({ ids, action: 'flagship' })).body.data.updated).toBe(3);
+    expect(await state()).toEqual([
+      [false, true, 'active'],
+      [false, true, 'active'],
+      [true, true, 'active'],
+    ]);
+    expect((await admin.post('/api/admin/products/bulk').send({ ids: [ids[2]], action: 'unflagship' })).body.data.updated).toBe(1);
+    expect((await admin.post('/api/admin/products/bulk').send({ ids, action: 'feature' })).body.data.updated).toBe(2); // one already featured
+    expect(await state()).toEqual([
+      [true, true, 'active'],
+      [true, true, 'active'],
+      [true, false, 'active'],
+    ]);
+    // The homepage Flagship section follows the selection.
+    const home = (await client().get('/api/home')).body.data as { flagship?: { sku?: string; slug: string }[] };
+    const slugs = (home.flagship ?? []).map((p) => p.slug);
+    expect(slugs).toEqual(expect.arrayContaining(['bulk-f1', 'bulk-f2']));
+    expect(slugs).not.toContain('bulk-f3');
+  });
+
   it('validates input and needs products:write', async () => {
     const admin = await createStaff('admin');
     expect((await admin.post('/api/admin/products/bulk').send({ ids: [], action: 'active' })).status).toBe(400);

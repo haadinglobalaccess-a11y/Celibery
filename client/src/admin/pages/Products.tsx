@@ -55,7 +55,7 @@ export function Products({ canWrite }: { canWrite: boolean }) {
       return next;
     });
   const allOnPage = Boolean(rows?.length) && (rows ?? []).every((r) => selected.has(r._id));
-  const runBulk = async (action: 'active' | 'draft' | 'archived' | 'delete') => {
+  const runBulk = async (action: 'active' | 'draft' | 'archived' | 'delete' | 'feature' | 'unfeature' | 'flagship' | 'unflagship') => {
     const ids = [...selected];
     if (!ids.length) return;
     const what = `${ids.length} product${ids.length === 1 ? '' : 's'}`;
@@ -64,8 +64,18 @@ export function Products({ canWrite }: { canWrite: boolean }) {
     setBulkBusy(true);
     try {
       const r = await post<{ updated: number; deleted: number; archived: number }>('/api/admin/products/bulk', { ids, action });
+      const done: Record<typeof action, string> = {
+        active: 'set to active',
+        draft: 'set to draft',
+        archived: 'archived',
+        delete: '',
+        feature: 'added to Featured',
+        unfeature: 'removed from Featured',
+        flagship: 'added to Flagship',
+        unflagship: 'removed from Flagship',
+      };
       if (action === 'delete') toast(`${r.deleted} deleted${r.archived ? `, ${r.archived} archived (they appear in past orders)` : ''}`);
-      else toast(`${r.updated} product${r.updated === 1 ? '' : 's'} set to ${action}`);
+      else toast(`${r.updated} product${r.updated === 1 ? '' : 's'} ${done[action]}`);
       setNonce((x) => x + 1);
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not update the selected products');
@@ -143,15 +153,33 @@ export function Products({ canWrite }: { canWrite: boolean }) {
       {canWrite && selected.size ? (
         <div className="products-bulk-bar" role="toolbar" aria-label="Bulk actions" data-testid="products-bulk-bar">
           <strong>{selected.size} selected</strong>
-          <button className="btn btn--primary btn--sm" disabled={bulkBusy} onClick={() => void runBulk('active')}>
-            Set active
-          </button>
-          <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('draft')}>
-            Set draft
-          </button>
-          <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('archived')}>
-            Archive
-          </button>
+          <div className="products-bulk-group" role="group" aria-label="Status">
+            <span className="muted">Status</span>
+            <button className="btn btn--primary btn--sm" disabled={bulkBusy} onClick={() => void runBulk('active')}>
+              Set active
+            </button>
+            <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('draft')}>
+              Set draft
+            </button>
+            <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('archived')}>
+              Archive
+            </button>
+          </div>
+          <div className="products-bulk-group" role="group" aria-label="Homepage">
+            <span className="muted">Homepage</span>
+            <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('feature')}>
+              Feature
+            </button>
+            <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('unfeature')}>
+              Unfeature
+            </button>
+            <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('flagship')}>
+              Flagship
+            </button>
+            <button className="btn btn--outline btn--sm" disabled={bulkBusy} onClick={() => void runBulk('unflagship')}>
+              Unflagship
+            </button>
+          </div>
           <button className="btn btn--outline btn--sm products-bulk-delete" disabled={bulkBusy} onClick={() => void runBulk('delete')}>
             Delete
           </button>

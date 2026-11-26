@@ -726,6 +726,19 @@ iframe.media-preview { border: 0; }
 .admin .products-bulk-bar strong {
   margin-inline-end: 6px;
 }
+.admin .products-bulk-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-inline-start: 10px;
+  border-inline-start: 1px solid var(--admin-border);
+}
+.admin .products-bulk-group .muted {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .admin .products-bulk-delete {
   color: var(--danger, #b42318);
   border-color: currentColor;
