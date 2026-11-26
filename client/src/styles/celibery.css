@@ -612,6 +612,18 @@ html[lang='ar'] .cx-card__title {
   --tone-bg: radial-gradient(90% 120% at 80% 30%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%), linear-gradient(160deg, #182024, #0b0e10 70%);
   --tone-ink: #fff;
 }
+/* Studio: the CELIBERY product-photography backdrop (near-black with a soft turquoise light behind the
+   product), so category artwork and product photos sit in the header as if shot there. */
+.cx-tone-studio {
+  --tone-bg: radial-gradient(55% 95% at 80% 50%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 68%), radial-gradient(40% 60% at 10% 100%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%), var(--cx-night);
+  --tone-ink: #fff;
+}
+.cx-listhead.is-dark .cx-lead {
+  color: var(--cx-night-muted);
+}
+.cx-listhead.is-dark .crumbs a:hover {
+  color: var(--accent);
+}
 
 /* =====================================================================
    02 · Flagship campaigns
