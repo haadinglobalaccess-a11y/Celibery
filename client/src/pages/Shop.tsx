@@ -142,15 +142,13 @@ function CategoryNav({ current }: { current?: string }) {
   );
 }
 
-const LIGHT_TONES = ['porcelain', 'mist', 'sand'];
-const DARK = new Set(['obsidian', 'graphite', 'midnight']);
+const DARK = new Set(['obsidian', 'graphite', 'midnight', 'studio']);
 
 export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionSlug?: string }) {
   const { t, lang, p } = useI18n();
   const { slug } = useParams();
   const [params, setParams] = useSearchParams();
   const [drawer, setDrawer] = useState(false);
-  const { data: categoryList } = useCached<Category[]>('/api/categories');
   const colSlug = collectionSlug ?? (mode === 'collection' ? slug : undefined);
   const q = params.get('q') ?? '';
 
@@ -240,10 +238,9 @@ export default function Shop({ mode, collectionSlug }: { mode: Mode; collectionS
   const activeFilters = ['minPrice', 'maxPrice', 'capacity', 'power', 'connector', 'color', 'inStock'].some((k) => params.get(k));
 
   const sc = storeCopy(lang);
-  const catIndex = mode === 'category' ? (categoryList?.findIndex((x) => x.slug === slug) ?? -1) : -1;
-  // Q1 hybrid theme: shopping pages stay light. Listing headers use only the light category tones;
-  // dark tones remain for the homepage's premium sections.
-  const tone = mode === 'category' ? LIGHT_TONES[Math.max(0, catIndex) % LIGHT_TONES.length] : mode === 'search' ? 'porcelain' : 'mist';
+  // Listing headers use the studio backdrop of the CELIBERY product photography (one identity with the
+  // product cards and photos); the rest of the shopping page stays light.
+  const tone = 'studio';
   const description = mode === 'category' ? L(cat.data?.category.description, lang) : mode === 'collection' ? L(col.data?.description, lang) : '';
   const visual = mode === 'category' ? cat.data?.category.image?.url || (slug ? placeholderFor(slug) : '') : mode === 'collection' ? col.data?.image?.url || '' : '';
   const eyebrow = mode === 'category' ? sc.categoryEyebrow : mode === 'collection' ? sc.collectionPageEyebrow : mode === 'search' ? sc.searchEyebrow : sc.shopEyebrow;
