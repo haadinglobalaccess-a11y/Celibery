@@ -95,7 +95,7 @@ export function HomeVideosAdmin() {
   const toast = useToast();
   const refresh = () => setNonce((n) => n + 1);
 
-  const videos = data?.videos ?? [];
+  const videos = useMemo(() => data?.videos ?? [], [data]);
   const positions = data?.positions ?? 4;
   const slots = useMemo(() => Array.from({ length: positions }, (_, i) => videos.find((v) => v.position === i + 1) ?? null), [videos, positions]);
   const unplaced = videos.filter((v) => !v.archived && v.position == null);

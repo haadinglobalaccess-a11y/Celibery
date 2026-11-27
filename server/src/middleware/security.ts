@@ -13,7 +13,9 @@ import { securityEvent } from '../lib/security-log';
  */
 export function csrfGuard(req: Request, _res: Response, next: NextFunction) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  if (req.path.startsWith('/api/webhooks/') || req.path.startsWith('/api/cron/')) return next();
+  // Mounted under /api, so req.path is mount-relative ("/webhooks/…"): match the full path.
+  const fullPath = req.baseUrl + req.path;
+  if (fullPath.startsWith('/api/webhooks/') || fullPath.startsWith('/api/cron/')) return next();
   if (req.get('x-requested-with') !== 'celibery') return next(forbidden('Missing or invalid request header'));
   next();
 }

@@ -46,14 +46,16 @@ export class LoginError extends AppError {
 }
 
 /** Records one failed password/2FA attempt: 5 failures lock the account for 15 minutes. */
-async function recordFailure(user: { _id: unknown; failedLogins?: number | null }) {
-  const failed = (user.failedLogins ?? 0) + 1;
-  const locked = failed >= MAX_FAILED;
-  await User.updateOne(
-    { _id: user._id },
-    locked ? { $set: { failedLogins: 0, lockUntil: new Date(Date.now() + LOCK_MINUTES * 60_000) } } : { $set: { failedLogins: failed } },
+async function recordFailure(user: { _id: unknown }) {
+  // Atomic increment: parallel wrong guesses cannot each read the same count and slip past the limit.
+  const after = await User.findOneAndUpdate({ _id: user._id }, { $inc: { failedLogins: 1 } }, { new: true }).select('+failedLogins').lean();
+  if ((after?.failedLogins ?? 0) < MAX_FAILED) return false;
+  // Exactly one of several parallel failures performs the lock (and reports lockedNow).
+  const r = await User.updateOne(
+    { _id: user._id, failedLogins: { $gte: MAX_FAILED } },
+    { $set: { failedLogins: 0, lockUntil: new Date(Date.now() + LOCK_MINUTES * 60_000) } },
   );
-  return locked;
+  return r.modifiedCount === 1;
 }
 
 export async function authenticate(emailAddr: string, pw: string) {
@@ -290,8 +292,8 @@ export async function disableMfa(userId: string, password: string, code: string,
   if (env.STAFF_MFA_REQUIRED) throw new AppError(403, 'MFA_REQUIRED', 'Two-factor authentication is mandatory for staff accounts');
   const user = await checkPassword(userId, password, sid);
   if (!user.mfaEnabled || !user.mfaSecret) throw badRequest('MFA_NOT_ENABLED', 'Two-factor authentication is not on');
-  const secret = decryptSecret(user.mfaSecret, mfaRing(), mfaContext(user._id));
-  if (verifyTotp(secret, code, { afterStep: user.mfaLastStep ?? 0 }) === null) throw badRequest('INVALID_CODE', 'The verification code is not valid');
+  // Consumes the code's time step, like sign-in: an observed code cannot be replayed to switch 2FA off.
+  if ((await consumeSecondFactor(user, code)) !== 'totp') throw badRequest('INVALID_CODE', 'The verification code is not valid');
   await User.updateOne({ _id: user._id }, { $set: { mfaEnabled: false }, $unset: { mfaSecret: 1, mfaPendingSecret: 1, mfaRecoveryHashes: 1, mfaLastStep: 1 } });
 }
 

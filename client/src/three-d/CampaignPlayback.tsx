@@ -51,7 +51,8 @@ export function CampaignPlayback(props: Props) {
       onController: controller => { if (disposed) controller.destroy(); else player.current = controller; },
     }).catch(() => { if (!disposed) failRef.current(); });
     return () => { disposed = true; player.current?.destroy(); player.current = undefined; };
-    // The owning hero rekeys this component whenever source or slide changes.
+    // The owning hero rekeys this component whenever source or slide changes, so mount-once is intended.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -116,6 +117,8 @@ export function CampaignPlayback(props: Props) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
+    // `source` is fixed for this component's lifetime (the hero rekeys it per source).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.playing]);
 
   if (!source || hasFailed) return null;

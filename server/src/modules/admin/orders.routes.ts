@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { audit } from '../../lib/audit';
 import { notFound } from '../../lib/errors';
 import { ah, escapeRegex, ok } from '../../lib/http';
-import { requirePermission } from '../../middleware/auth';
+import { requirePermission, requireRecentAuth } from '../../middleware/auth';
 import { q, validate } from '../../middleware/validate';
 import { Notification, Order, Payment, Refund, getSettings } from '../../models';
 import { manualCourier } from '../../integrations/shipping';
@@ -97,6 +97,8 @@ adminOrderRoutes.post(
 adminOrderRoutes.post(
   '/:id/refund',
   requirePermission('orders:refund'),
+  // Money leaves the business: a stolen or unattended session is not enough (step-up, 15 min).
+  requireRecentAuth,
   validate(idParam, 'params'),
   validate(refundSchema),
   ah(async (req, res) => {
@@ -137,6 +139,7 @@ adminOrderRoutes.post(
 adminOrderRoutes.post(
   '/:id/refunds/:refundId/resolve',
   requirePermission('orders:refund'),
+  requireRecentAuth,
   validate(z.object({ id: z.string().regex(/^[a-f0-9]{24}$/i), refundId: z.string().regex(/^[a-f0-9]{24}$/i) }), 'params'),
   validate(z.object({ outcome: z.enum(['succeeded', 'failed']), note: z.string().trim().min(3).max(300) })),
   ah(async (req, res) => {

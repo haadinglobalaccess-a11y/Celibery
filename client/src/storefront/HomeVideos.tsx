@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Icon } from '../components/Icon';
 import { useI18n } from '../i18n/I18n';
 import { storeCopy } from './copy';
@@ -43,7 +43,8 @@ export function HomeVideos() {
   const { t, lang } = useI18n();
   const { data } = useCached<HomeVideoSectionData>('/api/home/videos');
   const [playing, setPlaying] = useState<string | null>(null);
-  const videos = data?.enabled ? data.videos.slice(0, 8) : [];
+  // Memoised: a new array each render re-ran the structured-data effect below on every render.
+  const videos = useMemo(() => (data?.enabled ? data.videos.slice(0, 8) : []), [data]);
   const c = storeCopy(lang);
 
   // Previous/next controls for the row (shown only while the cards overflow it; RTL-aware).
