@@ -15,11 +15,22 @@ async function login(page: Page) {
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 }
 
+const ids: string[] = [];
+
+// Cleanup runs in its own hook (own time budget): when it ran inside the test, a slow full run hit the
+// test timeout mid-cleanup and a leftover Flagship product broke flagship.spec.ts.
+test.afterAll(async ({ browser }) => {
+  if (!ids.length) return;
+  const page = await browser.newPage();
+  await page.request.post('/api/auth/login', { headers: H, data: creds() });
+  for (const id of ids) await page.request.delete(`/api/admin/products/${id}`, { headers: H }); // 404 for the one the test deleted
+  await page.close();
+});
+
 test('select products, then Set active, Archive and Delete in one click each', async ({ page }) => {
   await login(page);
   const cats = (await (await page.request.get('/api/admin/categories')).json()).data as { _id: string; slug: string }[];
   const category = cats.find((c) => c.slug === 'cables')!._id;
-  const ids: string[] = [];
   for (const n of [1, 2, 3]) {
     const r = await page.request.post('/api/admin/products', { headers: H, data: { sku: `E2E-BULKACT-${n}`, slug: `e2e-bulkact-${n}`, category, price: 10, stock: 1, status: 'draft', name: { ar: `منتج ${n}`, en: `Bulk Action Item ${n}` } } });
     expect(r.status()).toBe(201);
@@ -27,7 +38,7 @@ test('select products, then Set active, Archive and Delete in one click each', a
   }
   const statusOf = async () => Promise.all(ids.map(async (id) => ((await (await page.request.get(`/api/admin/products/${id}`)).json()).data as { status: string }).status));
 
-  try {
+  {
     await page.goto('/admin/products?q=E2E-BULKACT');
     await expect(page.locator('table.products-table tbody tr')).toHaveCount(3);
     await expect(page.getByTestId('products-bulk-bar')).toHaveCount(0);
@@ -78,7 +89,5 @@ test('select products, then Set active, Archive and Delete in one click each', a
     await bar.getByRole('button', { name: 'Delete' }).click();
     await expect(page.getByText('1 deleted')).toBeVisible();
     await expect(page.locator('table.products-table tbody tr')).toHaveCount(2);
-  } finally {
-    for (const id of ids) await page.request.delete(`/api/admin/products/${id}`, { headers: H });
   }
 });

@@ -130,8 +130,10 @@ uploads every 30 minutes). Every job is safe to run concurrently, so several ins
 finishes in-flight requests (up to 10 s) and closes the database connection.
 
 **Two separate services (current Railway setup: storefront + API on different `*.up.railway.app` hosts)** still works:
-the API needs `CORS_ORIGINS=<storefront origin>` and leaves `COOKIE_SAMESITE` empty (`none`), and the
-storefront is built with `VITE_API_BASE_URL=<API origin>`. Two cautions:
+the API needs `CORS_ORIGINS=<storefront origin>`, `PUBLIC_API_URL=<API origin>` (payment gateways send webhooks
+there; the storefront host cannot receive them) and leaves `COOKIE_SAMESITE` empty (`none`), and the
+storefront is built with `VITE_API_BASE_URL=<API origin>`. Register the Tabby webhook as
+`<API origin>/api/webhooks/tabby`. Two cautions:
 
 - `vite preview` (what `client`'s `allowedHosts` entry was added for) is a local preview tool, not a production
   web server — serve `client/dist` from a static host, or use the single-service setup above.

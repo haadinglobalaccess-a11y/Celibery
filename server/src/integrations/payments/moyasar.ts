@@ -1,4 +1,4 @@
-import { env } from '../../config/env';
+import { publicApiOrigin } from '../../config/env';
 import { integration } from '../credentials';
 import { GatewayError, gatewayFetch } from './http';
 import type { CredentialCheck, InitiateInput, PaymentProvider, StatusResult } from './types';
@@ -73,7 +73,7 @@ export const moyasarProvider: PaymentProvider = {
         description: input.description,
         success_url: input.returnUrl,
         back_url: input.cancelUrl,
-        callback_url: `${env.PUBLIC_SITE_URL}/api/webhooks/moyasar`,
+        callback_url: `${publicApiOrigin()}/api/webhooks/moyasar`,
         metadata: { payment_id: input.paymentId, order_number: input.orderNumber },
       }),
     });

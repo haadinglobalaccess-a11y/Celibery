@@ -81,7 +81,11 @@ test.describe.serial('Featured and Flagship selections', () => {
     await filter.selectOption('flagship');
     await expect(page).toHaveURL(/placement=flagship/);
     const rows = page.locator('table.products-table tbody tr');
-    await expect(rows).toHaveCount(2);
+    // Independent of other specs' products: exactly our two Flagship items appear, the Featured-only one
+    // does not, and every row the filter returns is a Flagship product.
+    await expect(rows.filter({ hasText: /Flagship (Alpha|Beta) Power Bank/ })).toHaveCount(2);
+    await expect(rows.filter({ hasText: 'Featured Only' })).toHaveCount(0);
+    for (const row of await rows.all()) await expect(row.getByTestId('badge-flagship')).toBeVisible();
     await expect(rows.filter({ hasText: 'Flagship Alpha' }).getByTestId('badge-flagship')).toBeVisible();
     await expect(rows.filter({ hasText: 'Flagship Alpha' }).getByTestId('badge-featured')).toHaveCount(0);
     const beta = rows.filter({ hasText: 'Flagship Beta' });

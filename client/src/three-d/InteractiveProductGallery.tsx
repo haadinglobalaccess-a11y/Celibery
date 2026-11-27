@@ -227,6 +227,8 @@ function ThumbRail({ active, label, upLabel, downLabel, onLeave, children }: { a
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
+    // Observe once on mount: `measure` reads only refs and sets state, so a fresh copy is equivalent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // Keep the active thumbnail in view.
   useEffect(() => {

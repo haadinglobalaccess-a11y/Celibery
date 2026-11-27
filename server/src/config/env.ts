@@ -17,6 +17,11 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(4000),
   PUBLIC_SITE_URL: z.string().url().default('http://localhost:5173'),
+  /**
+   * Public HTTPS origin of the API when it is NOT served from PUBLIC_SITE_URL (storefront and API as
+   * two services). Payment gateways deliver webhooks here. Empty = same origin as PUBLIC_SITE_URL.
+   */
+  PUBLIC_API_URL: z.union([z.literal(''), z.string().url()]).default(''),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
   MONGODB_URI: z.string().default(''),
   MONGODB_DB_NAME: z.string().default('celibery'),
@@ -202,6 +207,10 @@ export function assertProductionConfig() {
   if (/replace-with|dev-only-insecure|change-me/i.test(env.JWT_SECRET)) problems.push('JWT_SECRET must be a unique production secret');
   const site = new URL(env.PUBLIC_SITE_URL);
   if (site.protocol !== 'https:' || /^(localhost|127\.|\[::1\])/.test(site.hostname)) problems.push('PUBLIC_SITE_URL must use the production HTTPS domain');
+  if (env.PUBLIC_API_URL) {
+    const api = new URL(env.PUBLIC_API_URL);
+    if (api.protocol !== 'https:' || /^(localhost|127\.|\[::1\])/.test(api.hostname)) problems.push('PUBLIC_API_URL must use the production HTTPS domain');
+  }
   const origins = env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean);
   if (!origins.length || origins.some(origin => { try { const url = new URL(origin); return url.protocol !== 'https:' || url.origin !== origin; } catch { return true; } }))
     problems.push('CORS_ORIGINS must contain explicit HTTPS origins');
@@ -252,4 +261,7 @@ export function cookieSameSite(): 'lax' | 'strict' | 'none' {
   return isProd ? 'none' : 'lax';
 }
 
-export const corsOrigins = env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+/** Public origin of the API (no trailing slash): PUBLIC_API_URL, or the site itself when the API shares its origin. */
+export const publicApiOrigin = () => (env.PUBLIC_API_URL || env.PUBLIC_SITE_URL).replace(/\/+$/, '');
+
+export const corsOrigins =env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
