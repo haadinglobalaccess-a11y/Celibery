@@ -72,13 +72,18 @@ test('select products, then Set active, Archive and Delete in one click each', a
     await expect(bar).toContainText('3 selected');
     page.once('dialog', (d) => void d.accept());
     await bar.getByRole('button', { name: 'Archive', exact: true }).click();
+    await expect(page.getByText('3 products archived')).toBeVisible();
     await expect.poll(statusOf).toEqual(['archived', 'archived', 'archived']);
+    // Each bulk action reloads the list and clears the selection: wait for that before selecting again,
+    // otherwise the next tick lands on the old rows and the reload wipes it (seen in CI).
+    await expect(bar).toHaveCount(0);
 
     // Unarchive: archived products come back as draft.
     await page.getByRole('checkbox', { name: 'Select Bulk Action Item 2' }).check();
     await bar.getByRole('button', { name: 'Unarchive' }).click();
     await expect(page.getByText('1 product unarchived (now draft)')).toBeVisible();
     await expect.poll(statusOf).toEqual(['archived', 'draft', 'archived']);
+    await expect(bar).toHaveCount(0);
 
     // Delete: cancelling the confirmation changes nothing; accepting deletes.
     await page.getByRole('checkbox', { name: 'Select Bulk Action Item 3' }).check();
